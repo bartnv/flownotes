@@ -1,0 +1,5 @@
+* { margin: 0; padding: 0 }
+HTML,BODY { width: 100%; height: 100%; }
+BODY { background-color: grey; }
+#main { display: flex; max-width: 1200px; height: 100%; margin: auto; justify-content: center; }
+#input,#render { align-self: center; width: 80%; height: 80%; background-color: white; }
