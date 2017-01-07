@@ -1,25 +1,42 @@
 var app = {
-  mode: 'edit'
+  mode: 'edit',
+  activenote: 1,
+  notes: {}
 }
 
 $(document).on('keydown', function(evt) {
   if (evt.key == 'F4') {
-    if (app.mode == 'edit') {
-      app.mode = 'render';
-      $('#input').hide();
-      $('#render').html(marked($('#input').val())).show();
-    }
-    else {
-      app.mode = 'edit';
-      $('#render').hide().empty();
-      $('#input').show();
-    }
+    if (app.mode == 'edit') app.mode = 'view';
+    else if (app.mode == 'view') app.mode = 'edit';
+    updatePanels();
   }
 });
 
 $().ready(function() {
   $('#render').hide();
+  $.ajax('data.php').done(parseFromServer);
 })
+
+function parseFromServer(data) {
+  if (data.mode) app.mode = data.mode;
+  if (data.activenote) app.activenote = data.activenote;
+  for (let i in data.notes) {
+    if (!app.notes[i]) app.notes[i] = {};
+    if (data.notes[i].content) app.notes[i].content = data.notes[i].content;
+  }
+  updatePanels();
+}
+function updatePanels() {
+  $('#input').val(app.notes[app.activenote].content);
+  if (app.mode == 'edit') {
+    $('#render').hide().empty();
+    $('#input').show();
+  }
+  else if (app.mode == 'view') {
+    $('#input').hide();
+    $('#render').html(marked($('#input').val())).show();
+  }
+}
 
 $.fn.getCursorPosition = function() {
   var el = $(this).get(0);
