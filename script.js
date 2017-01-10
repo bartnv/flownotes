@@ -1,7 +1,9 @@
 var app = {
   mode: 'edit',
   activenote: 1,
-  notes: {}
+  notes: {},
+  inactive: 0,
+  changed: 0
 }
 
 $(document).on('keydown', function(evt) {
@@ -14,8 +16,21 @@ $(document).on('keydown', function(evt) {
 
 $().ready(function() {
   $('#render').hide();
-  $.ajax('data.php').done(parseFromServer);
-})
+  $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 10000); });
+  $('#input').on('input', function() {
+    console.log('input');
+    if (!app.changed) app.changed = Date.now();
+    app.inactive = 0;
+  })
+});
+
+function tick() {
+  app.inactive++;
+  if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
+    app.changed = 0;
+    console.log('push to server');
+  }
+}
 
 function parseFromServer(data) {
   if (data.mode) app.mode = data.mode;
