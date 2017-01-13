@@ -2,9 +2,18 @@
 
 $dbh = new PDO('sqlite:notes.sq3');
 
-if (!empty($_GET['mode'])) $mode = $_GET['mode'];
-elseif (!empty($_POST['mode'])) $mode = $_POST['mode'];
-else $mode = 'init';
+header('Content-type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+  if (!empty($_GET['mode'])) $mode = $_GET['mode'];
+  else $mode = 'init';
+}
+elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
+  if (!empty($data['mode'])) $mode = $data['mode'];
+  else fatalerr('No mode specified in POST request');
+}
+else fatalerr('Invalid request method');
 
 switch ($mode) {
   case 'init':
@@ -13,9 +22,13 @@ switch ($mode) {
     $ret['activenote'] = query_setting('activenote', '1');
     $note = query_notes_id($ret['activenote']);
     $ret['notes'] = [ $ret['activenote'] => $note ];
-    header('Content-type: application/json');
     print json_encode($ret);
-  break;
+    exit();
+  case 'update':
+    error_log(json_encode($data));
+    exit();
+  default:
+    fatalerr('Invalid mode requested');
 }
 
 function query_setting($setting, $def = '') {
@@ -49,4 +62,9 @@ function query_notes_id($id) {
     return [];
   }
   return $row;
+}
+
+function fatalerr($msg) {
+  print json_encode([ 'error' => $msg ]);
+  exit(1);
 }

@@ -18,8 +18,8 @@ $().ready(function() {
   $('#render').hide();
   $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 10000); });
   $('#input').on('input', function() {
-    console.log('input');
     if (!app.changed) app.changed = Date.now();
+    app.notes[app.activenote].touched = true;
     app.inactive = 0;
   })
 });
@@ -28,11 +28,26 @@ function tick() {
   app.inactive++;
   if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
     app.changed = 0;
-    console.log('push to server');
+    if (app.notes[app.activenote].touched) app.notes[app.activenote].content = $('#input').val();
+    pushToServer();
   }
 }
 
+function pushToServer() {
+  let data = { mode: 'update', activenote: app.activenote, notes: {} };
+  for (let i in app.notes) {
+    if (app.notes[i].touched) {
+      data.notes[i] = app.notes[i];
+      delete app.notes[i].touched;
+    }
+  }
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+}
 function parseFromServer(data) {
+  if (data.error) {
+    alert('Error: ' + data.error);
+    return;
+  }
   if (data.mode) app.mode = data.mode;
   if (data.activenote) app.activenote = data.activenote;
   for (let i in data.notes) {
