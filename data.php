@@ -20,12 +20,17 @@ switch ($mode) {
     $ret = [];
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = query_setting('activenote', '1');
-    $note = query_notes_id($ret['activenote']);
+    $note = select_note($ret['activenote']);
     $ret['notes'] = [ $ret['activenote'] => $note ];
     print json_encode($ret);
     exit();
   case 'update':
-    error_log(json_encode($data));
+    if (!empty($data['notes'])) {
+      foreach ($data['notes'] as $id => $note) {
+        update_note($id, $note);
+      }
+    }
+    print '{ }';
     exit();
   default:
     fatalerr('Invalid mode requested');
@@ -45,23 +50,37 @@ function query_setting($setting, $def = '') {
   return $row[0];
 }
 
-function query_notes_id($id) {
+function select_note($id) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT * FROM note WHERE id = ?"))) {
     $err = $dbh->errorInfo();
-    error_log("query_notes_id() prepare failed: " . $err[2]);
+    error_log("select_note() prepare failed: " . $err[2]);
     return [];
   }
   if (!($stmt->execute([ $id ]))) {
     $err = $stmt->errorInfo();
-    error_log("query_notes_id() execute failed: " . $err[2]);
+    error_log("select_note() execute failed: " . $err[2]);
     return [];
   }
   if (!($row = $stmt->fetch(PDO::FETCH_ASSOC))) {
-    error_log("query_notes_id() for id $id returned no rows");
+    error_log("select_note() for id $id returned no rows");
     return [];
   }
   return $row;
+}
+function update_note($id, $note) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("UPDATE note SET content = ? WHERE id = ?"))) {
+    $err = $dbh->errorInfo();
+    error_log("update_note() prepare failed: " . $err[2]);
+    return;
+  }
+  if (!($stmt->execute([ $note['content'], $id ]))) {
+    $err = $stmt->errorInfo();
+    $processUser = posix_getpwuid(posix_geteuid());
+    error_log("update_note() execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    return;
+  }
 }
 
 function fatalerr($msg) {

@@ -22,6 +22,12 @@ $().ready(function() {
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
   })
+  $(window).on('unload', function() { // Use navigator.sendBeacon for this in the future
+    if (app.changed) {
+      app.notes[app.activenote].content = $('#input').val();
+      pushToServer(true);
+    }
+  });
 });
 
 function tick() {
@@ -33,15 +39,17 @@ function tick() {
   }
 }
 
-function pushToServer() {
+function pushToServer(sync) {
   let data = { mode: 'update', activenote: app.activenote, notes: {} };
+  let async = true;
+  if (sync) async = false;
   for (let i in app.notes) {
     if (app.notes[i].touched) {
       data.notes[i] = app.notes[i];
       delete app.notes[i].touched;
     }
   }
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json', async: async }).done(parseFromServer);
 }
 function parseFromServer(data) {
   if (data.error) {
