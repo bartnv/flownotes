@@ -1,5 +1,11 @@
-* { margin: 0; padding: 0 }
-HTML,BODY { width: 100%; height: 100%; }
-BODY { background-color: grey; }
-#main { display: flex; max-width: 1200px; height: 100%; margin: auto; justify-content: center; }
+HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; }
+BODY { margin: 0; background-color: grey; }
+CODE { background-color: rgb(200,200,200); }
+TABLE { border-collapse: collapse; }
+TH, TD { border: solid black 1px; padding: 0 3px; }
+#panels { display: flex; height: 100vh; }
+#panel-left { width: 300px; flex-shrink: 0; background-color: rgb(200,200,200); }
+#panels > DIV { }
+#panel-main { flex-grow: 1; display: flex; max-width: 1200px; height: 100vh; margin: auto; justify-content: center; }
 #input,#render { align-self: center; width: 80%; height: 80%; background-color: white; }
+#render { box-sizing: border-box; padding: 0 20px; overflow-y: scroll; }
