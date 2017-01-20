@@ -7,9 +7,17 @@ var app = {
 }
 
 $(document).on('keydown', function(evt) {
-  if (evt.key == 'F4') {
-    if (app.mode == 'edit') app.mode = 'view';
-    else if (app.mode == 'view') app.mode = 'edit';
+  if (evt.key == 'F2') {
+    if (app.mode == 'graph') app.mode = app.prev;
+    else {
+      app.prev = app.mode;
+      app.mode = 'graph';
+    }
+    updatePanels();
+  }
+  else if (evt.key == 'F4') {
+    if (app.mode == 'view') app.mode = 'edit';
+    else app.mode = 'view';
     updatePanels();
   }
 });
@@ -18,6 +26,7 @@ $().ready(function() {
   marked.setOptions({
     breaks: true
   });
+  app.graph = new sigma('graph');
   $('#render').hide();
   $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 10000); });
   $('#input').on('input', function() {
@@ -71,11 +80,24 @@ function parseFromServer(data) {
 function updatePanels() {
   if (app.mode == 'edit') {
     $('#render').hide().empty();
+    $('#graph').hide();
     $('#input').show();
   }
   else if (app.mode == 'view') {
     $('#input').hide();
     $('#render').html(marked($('#input').val())).show();
+    $('#graph').hide();
+  }
+  else if (app.mode == 'graph') {
+    $('#input').hide();
+    $('#render').hide().empty();
+    $('#graph').show();
+    app.graph.graph.clear();
+    for (let i in app.notes) {
+      let note = app.notes[i];
+      app.graph.graph.addNode({ id: String(i), label: 'test', x: 5, y: 5, size: 1 });
+    }
+    app.graph.refresh();
   }
 }
 

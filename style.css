@@ -7,5 +7,5 @@ TH, TD { border: solid black 1px; padding: 0 3px; }
 #panel-left { width: 300px; flex-shrink: 0; background-color: rgb(200,200,200); }
 #panels > DIV { }
 #panel-main { flex-grow: 1; display: flex; max-width: 1200px; height: 100vh; margin: auto; justify-content: center; }
-#input,#render { align-self: center; width: 80%; height: 80%; background-color: white; }
+#input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: scroll; }
