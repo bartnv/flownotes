@@ -61,11 +61,11 @@ function parseFromServer(data) {
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = {};
     if (data.notes[i].content) app.notes[i].content = data.notes[i].content;
+    if ((i == app.activenote) && !app.notes[app.activenote].touched) $('#input').val(app.notes[app.activenote].content);
   }
   updatePanels();
 }
 function updatePanels() {
-  $('#input').val(app.notes[app.activenote].content);
   if (app.mode == 'edit') {
     $('#render').hide().empty();
     $('#input').show();
