@@ -15,6 +15,9 @@ $(document).on('keydown', function(evt) {
 });
 
 $().ready(function() {
+  marked.setOptions({
+    breaks: true
+  });
   $('#render').hide();
   $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 10000); });
   $('#input').on('input', function() {
