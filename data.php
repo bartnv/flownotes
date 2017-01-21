@@ -33,6 +33,15 @@ switch ($mode) {
     }
     print '{ }';
     exit();
+  case 'activate':
+    if (empty($data['activenote'])) fatalerr('No activenote passed in mode activate');
+    if (!is_numeric($data['activenote'])) fatalerr('Invalid activenote passed in mode activate');
+    store_setting('activenote', $data['activenote']);
+    $ret = [];
+    $ret['notes'] = [];
+    $ret['notes'][$data['activenote']] = select_note($data['activenote']);
+    print json_encode($ret);
+    exit();
   default:
     fatalerr('Invalid mode requested');
 }
@@ -49,6 +58,19 @@ function query_setting($setting, $def = '') {
     return $def;
   }
   return $row[0];
+}
+function store_setting($setting, $value) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("INSERT OR REPLACE INTO setting (name, value) VALUES (?, ?)"))) {
+    $err = $dbh->errorInfo();
+    error_log("store_setting() prepare failed: " . $err[2]);
+    return;
+  }
+  if (!($stmt->execute([ $setting, $value ]))) {
+    $err = $stmt->errorInfo();
+    error_log("store_setting() execute failed: " . $err[2]);
+    return;
+  }
 }
 
 function select_note($id) {

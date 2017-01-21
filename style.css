@@ -9,5 +9,5 @@ TH, TD { border: solid black 1px; padding: 0 3px; }
 #panel-main { flex-grow: 1; display: flex; max-width: 1200px; height: 100vh; margin: auto; justify-content: center; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
-.note-li { margin: 5px; padding: 5px 8px; background-color: rgb(220,220,200); }
+.note-li { margin: 5px; padding: 5px 8px; background-color: rgb(220,220,200); cursor: pointer; }
 .note-title { font-weight: bold; font-size: 1.1em; line-height: 1.4; }

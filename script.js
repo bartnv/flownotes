@@ -1,7 +1,7 @@
 var app = {
   mode: 'edit',
   activenote: 1,
-  notes: [],
+  notes: {},
   inactive: 0,
   changed: 0
 }
@@ -74,9 +74,10 @@ function parseFromServer(data) {
   if (data.mode) app.mode = data.mode;
   if (data.activenote) app.activenote = data.activenote;
   for (let i in data.notes) {
-    if (!app.notes[i]) app.notes[i] = {};
+    if (!app.notes[i]) app.notes[i] = { id: i };
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
     else app.notes[i].title = '{notitle}';
+    if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
     if (data.notes[i].modified) app.notes[i].modified = data.notes[i].modified;
     if (data.notes[i].content !== undefined) app.notes[i].content = data.notes[i].content;
     if ((i == app.activenote) && !app.notes[app.activenote].touched) $('#input').val(app.notes[app.activenote].content);
@@ -105,12 +106,14 @@ function updatePanels() {
     }
     app.graph.refresh();
   }
-  app.notes.sort(function(a, b) { return b.modified - a.modified; });
+  let notes = Object.keys(app.notes).map(x => app.notes[x]);
+  notes.sort(function(a, b) { return b.modified - a.modified; });
   let count = 0;
   let last10 = "";
-  for (let i in app.notes) {
-    let note = app.notes[i];
-    last10 += '<div class="note-li"><span class="note-title">' + note.title + '</span><br><span class="note-modified">' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
+  for (let i in notes) {
+    let note = notes[i];
+    last10 += '<div class="note-li" onclick="activateNote(' + note.id + ')"><span class="note-title">' + note.title + '</span><br>';
+    last10 += '<span class="note-modified">' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
     if (++count == 10) break;
   }
   $('#panel-left').empty().html(last10);
@@ -120,6 +123,16 @@ function findTitle(text) {
   matches = text.match(/^\s*#+\s*([^#\r\n]+)/m);
   if (matches) return matches[1];
   else return 'notitle';
+}
+
+function activateNote(id) {
+  if (app.notes[app.activenote].touched) {
+    app.notes[app.activenote].content = $('#input').val();
+    app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
+  }
+  app.activenote = id;
+  let data = { mode: 'activate', activenote: app.activenote };
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
 }
 
 $.fn.getCursorPosition = function() {
