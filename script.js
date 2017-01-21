@@ -76,7 +76,7 @@ function parseFromServer(data) {
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = { id: i };
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
-    else app.notes[i].title = '{notitle}';
+    else if (!app.notes[i].title) app.notes[i].title = '{notitle}';
     if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
     if (data.notes[i].modified) app.notes[i].modified = data.notes[i].modified;
     if (data.notes[i].content !== undefined) app.notes[i].content = data.notes[i].content;
@@ -113,7 +113,7 @@ function updatePanels() {
   for (let i in notes) {
     let note = notes[i];
     last10 += '<div class="note-li" onclick="activateNote(' + note.id + ')"><span class="note-title">' + note.title + '</span><br>';
-    last10 += '<span class="note-modified">' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
+    last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
     if (++count == 10) break;
   }
   $('#panel-left').empty().html(last10);

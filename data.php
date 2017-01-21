@@ -26,12 +26,14 @@ switch ($mode) {
     print json_encode($ret);
     exit();
   case 'update':
+    $ret = [];
+    $ret['notes'] = [];
     if (!empty($data['notes'])) {
       foreach ($data['notes'] as $id => $note) {
-        update_note($id, $note);
+        $ret['notes'][$id] = update_note($id, $note);
       }
     }
-    print '{ }';
+    print json_encode($ret);
     exit();
   case 'activate':
     if (empty($data['activenote'])) fatalerr('No activenote passed in mode activate');
@@ -123,15 +125,31 @@ function update_note($id, $note) {
   global $dbh;
   if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now') WHERE id = ?"))) {
     $err = $dbh->errorInfo();
-    error_log("update_note() prepare failed: " . $err[2]);
+    error_log("update_note() update prepare failed: " . $err[2]);
     return;
   }
   if (!($stmt->execute([ $note['content'], $note['title'], $id ]))) {
     $err = $stmt->errorInfo();
     $processUser = posix_getpwuid(posix_geteuid());
-    error_log("update_note() execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    error_log("update_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
     return;
   }
+
+  if (!($stmt = $dbh->prepare("SELECT modified FROM note WHERE id = ?"))) {
+    $err = $dbh->errorInfo();
+    error_log("update_note() select prepare failed: " . $err[2]);
+    return [];
+  }
+  if (!($stmt->execute([ $id ]))) {
+    $err = $stmt->errorInfo();
+    error_log("update_note() select execute failed: " . $err[2]);
+    return [];
+  }
+  if (!($row = $stmt->fetch(PDO::FETCH_ASSOC))) {
+    error_log("update_note() select for id $id returned no rows");
+    return [];
+  }
+  return $row;
 }
 
 function fatalerr($msg) {
