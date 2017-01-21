@@ -1,7 +1,7 @@
 var app = {
   mode: 'edit',
   activenote: 1,
-  notes: {},
+  notes: [],
   inactive: 0,
   changed: 0
 }
