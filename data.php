@@ -20,6 +20,7 @@ switch ($mode) {
     $ret = [];
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = query_setting('activenote', '1');
+    $ret['activetableft'] = query_setting('activetableft', 'recent');
     $ret['notes'] = select_all_notes();
     $note = select_note($ret['activenote']);
     $ret['notes'][$ret['activenote']]['content'] = $note['content'];

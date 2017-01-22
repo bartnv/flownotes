@@ -13,7 +13,16 @@
 </head>
 <body>
   <div id="panels">
-    <div id="panel-left"></div>
+    <div id="panel-left">
+      <div id="tabbar-left" class="tabbar">
+        <div id="label-recent" class="tablabel">Recent</div>
+        <div id="label-search" class="tablabel tabactive">Search</div>
+        <div id="label-pinned" class="tablabel">Pinned</div>
+      </div>
+      <div id="tab-recent" class="tab" style="display: none;"></div>
+      <div id="tab-search" class="tab" style="display: none;"></div>
+      <div id="tab-pinned" class="tab" style="display: none;"></div>
+    </div>
     <div id="panel-main">
       <textarea id="input" style="display: none;" autofocus></textarea>
       <div id="render" style="display: none;"></div>

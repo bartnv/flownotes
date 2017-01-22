@@ -40,6 +40,9 @@ $().ready(function() {
       pushToServer(true);
     }
   });
+  $('#label-recent').on('click', function() { activateTab('recent'); });
+  $('#label-search').on('click', function() { activateTab('search'); });
+  $('#label-pinned').on('click', function() { activateTab('pinned'); });
 });
 
 function tick() {
@@ -73,6 +76,7 @@ function parseFromServer(data) {
   }
   if (data.mode) app.mode = data.mode;
   if (data.activenote) app.activenote = data.activenote;
+  if (data.activetableft) activateTab(data.activetableft);
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = { id: i };
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
@@ -116,7 +120,7 @@ function updatePanels() {
     last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
     if (++count == 10) break;
   }
-  $('#panel-left').empty().html(last10);
+  $('#tab-recent').empty().html(last10);
 }
 
 function findTitle(text) {
@@ -133,6 +137,10 @@ function activateNote(id) {
   app.activenote = id;
   let data = { mode: 'activate', activenote: app.activenote };
   $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+}
+function activateTab(name) {
+  $('#label-' + name).addClass('tabactive').siblings().removeClass('tabactive');
+  $('#tab-' + name).show().siblings('.tab').hide();
 }
 
 $.fn.getCursorPosition = function() {
