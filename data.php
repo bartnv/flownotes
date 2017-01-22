@@ -43,6 +43,7 @@ switch ($mode) {
     $ret = [];
     $ret['notes'] = [];
     $ret['notes'][$data['activenote']] = select_note($data['activenote']);
+    if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$data['activenote']]['modified'])) unset($ret['notes']);
     print json_encode($ret);
     exit();
   case 'search':

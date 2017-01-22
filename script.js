@@ -87,8 +87,10 @@ function parseFromServer(data) {
     else if (!app.notes[i].title) app.notes[i].title = '{notitle}';
     if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
     if (data.notes[i].modified) app.notes[i].modified = data.notes[i].modified;
-    if (data.notes[i].content !== undefined) app.notes[i].content = data.notes[i].content;
-    if ((i == app.activenote) && !app.notes[app.activenote].touched) $('#input').val(app.notes[app.activenote].content);
+    if ((data.notes[i].content !== undefined) && (app.notes[i].content != data.notes[i].content)) {
+      app.notes[i].content = data.notes[i].content;
+      if ((i == app.activenote) && !app.notes[app.activenote].touched) $('#input').val(app.notes[app.activenote].content);
+    }
   }
   if (data.searchresults) listSearchResults(data.searchresults);
   updatePanels();
@@ -140,7 +142,14 @@ function activateNote(id) {
     app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
   }
   app.activenote = id;
-  let data = { mode: 'activate', activenote: app.activenote };
+  let data = { mode: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
+  if (app.notes[id].content) {
+    if (app.mode == 'graph') app.mode = app.prev;
+    $('#input').val(app.notes[app.activenote].content);
+    updatePanels();
+    data.lazy = true;
+  }
+  else data.lazy = false;
   $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
 }
 function activateTab(name) {
