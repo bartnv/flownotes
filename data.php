@@ -45,6 +45,13 @@ switch ($mode) {
     $ret['notes'][$data['activenote']] = select_note($data['activenote']);
     print json_encode($ret);
     exit();
+  case 'search':
+    if (empty($data['term'])) fatalerr('No term passed in mode search');
+    $ret = [];
+    $ret['notes'] = search_notes($data['term']);
+    $ret['searchresults'] = array_keys($ret['notes']);
+    print json_encode($ret);
+    exit();
   default:
     fatalerr('Invalid mode requested');
 }
@@ -106,7 +113,7 @@ function select_note($id) {
 }
 function select_all_notes() {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note ORDER BY modified DESC"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note"))) {
     $err = $dbh->errorInfo();
     error_log("select_all_notes() prepare failed: " . $err[2]);
     return [];
@@ -114,6 +121,24 @@ function select_all_notes() {
   if (!($stmt->execute())) {
     $err = $stmt->errorInfo();
     error_log("select_all_notes() execute failed: " . $err[2]);
+    return [];
+  }
+  $notes = [];
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $notes[$row['id']] = array_slice($row, 1);
+  }
+  return $notes;
+}
+function search_notes($term) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note WHERE content LIKE ?"))) {
+    $err = $dbh->errorInfo();
+    error_log("search_notes() prepare failed: " . $err[2]);
+    return [];
+  }
+  if (!($stmt->execute([ '%' . preg_replace('/[^a-z0-9]/', '%', strtolower($term)) . '%' ]))) {
+    $err = $stmt->errorInfo();
+    error_log("search_notes() execute failed: " . $err[2]);
     return [];
   }
   $notes = [];

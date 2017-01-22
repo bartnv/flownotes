@@ -16,11 +16,17 @@
     <div id="panel-left">
       <div id="tabbar-left" class="tabbar">
         <div id="label-recent" class="tablabel">Recent</div>
-        <div id="label-search" class="tablabel tabactive">Search</div>
+        <div id="label-search" class="tablabel">Search</div>
         <div id="label-pinned" class="tablabel">Pinned</div>
       </div>
       <div id="tab-recent" class="tab" style="display: none;"></div>
-      <div id="tab-search" class="tab" style="display: none;"></div>
+      <div id="tab-search" class="tab" style="display: none;">
+        <div id="search-box">
+          <input type="text" id="search-input" class="search-controls">
+          <input type="button" id="search-button" class="search-controls" value="Go">
+        </div>
+        <div id="search-results"></div>
+      </div>
       <div id="tab-pinned" class="tab" style="display: none;"></div>
     </div>
     <div id="panel-main">

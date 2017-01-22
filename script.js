@@ -43,6 +43,10 @@ $().ready(function() {
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() { activateTab('search'); });
   $('#label-pinned').on('click', function() { activateTab('pinned'); });
+  $('#search-button').on('click', function() {
+    let data = { mode: 'search', term: $('#search-input').val() };
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+  })
 });
 
 function tick() {
@@ -86,6 +90,7 @@ function parseFromServer(data) {
     if (data.notes[i].content !== undefined) app.notes[i].content = data.notes[i].content;
     if ((i == app.activenote) && !app.notes[app.activenote].touched) $('#input').val(app.notes[app.activenote].content);
   }
+  if (data.searchresults) listSearchResults(data.searchresults);
   updatePanels();
 }
 function updatePanels() {
@@ -141,6 +146,17 @@ function activateNote(id) {
 function activateTab(name) {
   $('#label-' + name).addClass('tabactive').siblings().removeClass('tabactive');
   $('#tab-' + name).show().siblings('.tab').hide();
+  if (name == 'search') $('#search-input').focus();
+}
+
+function listSearchResults(items) {
+  let results = "";
+  for (let item of items) {
+    let note = app.notes[item];
+    results += '<div class="note-li" onclick="activateNote(' + note.id + ')"><span class="note-title">' + note.title + '</span><br>';
+    results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
+  }
+  $('#search-results').empty().html(results);
 }
 
 $.fn.getCursorPosition = function() {
