@@ -14,11 +14,13 @@ $(document).on('keydown', function(evt) {
       app.mode = 'graph';
     }
     updatePanels();
+    return false;
   }
   else if (evt.key == 'F4') {
     if (app.mode == 'view') app.mode = 'edit';
     else app.mode = 'view';
     updatePanels();
+    return false;
   }
 });
 
@@ -117,7 +119,7 @@ function updatePanels() {
     }
     app.graph.refresh();
   }
-  let notes = Object.keys(app.notes).map(x => app.notes[x]);
+  let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
   notes.sort(function(a, b) { return b.modified - a.modified; });
   let count = 0;
   let last10 = "";
@@ -162,8 +164,8 @@ function activateTab(name) {
 
 function listSearchResults(items) {
   let results = "";
-  for (let item of items) {
-    let note = app.notes[item];
+  for (let i in items) {
+    let note = app.notes[items[i]];
     results += '<div class="note-li" onclick="activateNote(' + note.id + ')"><span class="note-title">' + note.title + '</span><br>';
     results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
   }
