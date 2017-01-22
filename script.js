@@ -28,7 +28,7 @@ $().ready(function() {
   });
   app.graph = new sigma('graph');
   $('#render').hide();
-  $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 10000); });
+  $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 5000); });
   $('#input').on('input', function() {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
@@ -133,7 +133,9 @@ function updatePanels() {
 function findTitle(text) {
   matches = text.match(/^\s*#+\s*([^#\r\n]+)/m);
   if (matches) return matches[1];
-  else return 'notitle';
+  matches = text.match(/^\s*([A-Za-z0-9][A-Za-z0-9 ]+[A-Za-z0-9 ])/m);
+  if (matches) return matches[1];
+  return '{no title}';
 }
 
 function activateNote(id) {
