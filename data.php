@@ -21,7 +21,7 @@ switch ($mode) {
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = query_setting('activenote', '1');
     $ret['activetableft'] = query_setting('activetableft', 'recent');
-    $ret['notes'] = select_all_notes();
+    $ret['notes'] = select_recent_notes(10);
     $note = select_note($ret['activenote']);
     $ret['notes'][$ret['activenote']]['content'] = $note['content'];
     print json_encode($ret);
@@ -51,6 +51,13 @@ switch ($mode) {
     $ret = [];
     $ret['notes'] = search_notes($data['term']);
     $ret['searchresults'] = array_keys($ret['notes']);
+    print json_encode($ret);
+    exit();
+  case 'add':
+    $ret = [];
+    $ret['notes'] = [];
+    $ret['activenote'] = add_note();
+    $ret['notes'][$ret['activenote']] = select_note($ret['activenote']);
     print json_encode($ret);
     exit();
   default:
@@ -84,6 +91,15 @@ function store_setting($setting, $value) {
   }
 }
 
+function add_note() {
+  global $dbh;
+  if (!$dbh->query("INSERT INTO note (content) VALUES ('')")) {
+    $err = $dbh->errorInfo();
+    error_log("select_note() select prepare failed: " . $err[2]);
+    return null;
+  }
+  return $dbh->lastInsertId();
+}
 function select_note($id) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT * FROM note WHERE id = ?"))) {
@@ -112,9 +128,9 @@ function select_note($id) {
   }
   return $row;
 }
-function select_all_notes() {
+function select_recent_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note ORDER BY modified DESC LIMIT $count"))) {
     $err = $dbh->errorInfo();
     error_log("select_all_notes() prepare failed: " . $err[2]);
     return [];

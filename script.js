@@ -48,7 +48,11 @@ $().ready(function() {
   $('#search-button').on('click', function() {
     let data = { mode: 'search', term: $('#search-input').val() };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
-  })
+  });
+  $('#button-addnote').on('click', function() {
+    let data = { mode: 'add' };
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+  });
 });
 
 function tick() {
@@ -86,12 +90,14 @@ function parseFromServer(data) {
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = { id: i };
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
-    else if (!app.notes[i].title) app.notes[i].title = '{notitle}';
+    else if (!app.notes[i].title) app.notes[i].title = '{no title}';
     if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
     if (data.notes[i].modified) app.notes[i].modified = data.notes[i].modified;
-    if ((data.notes[i].content !== undefined) && (app.notes[i].content != data.notes[i].content)) {
+    if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
-      if ((i == app.activenote) && !app.notes[app.activenote].touched) $('#input').val(app.notes[app.activenote].content);
+      if ((i == app.activenote) && !app.notes[app.activenote].touched) {
+        $('#input').val(app.notes[app.activenote].content);
+      }
     }
   }
   if (data.searchresults) listSearchResults(data.searchresults);
@@ -101,7 +107,7 @@ function updatePanels() {
   if (app.mode == 'edit') {
     $('#render').hide().empty();
     $('#graph').hide();
-    $('#input').show();
+    $('#input').show().focus();
   }
   else if (app.mode == 'view') {
     $('#input').hide();
@@ -147,7 +153,7 @@ function activateNote(id) {
   }
   app.activenote = id;
   let data = { mode: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
-  if (app.notes[id].content) {
+  if (app.notes[id].content !== undefined) {
     if (app.mode == 'graph') app.mode = app.prev;
     $('#input').val(app.notes[app.activenote].content);
     updatePanels();
