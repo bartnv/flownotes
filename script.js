@@ -56,8 +56,14 @@ $().ready(function() {
     }
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
-  $('#label-search').on('click', function() { activateTab('search'); });
+  $('#label-search').on('click', function() {
+    activateTab('search');
+    $('#search-input').select();
+  });
   $('#label-pinned').on('click', function() { activateTab('pinned'); });
+  $('#search-input').on('keyup', function(e) {
+    if (e.originalEvent.code == 'Enter') $('#search-button').click();
+  });
   $('#search-button').on('click', function() {
     let data = { mode: 'search', term: $('#search-input').val() };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
