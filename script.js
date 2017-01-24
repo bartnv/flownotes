@@ -36,16 +36,19 @@ $().ready(function() {
   //   return undefined;
   // }
   app.graph = new sigma('graph');
-  $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 5000); });
-  $('#input').on('input', function() {
+  let data = { mode: 'init' };
+  if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).always(function() { setInterval(tick, 5000); });
+  $('#input').on('keydown', function(e) {
+    if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
+      console.log('do note select');
+    }
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
   });
   $(window).on('hashchange', function(e) {
-    console.log('hashchange');
-    let val = location.hash.substr(1);
-    if (val.match(/^[0-9]+$/)) activateNote(parseInt(val));
+    if (location.hash.match(/^#[0-9]+$/)) activateNote(parseInt(location.hash.substr(1)));
   }).on('unload', function() { // Use navigator.sendBeacon for this in the future
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();

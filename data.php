@@ -4,22 +4,19 @@ $dbh = new PDO('sqlite:notes.sq3');
 
 header('Content-type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-  if (!empty($_GET['mode'])) $mode = $_GET['mode'];
-  else $mode = 'init';
-}
-elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
-  if (!empty($data['mode'])) $mode = $data['mode'];
-  else fatalerr('No mode specified in POST request');
-}
-else fatalerr('Invalid request method');
+if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
+if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
+if (empty($data['mode'])) fatalerr('No mode specified in POST request');
 
-switch ($mode) {
+switch ($data['mode']) {
   case 'init':
     $ret = [];
     $ret['mode'] = query_setting('mode', 'edit');
-    $ret['activenote'] = query_setting('activenote', '1');
+    if (!empty($data['activenote']) && is_numeric($data['activenote'])) {
+      store_setting('activenote', $data['activenote']);
+      $ret['activenote'] = $data['activenote'];
+    }
+    else $ret['activenote'] = query_setting('activenote', '1');
     $ret['activetableft'] = query_setting('activetableft', 'recent');
     $ret['notes'] = select_recent_notes(10);
     $note = select_note($ret['activenote']);
