@@ -5,6 +5,7 @@ TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid black 1px; padding: 0 3px; }
 #panels { display: flex; height: 100vh; }
 #panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); }
+#panel-left A { text-decoration: none; color: inherit; }
 #panels > DIV { }
 #panel-main { flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; }
 #main-buttons { position: absolute; left: 20em; top: 0px; }

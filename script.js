@@ -28,15 +28,25 @@ $().ready(function() {
   marked.setOptions({
     breaks: true
   });
+  app.renderer = new marked.Renderer();
+  // app.renderer.link = function(href, title, text) {
+  //   if (href.match(/^[0-9]+$/)) {
+  //     href = '?note=' +
+  //   }
+  //   return undefined;
+  // }
   app.graph = new sigma('graph');
-  $('#render').hide();
   $.ajax('data.php').done(parseFromServer).always(function() { setInterval(tick, 5000); });
   $('#input').on('input', function() {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
-  })
-  $(window).on('unload', function() { // Use navigator.sendBeacon for this in the future
+  });
+  $(window).on('hashchange', function(e) {
+    console.log('hashchange');
+    let val = location.hash.substr(1);
+    if (val.match(/^[0-9]+$/)) activateNote(parseInt(val));
+  }).on('unload', function() { // Use navigator.sendBeacon for this in the future
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();
       pushToServer(true);
@@ -111,7 +121,7 @@ function updatePanels() {
   }
   else if (app.mode == 'view') {
     $('#input').hide();
-    $('#render').html(marked($('#input').val())).show();
+    $('#render').html(marked($('#input').val(), { renderer: app.renderer })).show();
     $('#graph').hide();
   }
   else if (app.mode == 'graph') {
@@ -131,8 +141,8 @@ function updatePanels() {
   let last10 = "";
   for (let i in notes) {
     let note = notes[i];
-    last10 += '<div class="note-li" onclick="activateNote(' + note.id + ')"><span class="note-title">' + note.title + '</span><br>';
-    last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
+    last10 += '<a href="#' + note.id + '"><div class="note-li"><span class="note-title">' + note.title + '</span><br>';
+    last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div></a>';
     if (++count == 10) break;
   }
   $('#tab-recent').empty().html(last10);
@@ -172,8 +182,8 @@ function listSearchResults(items) {
   let results = "";
   for (let i in items) {
     let note = app.notes[items[i]];
-    results += '<div class="note-li" onclick="activateNote(' + note.id + ')"><span class="note-title">' + note.title + '</span><br>';
-    results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div>';
+    results += '<a href="#' + note.id + '"><div class="note-li"><span class="note-title">' + note.title + '</span><br>';
+    results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
 }
