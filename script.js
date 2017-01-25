@@ -13,12 +13,16 @@ $(document).on('keydown', function(evt) {
       app.prev = app.mode;
       app.mode = 'graph';
     }
+    let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
     updatePanels();
     return false;
   }
   else if (evt.key == 'F4') {
     if (app.mode == 'view') app.mode = 'edit';
     else app.mode = 'view';
+    let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
     updatePanels();
     return false;
   }
@@ -36,7 +40,7 @@ $().ready(function() {
   //   return undefined;
   // }
   app.graph = new sigma('graph');
-  let data = { mode: 'init' };
+  let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
   $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).always(function() { setInterval(tick, 5000); });
   $('#input').on('keydown', function(e) {
@@ -66,11 +70,11 @@ $().ready(function() {
     if (e.originalEvent.code == 'Enter') $('#search-button').click();
   });
   $('#search-button').on('click', function() {
-    let data = { mode: 'search', term: $('#search-input').val() };
+    let data = { req: 'search', term: $('#search-input').val() };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   });
   $('#button-addnote').on('click', function() {
-    let data = { mode: 'add' };
+    let data = { req: 'add' };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   });
 });
@@ -88,7 +92,7 @@ function tick() {
 }
 
 function pushToServer(sync) {
-  let data = { mode: 'update', activenote: app.activenote, notes: {} };
+  let data = { req: 'update', activenote: app.activenote, notes: {} };
   let async = true;
   if (sync) async = false;
   for (let i in app.notes) {
@@ -172,7 +176,7 @@ function activateNote(id) {
     app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
   }
   app.activenote = id;
-  let data = { mode: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
+  let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
   if (app.notes[id].content !== undefined) {
     if (app.mode == 'graph') app.mode = app.prev;
     $('#input').val(app.notes[app.activenote].content);

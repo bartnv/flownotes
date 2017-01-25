@@ -6,14 +6,14 @@ header('Content-type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
 if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
-if (empty($data['mode'])) fatalerr('No mode specified in POST request');
+if (empty($data['req'])) fatalerr('No req specified in POST request');
 
 if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
 else $activenote = query_setting('activenote', '1');
 
 $ret = [];
 
-switch ($data['mode']) {
+switch ($data['req']) {
   case 'init':
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = $activenote;
@@ -31,9 +31,10 @@ switch ($data['mode']) {
     $ret['notes'] = [];
     $ret['notes'][$activenote] = select_note($activenote);
     if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
+    if (!empty($data['appmode'])) store_setting('mode', $data['appmode']);
     break;
   case 'search':
-    if (empty($data['term'])) fatalerr('No term passed in mode search');
+    if (empty($data['term'])) fatalerr('No term passed in req search');
     $ret['notes'] = search_notes($data['term']);
     $ret['searchresults'] = array_keys($ret['notes']);
     break;
@@ -44,7 +45,7 @@ switch ($data['mode']) {
     $ret['notes'][$activenote] = select_note($activenote);
     break;
   default:
-    fatalerr('Invalid mode requested');
+    fatalerr('Invalid req requested');
 }
 
 print json_encode($ret);
