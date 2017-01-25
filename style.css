@@ -10,7 +10,8 @@ H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 #panels > DIV { }
 #panel-main { flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; }
 #main-buttons { position: absolute; left: 20em; top: 0px; }
-#button-addnote { cursor: pointer; }
+.main-button { cursor: pointer; }
+.button-unpin { float: right; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .note-li { margin: 5px; padding: 5px 8px; background-color: rgb(220,220,200); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -77,7 +77,26 @@ $().ready(function() {
     let data = { req: 'add' };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   });
+  $('#button-pinnote').on('click', function() {
+    activateTab('pinned');
+    if (app.notes[app.activenote].pinned < 1) {
+      app.notes[app.activenote].pinned = true;
+      let data = { req: 'update', notes: {} };
+      data.notes[app.activenote] = {};
+      data.notes[app.activenote].pinned = true;
+      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    }
+  })
 });
+
+function unpinNote(id) {
+  console.log('unpin ' +id);
+  app.notes[id].pinned = 0;
+  let data = { req: 'update', notes: {} };
+  data.notes[id] = {};
+  data.notes[id].pinned = 0;
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+}
 
 function tick() {
   app.inactive++;
@@ -117,6 +136,7 @@ function parseFromServer(data) {
     else if (!app.notes[i].title) app.notes[i].title = '{no title}';
     if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
     if (data.notes[i].modified) app.notes[i].modified = data.notes[i].modified;
+    if (data.notes[i].pinned) app.notes[i].pinned = data.notes[i].pinned;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
       if ((i == app.activenote) && !app.notes[app.activenote].touched) {
@@ -149,6 +169,7 @@ function updatePanels() {
     }
     app.graph.refresh();
   }
+
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
   notes.sort(function(a, b) { return b.modified - a.modified; });
   let count = 0;
@@ -162,6 +183,22 @@ function updatePanels() {
     if (++count == 10) break;
   }
   $('#tab-recent').empty().html(last10);
+
+  notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
+  count = 0;
+  let pinned = "";
+  for (let i in notes) {
+    let note = notes[i];
+    if (!note.pinned || (note.pinned == '0')) break;
+    let extraclass = '';
+    if (note.id == app.activenote) extraclass = ' noteactive';
+    pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '">';
+    pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
+    pinned += '<span class="note-title">' + note.title + '</span><br>';
+    pinned += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    if (++count == 10) break;
+  }
+  $('#tab-pinned').empty().html(pinned);
 }
 
 function findTitle(text) {
