@@ -14,6 +14,7 @@ TH, TD { border: solid black 1px; padding: 0 3px; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .note-li { margin: 5px; padding: 5px 8px; background-color: rgb(220,220,200); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-title { font-weight: bold; font-size: 1.1em; line-height: 1.4; }
+.noteactive { background-color: rgb(200,220,200); }
 .tabbar { display: flex; }
 .tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; }
 .tabactive { background-color: rgb(200,200,200) !important; }

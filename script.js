@@ -155,7 +155,9 @@ function updatePanels() {
   let last10 = "";
   for (let i in notes) {
     let note = notes[i];
-    last10 += '<a href="#' + note.id + '"><div class="note-li"><span class="note-title">' + note.title + '</span><br>';
+    let extraclass = '';
+    if (note.id == app.activenote) extraclass = ' noteactive';
+    last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
     last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div></a>';
     if (++count == 10) break;
   }
@@ -185,6 +187,8 @@ function activateNote(id) {
   }
   else data.lazy = false;
   $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+  $('.note-li').removeClass('noteactive');
+  $('a[href="#' + app.activenote + '"]').children().addClass('noteactive');
 }
 function activateTab(name) {
   $('#label-' + name).addClass('tabactive').siblings().removeClass('tabactive');
@@ -196,7 +200,9 @@ function listSearchResults(items) {
   let results = "";
   for (let i in items) {
     let note = app.notes[items[i]];
-    results += '<a href="#' + note.id + '"><div class="note-li"><span class="note-title">' + note.title + '</span><br>';
+    let extraclass = '';
+    if (note.id == app.activenote) extraclass = ' noteactive';
+    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
     results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
