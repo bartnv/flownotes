@@ -35,7 +35,7 @@ switch ($data['req']) {
     $ret['notes'] = [];
     $ret['notes'][$activenote] = select_note($activenote);
     if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
-    if (!empty($data['appmode'])) store_setting('mode', $data['appmode']);
+    if (!empty($data['mode'])) store_setting('mode', $data['mode']);
     break;
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in req search');

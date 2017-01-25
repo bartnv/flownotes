@@ -90,7 +90,6 @@ $().ready(function() {
 });
 
 function unpinNote(id) {
-  console.log('unpin ' +id);
   app.notes[id].pinned = 0;
   let data = { req: 'update', notes: {} };
   data.notes[id] = {};
