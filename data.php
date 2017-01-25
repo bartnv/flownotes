@@ -8,58 +8,47 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
 if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
 if (empty($data['mode'])) fatalerr('No mode specified in POST request');
 
+if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
+else $activenote = query_setting('activenote', '1');
+
+$ret = [];
+
 switch ($data['mode']) {
   case 'init':
-    $ret = [];
     $ret['mode'] = query_setting('mode', 'edit');
-    if (!empty($data['activenote']) && is_numeric($data['activenote'])) {
-      store_setting('activenote', $data['activenote']);
-      $ret['activenote'] = $data['activenote'];
-    }
-    else $ret['activenote'] = query_setting('activenote', '1');
+    $ret['activenote'] = $activenote;
     $ret['activetableft'] = query_setting('activetableft', 'recent');
     $ret['notes'] = select_recent_notes(10);
-    $note = select_note($ret['activenote']);
-    $ret['notes'][$ret['activenote']]['content'] = $note['content'];
-    print json_encode($ret);
-    exit();
+    $ret['notes'][$activenote] = select_note($activenote);
+    break;
   case 'update':
-    $ret = [];
     $ret['notes'] = [];
     if (!empty($data['notes'])) {
-      foreach ($data['notes'] as $id => $note) {
-        $ret['notes'][$id] = update_note($id, $note);
-      }
+      foreach ($data['notes'] as $id => $note) $ret['notes'][$id] = update_note($id, $note);
     }
-    print json_encode($ret);
-    exit();
+    break;
   case 'activate':
-    if (empty($data['activenote'])) fatalerr('No activenote passed in mode activate');
-    if (!is_numeric($data['activenote'])) fatalerr('Invalid activenote passed in mode activate');
-    store_setting('activenote', $data['activenote']);
-    $ret = [];
     $ret['notes'] = [];
-    $ret['notes'][$data['activenote']] = select_note($data['activenote']);
-    if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$data['activenote']]['modified'])) unset($ret['notes']);
-    print json_encode($ret);
-    exit();
+    $ret['notes'][$activenote] = select_note($activenote);
+    if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
+    break;
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in mode search');
-    $ret = [];
     $ret['notes'] = search_notes($data['term']);
     $ret['searchresults'] = array_keys($ret['notes']);
-    print json_encode($ret);
-    exit();
+    break;
   case 'add':
-    $ret = [];
     $ret['notes'] = [];
-    $ret['activenote'] = add_note();
-    $ret['notes'][$ret['activenote']] = select_note($ret['activenote']);
-    print json_encode($ret);
-    exit();
+    $activenote = add_note();
+    $ret['activenote'] = $activenote;
+    $ret['notes'][$activenote] = select_note($activenote);
+    break;
   default:
     fatalerr('Invalid mode requested');
 }
+
+print json_encode($ret);
+exit();
 
 function query_setting($setting, $def = '') {
   global $dbh;
@@ -79,13 +68,14 @@ function store_setting($setting, $value) {
   if (!($stmt = $dbh->prepare("INSERT OR REPLACE INTO setting (name, value) VALUES (?, ?)"))) {
     $err = $dbh->errorInfo();
     error_log("store_setting() prepare failed: " . $err[2]);
-    return;
+    return null;
   }
   if (!($stmt->execute([ $setting, $value ]))) {
     $err = $stmt->errorInfo();
     error_log("store_setting() execute failed: " . $err[2]);
-    return;
+    return null;
   }
+  return $value;
 }
 
 function add_note() {
