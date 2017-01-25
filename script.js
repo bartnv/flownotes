@@ -43,6 +43,7 @@ $().ready(function() {
     if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
       console.log('do note select');
     }
+  }).on('input', function() {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
