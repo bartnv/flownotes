@@ -2,7 +2,8 @@ HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; }
 BODY { margin: 0; background-color: grey; }
 CODE { background-color: rgb(200,200,200); }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
-TH, TD { border: solid black 1px; padding: 0 3px; }
+TH, TD { border: solid #ccc 1px; padding: 0 3px; }
+H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 #panels { display: flex; height: 100vh; }
 #panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); }
 #panel-left A { text-decoration: none; color: inherit; }

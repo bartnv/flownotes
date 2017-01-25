@@ -158,7 +158,7 @@ function updatePanels() {
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' noteactive';
     last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
-    last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div></a>';
+    last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
     if (++count == 10) break;
   }
   $('#tab-recent').empty().html(last10);
@@ -203,7 +203,7 @@ function listSearchResults(items) {
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' noteactive';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
-    results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i:s') + '</span></div></a>';
+    results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
 }
