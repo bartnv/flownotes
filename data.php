@@ -18,8 +18,8 @@ switch ($data['req']) {
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = $activenote;
     $ret['activetableft'] = query_setting('activetableft', 'recent');
-    $ret['notes'] = select_recent_notes(10);
-    $ret['notes'] = select_pinned_notes(10) + $ret['notes'];
+    $ret['notes'] = select_recent_notes(20);
+    $ret['notes'] = select_pinned_notes(20) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
     break;
   case 'update':
@@ -43,6 +43,7 @@ switch ($data['req']) {
     $ret['searchresults'] = array_keys($ret['notes']);
     break;
   case 'add':
+    $ret['mode'] = store_setting('mode', 'edit');
     $ret['notes'] = [];
     $activenote = add_note();
     $ret['activenote'] = $activenote;

@@ -179,7 +179,7 @@ function updatePanels() {
     if (note.id == app.activenote) extraclass = ' noteactive';
     last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
     last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-    if (++count == 10) break;
+    if (++count*65 > $(window).height()) break;
   }
   $('#tab-recent').empty().html(last10);
 
@@ -195,7 +195,7 @@ function updatePanels() {
     pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
     pinned += '<span class="note-title">' + note.title + '</span><br>';
     pinned += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-    if (++count == 10) break;
+    if (++count*65 > $(window).height()) break;
   }
   $('#tab-pinned').empty().html(pinned);
 }
