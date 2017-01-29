@@ -73,11 +73,11 @@ $().ready(function() {
     let data = { req: 'search', term: $('#search-input').val() };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   });
-  $('#button-addnote').on('click', function() {
+  $('#button-note-add').on('click', function() {
     let data = { req: 'add' };
     $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   });
-  $('#button-pinnote').on('click', function() {
+  $('#button-note-pin').on('click', function() {
     activateTab('pinned');
     if (app.notes[app.activenote].pinned < 1) {
       app.notes[app.activenote].pinned = true;
@@ -86,7 +86,13 @@ $().ready(function() {
       data.notes[app.activenote].pinned = true;
       $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
     }
-  })
+  });
+  $('#buttons-mode').on('click', '.button-mode', function(e) {
+    app.mode = this.id.split('-')[2];
+    let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    updatePanels();
+  });
 });
 
 function unpinNote(id) {
@@ -168,6 +174,7 @@ function updatePanels() {
     }
     app.graph.refresh();
   }
+  $('#button-mode-' + app.mode).addClass('button-active').siblings().removeClass('button-active');
 
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
   notes.sort(function(a, b) { return b.modified - a.modified; });
@@ -176,7 +183,7 @@ function updatePanels() {
   for (let i in notes) {
     let note = notes[i];
     let extraclass = '';
-    if (note.id == app.activenote) extraclass = ' noteactive';
+    if (note.id == app.activenote) extraclass = ' note-active';
     last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
     last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
     if (++count*65 > $(window).height()) break;
@@ -190,7 +197,7 @@ function updatePanels() {
     let note = notes[i];
     if (!note.pinned || (note.pinned == '0')) break;
     let extraclass = '';
-    if (note.id == app.activenote) extraclass = ' noteactive';
+    if (note.id == app.activenote) extraclass = ' note-active';
     pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '">';
     pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
     pinned += '<span class="note-title">' + note.title + '</span><br>';
@@ -223,11 +230,11 @@ function activateNote(id) {
   }
   else data.lazy = false;
   $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
-  $('.note-li').removeClass('noteactive');
-  $('a[href="#' + app.activenote + '"]').children().addClass('noteactive');
+  $('.note-li').removeClass('note-active');
+  $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
 }
 function activateTab(name) {
-  $('#label-' + name).addClass('tabactive').siblings().removeClass('tabactive');
+  $('#label-' + name).addClass('tab-active').siblings().removeClass('tab-active');
   $('#tab-' + name).show().siblings('.tab').hide();
   if (name == 'search') $('#search-input').focus();
 }
@@ -237,7 +244,7 @@ function listSearchResults(items) {
   for (let i in items) {
     let note = app.notes[items[i]];
     let extraclass = '';
-    if (note.id == app.activenote) extraclass = ' noteactive';
+    if (note.id == app.activenote) extraclass = ' note-active';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
     results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }

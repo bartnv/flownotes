@@ -9,17 +9,22 @@ H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 #panel-left A { text-decoration: none; color: inherit; }
 #panels > DIV { }
 #panel-main { flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; }
-#main-buttons { position: absolute; left: 20em; top: 0px; }
-.main-button { cursor: pointer; }
+#buttons-main { display: flex; position: absolute; left: 20em; top: 0px; }
+#buttons-main > DIV { background-color: rgb(200,200,200); }
+#buttons-main DIV {  }
+#buttons-mode { border-right: solid black 1px; }
+#label-mode,#label-note { border-bottom: solid black 1px; padding: 5px; }
+.button-mode,.button-note { display: inline-block; cursor: pointer; padding: 5px; }
 .button-unpin { float: right; }
+.button-active { background-color: rgb(200,220,200) !important; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .note-li { margin: 5px; padding: 5px 8px; background-color: rgb(220,220,200); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-title { font-weight: bold; font-size: 1.1em; line-height: 1.4; }
-.noteactive { background-color: rgb(200,220,200); }
+.note-active { background-color: rgb(200,220,200) !important; }
 .tabbar { display: flex; }
 .tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; }
-.tabactive { background-color: rgb(200,200,200) !important; }
+.tab-active { background-color: rgb(200,200,200) !important; }
 .tab { position: absolute; width: 20em; }
 #search-box { display: flex; }
 #search-input { flex-grow: 1; margin-right: 0; }
