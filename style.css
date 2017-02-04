@@ -30,9 +30,12 @@ H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 #search-input { flex-grow: 1; margin-right: 0; }
 .search-controls { margin: 5px 5px 0 5px; }
 
-@media (max-width: 799px) {
+@media (max-width: 1024px) {
+  HTML { font-size: 14px; }
+}
+@media (max-width: 800px) {
   HTML { font-size: 12px; }
 }
-@media (max-width: 599px) {
+@media (max-width: 600px) {
   HTML { font-size: 9px; }
 }

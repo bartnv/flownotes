@@ -33,19 +33,23 @@ $().ready(function() {
     breaks: true
   });
   app.renderer = new marked.Renderer();
-  // app.renderer.link = function(href, title, text) {
-  //   if (href.match(/^[0-9]+$/)) {
-  //     href = '?note=' +
-  //   }
-  //   return undefined;
-  // }
+  app.renderer.link = function(href, title, text) {
+    if ((text == '?') && href.match(/^#[0-9]+$/)) {
+      let id = parseInt(href.substring(1));
+      if (app.notes[id] && app.notes[id].title) text = app.notes[id].title;
+      else text = '?';
+    }
+    return '<a href="' + href + '">' + text + '</a>';
+  }
   app.graph = new sigma('graph');
   let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
   $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).always(function() { setInterval(tick, 5000); });
   $('#input').on('keydown', function(e) {
     if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
-      console.log('do note select');
+      app.addlink = true;
+      let data = { req: 'add' };
+      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
     }
   }).on('input', function() {
     if (!app.changed) app.changed = Date.now();
@@ -53,7 +57,10 @@ $().ready(function() {
     app.inactive = 0;
   });
   $(window).on('hashchange', function(e) {
-    if (location.hash.match(/^#[0-9]+$/)) activateNote(parseInt(location.hash.substr(1)));
+    if (location.hash.match(/^#[0-9]+$/)) {
+      let id = parseInt(location.hash.substr(1));
+      if (id != app.activenote) activateNote(id);
+    }
   }).on('unload', function() { // Use navigator.sendBeacon for this in the future
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();
@@ -95,6 +102,8 @@ $().ready(function() {
   });
 });
 
+function addNote() {
+}
 function unpinNote(id) {
   app.notes[id].pinned = 0;
   let data = { req: 'update', notes: {} };
@@ -133,7 +142,19 @@ function parseFromServer(data) {
     return;
   }
   if (data.mode) app.mode = data.mode;
-  if (data.activenote) app.activenote = data.activenote;
+  if (data.activenote) {
+    if (app.addlink) {
+      let input = $('#input')[0];
+      let pos = input.selectionStart;
+      let val = input.value;
+      let link = '[?](#' + data.activenote + ')';
+      input.value = val.substring(0, pos) + link + val.substring(pos);
+      app.notes[app.activenote].touched = true;
+      app.addlink = false;
+    }
+    if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
+    else activateNote(data.activenote, true);
+  }
   if (data.activetableft) activateTab(data.activetableft);
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = { id: i };
@@ -215,21 +236,23 @@ function findTitle(text) {
   return '{no title}';
 }
 
-function activateNote(id) {
-  if (app.notes[app.activenote].touched) {
+function activateNote(id, nopost) {
+  if (app.notes[app.activenote] && app.notes[app.activenote].touched) {
     app.notes[app.activenote].content = $('#input').val();
     app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
   }
   app.activenote = id;
-  let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
-  if (app.notes[id].content !== undefined) {
-    if (app.mode == 'graph') app.mode = app.prev;
-    $('#input').val(app.notes[app.activenote].content);
-    updatePanels();
-    data.lazy = true;
+  if (!nopost) {
+    let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
+    if (app.notes[id].content !== undefined) {
+      if (app.mode == 'graph') app.mode = app.prev;
+      $('#input').val(app.notes[app.activenote].content);
+      updatePanels();
+      data.lazy = true;
+    }
+    else data.lazy = false;
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   }
-  else data.lazy = false;
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
 }
