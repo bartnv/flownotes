@@ -117,14 +117,21 @@ function tick() {
     }
     pushUpdate();
   }
+  else if (app.offline && (app.inactive%12 == 0)) sendToServer({ req: 'update' });
 }
 
-function pushUpdate(sync) {
+function pushUpdate(sync, retransmit) {
   let data = { req: 'update', activenote: app.activenote, notes: {} };
   for (let i in app.notes) {
     if (app.notes[i].touched) {
       data.notes[i] = app.notes[i];
       delete app.notes[i].touched;
+      app.notes[i].intransit = true;
+    }
+  }
+  if (retransmit) {
+    for (let i in app.notes) {
+      if (app.notes[i].intransit) data.notes[i] = app.notes[i];
     }
   }
   sendToServer(data, sync);
@@ -138,7 +145,10 @@ function sendToServer(data, sync) {
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline();
   if (data.error) return alert('Error: ' + data.error);
-  if (app.offline) app.offline = 0;
+  if (app.offline) {
+    app.offline = 0;
+    pushUpdate(false, true);
+  }
 
   $('#status').css('opacity', '0');
   if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
@@ -162,7 +172,10 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
     else if (!app.notes[i].title) app.notes[i].title = '{no title}';
     if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
-    if (data.notes[i].modified) app.notes[i].modified = data.notes[i].modified;
+    if (data.notes[i].modified) {
+      app.notes[i].modified = data.notes[i].modified;
+      if (app.notes[i].intransit) delete app.notes[i].intransit;
+    }
     if (data.notes[i].pinned) app.notes[i].pinned = data.notes[i].pinned;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
@@ -179,7 +192,12 @@ function offline() {
     $('#status').html('Connection failed, switching to offline mode').css('opacity', 1);
   }
   else {
-    $('#status').html('Offline mode').css('opacity', 1);
+    let count = 0;
+    for (let i in app.notes) {
+      if (app.notes[i].touched || app.notes[i].intransit) count++;
+    }
+    if (count) $('#status').html('Offline mode (' + count + ' unsaved notes)').css('opacity', 1);
+    else $('#status').html('Offline mode').css('opacity', 1);
   }
   if (app.notes[app.activenote].content === undefined) {
     $('#input').val('');
