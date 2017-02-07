@@ -9,10 +9,10 @@ H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 #panel-left A { text-decoration: none; color: inherit; }
 #panels > DIV { }
 #panel-main { flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; }
-#buttons-main { display: flex; position: absolute; left: 20em; top: 0px; }
+#buttons-main { display: flex; position: absolute; left: 20em; top: 0px; right: 0px; }
 #buttons-main > DIV { background-color: rgb(200,200,200); }
-#buttons-main DIV {  }
 #buttons-mode { border-right: solid black 1px; }
+#status { margin-left: auto; padding: 5px; align-self: flex-start; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; }
 #label-mode,#label-note { border-bottom: solid black 1px; padding: 5px; }
 .button-mode,.button-note { display: inline-block; cursor: pointer; padding: 5px; }
 .button-unpin { float: right; }

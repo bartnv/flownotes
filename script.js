@@ -3,7 +3,8 @@ var app = {
   activenote: 1,
   notes: [],
   inactive: 0,
-  changed: 0
+  changed: 0,
+  offline: 0
 }
 
 $(document).on('keydown', function(evt) {
@@ -14,7 +15,7 @@ $(document).on('keydown', function(evt) {
       app.mode = 'graph';
     }
     let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
     updatePanels();
     return false;
   }
@@ -22,11 +23,21 @@ $(document).on('keydown', function(evt) {
     if (app.mode == 'view') app.mode = 'edit';
     else app.mode = 'view';
     let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
     updatePanels();
     return false;
   }
 });
+
+function offline() {
+  if (!app.offline) {
+    app.offline = Date.now();
+    $('#status').html('Connection failed, switching to offline mode').css('opacity', 1);
+  }
+  else {
+    $('#status').html('Offline mode').css('opacity', 1);
+  }
+}
 
 $().ready(function() {
   marked.setOptions({
@@ -44,12 +55,12 @@ $().ready(function() {
   app.graph = new sigma('graph');
   let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).always(function() { setInterval(tick, 5000); });
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline).always(function() { setInterval(tick, 5000); });
   $('#input').on('keydown', function(e) {
     if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
       app.addlink = true;
       let data = { req: 'add' };
-      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
     }
   }).on('input', function() {
     if (!app.changed) app.changed = Date.now();
@@ -78,11 +89,11 @@ $().ready(function() {
   });
   $('#search-button').on('click', function() {
     let data = { req: 'search', term: $('#search-input').val() };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
   });
   $('#button-note-add').on('click', function() {
     let data = { req: 'add' };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
   });
   $('#button-note-pin').on('click', function() {
     activateTab('pinned');
@@ -91,13 +102,13 @@ $().ready(function() {
       let data = { req: 'update', notes: {} };
       data.notes[app.activenote] = {};
       data.notes[app.activenote].pinned = true;
-      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
     }
   });
   $('#buttons-mode').on('click', '.button-mode', function(e) {
     app.mode = this.id.split('-')[2];
     let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
     updatePanels();
   });
 });
@@ -109,7 +120,7 @@ function unpinNote(id) {
   let data = { req: 'update', notes: {} };
   data.notes[id] = {};
   data.notes[id].pinned = 0;
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
 }
 
 function tick() {
@@ -134,13 +145,14 @@ function pushToServer(sync) {
       delete app.notes[i].touched;
     }
   }
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json', async: async }).done(parseFromServer);
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json', async: async }).done(parseFromServer).fail(offline);
 }
-function parseFromServer(data) {
-  if (data.error) {
-    alert('Error: ' + data.error);
-    return;
-  }
+function parseFromServer(data, textStatus, xhr) {
+  if (xhr.status != 200) return offline();
+  if (data.error) return alert('Error: ' + data.error);
+  if (app.offline) app.offline = 0;
+
+  $('#status').css('opacity', '0');
   if (data.mode) app.mode = data.mode;
   if (data.activenote) {
     if (app.addlink) {
@@ -166,7 +178,7 @@ function parseFromServer(data) {
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
       if ((i == app.activenote) && !app.notes[app.activenote].touched) {
-        $('#input').val(app.notes[app.activenote].content);
+        $('#input').val(app.notes[app.activenote].content).attr('disabled', false);
       }
     }
   }
@@ -250,8 +262,12 @@ function activateNote(id, nopost) {
       updatePanels();
       data.lazy = true;
     }
-    else data.lazy = false;
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer);
+    else {
+      data.lazy = false;
+      $('#input').attr('disabled', true);
+      $('#status').html('Loading...').css('opacity', 1);
+    }
+    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
   }
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
