@@ -14,16 +14,14 @@ $(document).on('keydown', function(evt) {
       app.prev = app.mode;
       app.mode = 'graph';
     }
-    let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
     updatePanels();
     return false;
   }
   else if (evt.key == 'F4') {
     if (app.mode == 'view') app.mode = 'edit';
     else app.mode = 'view';
-    let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
     updatePanels();
     return false;
   }
@@ -36,6 +34,10 @@ function offline() {
   }
   else {
     $('#status').html('Offline mode').css('opacity', 1);
+  }
+  if (app.notes[app.activenote].content === undefined) {
+    $('#input').val('');
+    $('#render').empty();
   }
 }
 
@@ -55,12 +57,11 @@ $().ready(function() {
   app.graph = new sigma('graph');
   let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline).always(function() { setInterval(tick, 5000); });
+  sendToServer(data).always(function() { setInterval(tick, 5000); });
   $('#input').on('keydown', function(e) {
     if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
       app.addlink = true;
-      let data = { req: 'add' };
-      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+      sendToServer({ req: 'add' });
     }
   }).on('input', function() {
     if (!app.changed) app.changed = Date.now();
@@ -75,7 +76,7 @@ $().ready(function() {
   }).on('unload', function() { // Use navigator.sendBeacon for this in the future
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();
-      pushToServer(true);
+      pushUpdate(true);
     }
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
@@ -88,12 +89,10 @@ $().ready(function() {
     if (e.originalEvent.code == 'Enter') $('#search-button').click();
   });
   $('#search-button').on('click', function() {
-    let data = { req: 'search', term: $('#search-input').val() };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+    sendToServer({ req: 'search', term: $('#search-input').val() });
   });
   $('#button-note-add').on('click', function() {
-    let data = { req: 'add' };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+    sendToServer({ req: 'add' });
   });
   $('#button-note-pin').on('click', function() {
     activateTab('pinned');
@@ -102,25 +101,25 @@ $().ready(function() {
       let data = { req: 'update', notes: {} };
       data.notes[app.activenote] = {};
       data.notes[app.activenote].pinned = true;
-      $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+      sendToServer(data);
     }
   });
   $('#buttons-mode').on('click', '.button-mode', function(e) {
     app.mode = this.id.split('-')[2];
-    let data = { req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true };
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
     updatePanels();
   });
 });
 
-function addNote() {
-}
 function unpinNote(id) {
   app.notes[id].pinned = 0;
   let data = { req: 'update', notes: {} };
   data.notes[id] = {};
   data.notes[id].pinned = 0;
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+  sendToServer(data);
+}
+function loadNote(id) {
+  $('#input').val(app.notes[app.activenote].content).attr('disabled', false);
 }
 
 function tick() {
@@ -131,21 +130,25 @@ function tick() {
       app.notes[app.activenote].content = $('#input').val();
       app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
     }
-    pushToServer();
+    pushUpdate();
   }
 }
 
-function pushToServer(sync) {
+function pushUpdate(sync) {
   let data = { req: 'update', activenote: app.activenote, notes: {} };
-  let async = true;
-  if (sync) async = false;
   for (let i in app.notes) {
     if (app.notes[i].touched) {
       data.notes[i] = app.notes[i];
       delete app.notes[i].touched;
     }
   }
-  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json', async: async }).done(parseFromServer).fail(offline);
+  sendToServer(data, sync);
+}
+
+function sendToServer(data, sync) {
+  let async = true;
+  if (sync) async = false;
+  return $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json', async: async }).done(parseFromServer).fail(offline);
 }
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline();
@@ -177,9 +180,7 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.notes[i].pinned) app.notes[i].pinned = data.notes[i].pinned;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
-      if ((i == app.activenote) && !app.notes[app.activenote].touched) {
-        $('#input').val(app.notes[app.activenote].content).attr('disabled', false);
-      }
+      if ((i == app.activenote) && !app.notes[app.activenote].touched) loadNote(app.activenote);
     }
   }
   if (data.searchresults) listSearchResults(data.searchresults);
@@ -258,7 +259,7 @@ function activateNote(id, nopost) {
     let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
     if (app.notes[id].content !== undefined) {
       if (app.mode == 'graph') app.mode = app.prev;
-      $('#input').val(app.notes[app.activenote].content);
+      loadNote(app.activenote);
       updatePanels();
       data.lazy = true;
     }
@@ -267,7 +268,7 @@ function activateNote(id, nopost) {
       $('#input').attr('disabled', true);
       $('#status').html('Loading...').css('opacity', 1);
     }
-    $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+    sendToServer(data);
   }
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
