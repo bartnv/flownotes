@@ -103,7 +103,7 @@ function unpinNote(id) {
   sendToServer(data);
 }
 function loadNote(id) {
-  if (app.mode == 'view') $('#render').html(marked(app.notes[id].content, { renderer: app.renderer }))
+  if (app.mode == 'view') $('#render').html(marked(app.notes[id].content, { renderer: app.renderer }));
   $('#input').val(app.notes[id].content).attr('disabled', false);
 }
 
@@ -156,6 +156,7 @@ function parseFromServer(data, textStatus, xhr) {
     else activateNote(parseInt(data.activenote), true);
   }
   if (data.activetableft) activateTab(data.activetableft);
+  let reload = false;
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = { id: i };
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
@@ -165,9 +166,10 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.notes[i].pinned) app.notes[i].pinned = data.notes[i].pinned;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
-      if ((i == app.activenote) && !app.notes[app.activenote].touched) loadNote(app.activenote);
+      if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
     }
   }
+  if (reload) loadNote(app.activenote);
   if (data.searchresults) listSearchResults(data.searchresults);
   updatePanels();
 }
