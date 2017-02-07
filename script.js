@@ -89,7 +89,8 @@ $().ready(function() {
       sendToServer(data);
     }
   });
-  $('#buttons-mode').on('click', '.button-mode', function(e) {
+  $('#panel-buttons').on('click', '.button-mode', function(e) {
+    console.log(this);
     switchMode(this.id.split('-')[2]);
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
   });
