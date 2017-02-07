@@ -9,37 +9,21 @@ var app = {
 
 $(document).on('keydown', function(evt) {
   if (evt.key == 'F2') {
-    if (app.mode == 'graph') app.mode = app.prev;
+    if (app.mode == 'graph') switchMode(app.prev);
     else {
       app.prev = app.mode;
-      app.mode = 'graph';
+      switchMode('graph');
     }
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
-    updatePanels();
     return false;
   }
   else if (evt.key == 'F4') {
-    if (app.mode == 'view') app.mode = 'edit';
-    else app.mode = 'view';
+    if (app.mode == 'view') switchMode('edit');
+    else switchMode('view');
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
-    updatePanels();
     return false;
   }
 });
-
-function offline() {
-  if (!app.offline) {
-    app.offline = Date.now();
-    $('#status').html('Connection failed, switching to offline mode').css('opacity', 1);
-  }
-  else {
-    $('#status').html('Offline mode').css('opacity', 1);
-  }
-  if (app.notes[app.activenote].content === undefined) {
-    $('#input').val('');
-    $('#render').empty();
-  }
-}
 
 $().ready(function() {
   marked.setOptions({
@@ -90,6 +74,7 @@ $().ready(function() {
   });
   $('#search-button').on('click', function() {
     sendToServer({ req: 'search', term: $('#search-input').val() });
+    $('#search-input').select();
   });
   $('#button-note-add').on('click', function() {
     sendToServer({ req: 'add' });
@@ -105,9 +90,8 @@ $().ready(function() {
     }
   });
   $('#buttons-mode').on('click', '.button-mode', function(e) {
-    app.mode = this.id.split('-')[2];
+    switchMode(this.id.split('-')[2]);
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
-    updatePanels();
   });
 });
 
@@ -119,7 +103,8 @@ function unpinNote(id) {
   sendToServer(data);
 }
 function loadNote(id) {
-  $('#input').val(app.notes[app.activenote].content).attr('disabled', false);
+  if (app.mode == 'view') $('#render').html(marked(app.notes[id].content, { renderer: app.renderer }))
+  $('#input').val(app.notes[id].content).attr('disabled', false);
 }
 
 function tick() {
@@ -156,7 +141,7 @@ function parseFromServer(data, textStatus, xhr) {
   if (app.offline) app.offline = 0;
 
   $('#status').css('opacity', '0');
-  if (data.mode) app.mode = data.mode;
+  if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
   if (data.activenote) {
     if (app.addlink) {
       let input = $('#input')[0];
@@ -168,7 +153,7 @@ function parseFromServer(data, textStatus, xhr) {
       app.addlink = false;
     }
     if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
-    else activateNote(data.activenote, true);
+    else activateNote(parseInt(data.activenote), true);
   }
   if (data.activetableft) activateTab(data.activetableft);
   for (let i in data.notes) {
@@ -186,7 +171,22 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.searchresults) listSearchResults(data.searchresults);
   updatePanels();
 }
-function updatePanels() {
+function offline() {
+  if (!app.offline) {
+    app.offline = Date.now();
+    $('#status').html('Connection failed, switching to offline mode').css('opacity', 1);
+  }
+  else {
+    $('#status').html('Offline mode').css('opacity', 1);
+  }
+  if (app.notes[app.activenote].content === undefined) {
+    $('#input').val('');
+    $('#render').empty();
+  }
+}
+
+function switchMode(newmode) {
+  app.mode = newmode;
   if (app.mode == 'edit') {
     $('#render').hide().empty();
     $('#graph').hide();
@@ -209,36 +209,40 @@ function updatePanels() {
     app.graph.refresh();
   }
   $('#button-mode-' + app.mode).addClass('button-active').siblings().removeClass('button-active');
-
+}
+function updatePanels() {
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
-  notes.sort(function(a, b) { return b.modified - a.modified; });
-  let count = 0;
-  let last10 = "";
-  for (let i in notes) {
-    let note = notes[i];
-    let extraclass = '';
-    if (note.id == app.activenote) extraclass = ' note-active';
-    last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
-    last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-    if (++count*65 > $(window).height()) break;
+  if ($('#label-recent').hasClass('tab-active')) {
+    notes.sort(function(a, b) { return b.modified - a.modified; });
+    let count = 0;
+    let last10 = "";
+    for (let i in notes) {
+      let note = notes[i];
+      let extraclass = '';
+      if (note.id == app.activenote) extraclass = ' note-active';
+      last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
+      last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+      if (++count*65 > $(window).height()) break;
+    }
+    $('#tab-recent').empty().html(last10);
   }
-  $('#tab-recent').empty().html(last10);
-
-  notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
-  count = 0;
-  let pinned = "";
-  for (let i in notes) {
-    let note = notes[i];
-    if (!note.pinned || (note.pinned == '0')) break;
-    let extraclass = '';
-    if (note.id == app.activenote) extraclass = ' note-active';
-    pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '">';
-    pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
-    pinned += '<span class="note-title">' + note.title + '</span><br>';
-    pinned += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-    if (++count*65 > $(window).height()) break;
+  else if ($('#label-pinned').hasClass('tab-active')) {
+    notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
+    count = 0;
+    let pinned = "";
+    for (let i in notes) {
+      let note = notes[i];
+      if (!note.pinned || (note.pinned == '0')) break;
+      let extraclass = '';
+      if (note.id == app.activenote) extraclass = ' note-active';
+      pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '">';
+      pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
+      pinned += '<span class="note-title">' + note.title + '</span><br>';
+      pinned += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+      if (++count*65 > $(window).height()) break;
+    }
+    $('#tab-pinned').empty().html(pinned);
   }
-  $('#tab-pinned').empty().html(pinned);
 }
 
 function findTitle(text) {
@@ -258,7 +262,7 @@ function activateNote(id, nopost) {
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
     if (app.notes[id].content !== undefined) {
-      if (app.mode == 'graph') app.mode = app.prev;
+      if (app.mode == 'graph') switchMode(app.prev);
       loadNote(app.activenote);
       updatePanels();
       data.lazy = true;
@@ -277,6 +281,7 @@ function activateTab(name) {
   $('#label-' + name).addClass('tab-active').siblings().removeClass('tab-active');
   $('#tab-' + name).show().siblings('.tab').hide();
   if (name == 'search') $('#search-input').focus();
+  updatePanels();
 }
 
 function listSearchResults(items) {
