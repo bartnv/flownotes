@@ -80,13 +80,15 @@ $().ready(function() {
     sendToServer({ req: 'add' });
   });
   $('#button-note-pin').on('click', function() {
-    activateTab('pinned');
-    if (app.notes[app.activenote].pinned < 1) {
+    if (app.notes[app.activenote].pinned) unpinNote(app.activenote);
+    else {
       app.notes[app.activenote].pinned = true;
       let data = { req: 'update', notes: {} };
       data.notes[app.activenote] = {};
       data.notes[app.activenote].pinned = true;
       sendToServer(data);
+      activateTab('pinned');
+      $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
     }
   });
   $('#panel-buttons').on('click', '.button-mode', function(e) {
@@ -102,9 +104,13 @@ function unpinNote(id) {
   data.notes[id] = {};
   data.notes[id].pinned = 0;
   sendToServer(data);
+  if ($('#label-pinned').hasClass('tab-active')) updatePanels();
+  if (id == app.activenote) $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
 }
 function loadNote(id) {
   if (app.mode == 'view') $('#render').html(marked(app.notes[id].content, { renderer: app.renderer }));
+  if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
+  else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
   $('#input').val(app.notes[id].content).attr('disabled', false);
 }
 
@@ -177,7 +183,7 @@ function parseFromServer(data, textStatus, xhr) {
       app.notes[i].modified = data.notes[i].modified;
       if (app.notes[i].intransit) delete app.notes[i].intransit;
     }
-    if (data.notes[i].pinned) app.notes[i].pinned = data.notes[i].pinned;
+    if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
       if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
@@ -229,7 +235,7 @@ function switchMode(newmode) {
     }
     app.graph.refresh();
   }
-  $('#button-mode-' + app.mode).addClass('button-active').siblings().removeClass('button-active');
+  $('#button-mode-' + app.mode).addClass('button-active').siblings('.button-mode').removeClass('button-active');
 }
 function updatePanels() {
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
@@ -242,8 +248,8 @@ function updatePanels() {
       let extraclass = '';
       if (note.id == app.activenote) extraclass = ' note-active';
       last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
-      last10 += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-      if (++count*65 > $(window).height()) break;
+      last10 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+      if (++count*60 > $(window).height()) break;
     }
     $('#tab-recent').empty().html(last10);
   }
@@ -253,14 +259,14 @@ function updatePanels() {
     let pinned = "";
     for (let i in notes) {
       let note = notes[i];
-      if (!note.pinned || (note.pinned == '0')) break;
+      if (!note.pinned) break;
       let extraclass = '';
       if (note.id == app.activenote) extraclass = ' note-active';
       pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '">';
       pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
       pinned += '<span class="note-title">' + note.title + '</span><br>';
-      pinned += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-      if (++count*65 > $(window).height()) break;
+      pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+      if (++count*60 > $(window).height()) break;
     }
     $('#tab-pinned').empty().html(pinned);
   }
@@ -312,7 +318,7 @@ function listSearchResults(items) {
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
-    results += '<span class="note-modified">Saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
 }

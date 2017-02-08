@@ -1,5 +1,5 @@
 HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; }
-BODY { margin: 0; background-color: grey; }
+BODY { margin: 0; background-color: grey; font-family: 'Lato', sans-serif; }
 CODE { background-color: rgb(200,200,200); }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
@@ -13,12 +13,13 @@ H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 .button-active { background-color: rgb(80,80,80) !important; }
 #panel-main { flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; }
 #status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; }
-.button-unpin { float: right; }
+.button-unpin { float: right; margin-right: -3px; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
-.note-li { margin: 5px; padding: 5px 8px; background-color: rgb(220,220,200); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.note-title { font-weight: bold; font-size: 1.1em; line-height: 1.4; }
-.note-active { background-color: rgb(200,220,200) !important; }
+.note-li { margin: 5px; padding: 5px 8px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-active { background-color: #6BA2A5 !important; }
+.note-title { font-weight: bold; line-height: 1.4; }
+.note-modified { font-size: 0.9em; }
 .tabbar { display: flex; }
 .tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; }
 .tab-active { background-color: rgb(200,200,200) !important; }
