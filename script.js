@@ -31,12 +31,14 @@ $().ready(function() {
   });
   app.renderer = new marked.Renderer();
   app.renderer.link = function(href, title, text) {
-    if ((text == '?') && href.match(/^#[0-9]+$/)) {
-      let id = parseInt(href.substring(1));
-      if (app.notes[id] && app.notes[id].title) text = app.notes[id].title;
-      else text = '?';
+    if (href.match(/^#[0-9]+$/)) {
+      if (text == '?') {
+        let id = parseInt(href.substring(1));
+        if (app.notes[id] && app.notes[id].title) text = app.notes[id].title;
+      }
+      return '<a href="' + href + '">' + text + '</a>';
     }
-    return '<a href="' + href + '">' + text + '</a>';
+    return '<a href="' + href + '" target="_blank">' + text + '</a>';
   }
   app.graph = new sigma('graph');
   let data = { req: 'init' };
