@@ -244,16 +244,16 @@ function updatePanels() {
   if ($('#label-recent').hasClass('tab-active')) {
     notes.sort(function(a, b) { return b.modified - a.modified; });
     let count = 0;
-    let last10 = "";
+    let last20 = "";
     for (let i in notes) {
       let note = notes[i];
       let extraclass = '';
       if (note.id == app.activenote) extraclass = ' note-active';
-      last10 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
-      last10 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-      if (++count*60 > $(window).height()) break;
+      last20 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
+      last20 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+      if (++count >= 20) break;
     }
-    $('#tab-recent').empty().html(last10);
+    $('#tab-recent').empty().html(last20);
   }
   else if ($('#label-pinned').hasClass('tab-active')) {
     notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
@@ -268,7 +268,7 @@ function updatePanels() {
       pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
       pinned += '<span class="note-title">' + note.title + '</span><br>';
       pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-      if (++count*60 > $(window).height()) break;
+      if (++count >= 20) break;
     }
     $('#tab-pinned').empty().html(pinned);
   }

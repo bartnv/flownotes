@@ -9,7 +9,7 @@ H3 { margin-bottom: 15px; }
 #panels { display: flex; height: 100vh; }
 #panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); }
 #panel-left A { text-decoration: none; color: inherit; }
-#panel-buttons { display: flex; flex-direction: column; width: 30px; background-color: rgb(40,40,40); }
+#panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 #panel-buttons > DIV { cursor: pointer; padding: 5px; }
 .button-svg { display: block; }
 .button-active { background-color: rgb(80,80,80) !important; }
