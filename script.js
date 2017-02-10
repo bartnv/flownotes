@@ -180,7 +180,6 @@ function parseFromServer(data, textStatus, xhr) {
     if (!app.notes[i]) app.notes[i] = { id: i };
     if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
     else if (!app.notes[i].title) app.notes[i].title = '{no title}';
-    if (data.notes[i].accessed) app.notes[i].accessed = data.notes[i].accessed;
     if (data.notes[i].modified) {
       app.notes[i].modified = data.notes[i].modified;
       if (app.notes[i].intransit) delete app.notes[i].intransit;

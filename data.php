@@ -109,21 +109,11 @@ function select_note($id) {
     error_log("select_note() select for id $id returned no rows");
     return [];
   }
-
-  if (!($stmt = $dbh->prepare("UPDATE note SET accessed = strftime('%s', 'now') WHERE id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("select_note() update prepare failed: " . $err[2]);
-  }
-  if (!($stmt->execute([ $id ]))) {
-    $err = $stmt->errorInfo();
-    $processUser = posix_getpwuid(posix_geteuid());
-    error_log("select_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
-  }
   return $row;
 }
 function select_recent_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note ORDER BY modified DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note ORDER BY modified DESC LIMIT $count"))) {
     $err = $dbh->errorInfo();
     error_log("select_recent_notes() prepare failed: " . $err[2]);
     return [];
@@ -141,7 +131,7 @@ function select_recent_notes($count) {
 }
 function select_pinned_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title, pinned FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
     $err = $dbh->errorInfo();
     error_log("select_pinned_notes() prepare failed: " . $err[2]);
     return [];
@@ -159,7 +149,7 @@ function select_pinned_notes($count) {
 }
 function search_notes($term) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, accessed, modified, title FROM note WHERE content LIKE ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE content LIKE ?"))) {
     $err = $dbh->errorInfo();
     error_log("search_notes() prepare failed: " . $err[2]);
     return [];
