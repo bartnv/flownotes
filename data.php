@@ -1,6 +1,6 @@
 <?
 
-$dbh = new PDO('sqlite:notes.sq3');
+$dbh = new PDO('sqlite:db/notes.sq3');
 
 header('Content-type: application/json');
 
