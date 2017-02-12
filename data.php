@@ -190,6 +190,7 @@ function update_note($id, $note) {
     error_log("update_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
     return;
   }
+  update_links($id, $note['title'], $note['content']);
 
   if (!($stmt = $dbh->prepare("SELECT modified, pinned FROM note WHERE id = ?"))) {
     $err = $dbh->errorInfo();
@@ -206,6 +207,24 @@ function update_note($id, $note) {
     return [];
   }
   return $row;
+}
+function update_links($id, $title, $content) {
+  global $dbh;
+  if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
+  if (!($res = $dbh->query("DELETE FROM link WHERE source = $id"))) {
+    error_log("update_links delete query failed: " . $dbh->errorInfo()[2]);
+    return;
+  }
+  for ($i = 0; $matches[1][$i]; $i++) {
+    $text = $matches[1][$i];
+    $link = $matches[2][$i];
+    if (strpos($text, '=') === 0) $text = "NULL";
+    else $text = "'$text'";
+    if (!($res = $dbh->query("INSERT INTO link (source, target, name) VALUES ($id, $link, $text)"))) {
+      error_log("update_links insert query failed: " . $dbh->errorInfo()[2]);
+      return;
+    }
+  }
 }
 function update_note_pinned($id, $note) {
   global $dbh;
