@@ -165,6 +165,29 @@ function search_notes($term) {
   }
   return $notes;
 }
+function if_query($query, $params = []) {
+  global $dbh;
+  if (!empty($params)) {
+    if (!($stmt = $dbh->prepare($query))) {
+      error_log("if_query() prepare failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+    if (!($stmt->execute($params))) {
+      error_log("if_query() execute failed: " . $stmt->errorInfo()[2]);
+      return false;
+    }
+    if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return false;
+  }
+  else {
+    if (!($res = $dbh->query($query))) {
+      error_log("if_query() query failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+    if (!($row = $res->fetch(PDO::FETCH_NUM))) return false;
+  }
+  if ($row[0]) return true;
+  return false;
+}
 function update_note($id, $note) {
   global $dbh;
   if ($note['pinned']) {
@@ -179,6 +202,9 @@ function update_note($id, $note) {
     else $pinned = $note['pinned'];
   }
   else $pinned = 0;
+  if (!if_query("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) {
+    error_log("Note #$id changed title");
+  }
   if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ? WHERE id = ?"))) {
     $err = $dbh->errorInfo();
     error_log("update_note() update prepare failed: " . $err[2]);
@@ -190,7 +216,7 @@ function update_note($id, $note) {
     error_log("update_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
     return;
   }
-  update_links($id, $note['title'], $note['content']);
+  update_links($id, $note['content']);
 
   if (!($stmt = $dbh->prepare("SELECT modified, pinned FROM note WHERE id = ?"))) {
     $err = $dbh->errorInfo();
@@ -208,7 +234,7 @@ function update_note($id, $note) {
   }
   return $row;
 }
-function update_links($id, $title, $content) {
+function update_links($id, $content) {
   global $dbh;
   if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
   if (!($res = $dbh->query("DELETE FROM link WHERE source = $id"))) {
