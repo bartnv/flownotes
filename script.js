@@ -78,6 +78,23 @@ $().ready(function() {
     sendToServer({ req: 'search', term: $('#search-input').val() });
     $('#search-input').select();
   });
+  $('#button-panel-hide').on('click', function() {
+    if (app.hidepanelleft) {
+      app.hidepanelleft = false;
+      $(this).addClass('button-active').attr('title', 'Hide left panel');
+      $('#panel-left').css('margin-left', '0');
+    }
+    else {
+      app.hidepanelleft = true;
+      $(this).removeClass('button-active').attr('title', 'Show left panel');
+      $('#panel-left').css('margin-left', '-20em');
+    }
+  });
+  $('#panel-buttons').on('click', '.button-mode', function(e) {
+    console.log(this);
+    switchMode(this.id.split('-')[2]);
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
+  });
   $('#button-note-add').on('click', function() {
     sendToServer({ req: 'add' });
   });
@@ -92,11 +109,6 @@ $().ready(function() {
       activateTab('pinned');
       $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
     }
-  });
-  $('#panel-buttons').on('click', '.button-mode', function(e) {
-    console.log(this);
-    switchMode(this.id.split('-')[2]);
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
   });
 });
 
