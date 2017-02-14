@@ -27,7 +27,7 @@ H3 { margin-bottom: 15px; }
 .tab-active { background-color: rgb(200,200,200) !important; }
 .tab { position: absolute; width: 20em; }
 #search-box { display: flex; }
-#search-input { flex-grow: 1; margin-right: 0; }
+#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 .search-controls { margin: 5px 5px 0 5px; }
 
 @media (max-width: 1024px) {
