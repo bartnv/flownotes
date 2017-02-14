@@ -165,7 +165,7 @@ function search_notes($term) {
   }
   return $notes;
 }
-function if_query($query, $params = []) {
+function sql_if($query, $params = []) {
   global $dbh;
   if (!empty($params)) {
     if (!($stmt = $dbh->prepare($query))) {
@@ -188,6 +188,26 @@ function if_query($query, $params = []) {
   if ($row[0]) return true;
   return false;
 }
+function sql_foreach($query, $function, $params = []) {
+  global $dbh;
+  if (!empty($params)) {
+    if (!($stmt = $dbh->prepare($query))) {
+      error_log("if_query() prepare failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+    if (!($stmt->execute($params))) {
+      error_log("if_query() execute failed: " . $stmt->errorInfo()[2]);
+      return false;
+    }
+  }
+  else {
+    if (!($stmt = $dbh->query($query))) {
+      error_log("if_query() query failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+  }
+  while ($row = $stmt->fetch()) $function($row);
+}
 function update_note($id, $note) {
   global $dbh;
   if ($note['pinned']) {
@@ -202,8 +222,9 @@ function update_note($id, $note) {
     else $pinned = $note['pinned'];
   }
   else $pinned = 0;
-  if (!if_query("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) {
+  if (!sql_if("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) {
     error_log("Note #$id changed title");
+    sql_foreach("SELECT * FROM link WHERE target = $id", function($row) { error_log("Would update " . $row['source']); });
   }
   if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ? WHERE id = ?"))) {
     $err = $dbh->errorInfo();
