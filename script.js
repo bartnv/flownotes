@@ -32,10 +32,7 @@ $().ready(function() {
   app.renderer = new marked.Renderer();
   app.renderer.link = function(href, title, text) {
     if (href.match(/^#[0-9]+$/)) {
-      if (text == '?') {
-        let id = parseInt(href.substring(1));
-        if (app.notes[id] && app.notes[id].title) text = app.notes[id].title;
-      }
+      if (text.startsWith('=') && (text != '=')) text = text.substr(1);
       return '<a href="' + href + '">' + text + '</a>';
     }
     return '<a href="' + href + '" target="_blank">' + text + '</a>';
@@ -178,7 +175,7 @@ function parseFromServer(data, textStatus, xhr) {
       let input = $('#input')[0];
       let pos = input.selectionStart;
       let val = input.value;
-      let link = '[?](#' + data.activenote + ')';
+      let link = '[=](#' + data.activenote + ')';
       input.value = val.substring(0, pos) + link + val.substring(pos);
       app.notes[app.activenote].touched = true;
       app.addlink = false;

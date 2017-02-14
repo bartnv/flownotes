@@ -26,7 +26,7 @@ switch ($data['req']) {
     $ret['notes'] = [];
     if (!empty($data['notes'])) {
       foreach ($data['notes'] as $id => $note) {
-        if (isset($note['content'])) $ret['notes'][$id] = update_note($id, $note);
+        if (isset($note['content'])) $ret['notes'] = update_note($id, $note) + $ret['notes'];
         else $ret['notes'][$id]['pinned'] = update_note_pinned($id, $note);
       }
     }
@@ -165,6 +165,115 @@ function search_notes($term) {
   }
   return $notes;
 }
+function update_note($id, $note) {
+  global $dbh;
+  if ($note['pinned']) {
+    if ($note['pinned'] === true) {
+      if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
+        $err = $dbh->errorInfo();
+        error_log("update_note() pinned select failed: " . $err[2]);
+        $pinned = 'NULL';
+      }
+      $pinned = $res->fetch(PDO::FETCH_NUM)[0];
+    }
+    else $pinned = $note['pinned'];
+  }
+  else $pinned = 0;
+
+  $GLOBALS['extra_ids'] = [ $id ];
+  if (!sql_if("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) { // Note changed title
+    sql_foreach("SELECT * FROM link WHERE target = $id AND name IS NULL",
+      function($row) use ($note) {
+        $GLOBALS['extra_ids'][] = $row['source'];
+        update_backlinks($row['source'], $row['target'], $note['title']);
+      }
+    );
+  }
+  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ? WHERE id = ?"))) {
+    $err = $dbh->errorInfo();
+    error_log("update_note() update prepare failed: " . $err[2]);
+    return;
+  }
+  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $id ]))) {
+    $err = $stmt->errorInfo();
+    $processUser = posix_getpwuid(posix_geteuid());
+    error_log("update_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    return;
+  }
+  update_links($id, $note['content']);
+
+  if (!($stmt = $dbh->query("SELECT modified, pinned FROM note WHERE id = $id"))) {
+    $err = $dbh->errorInfo();
+    error_log("update_note() select query failed: " . $err[2]);
+    return [];
+  }
+  $rows = [];
+  if (!$row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    error_log("update_note() select query returned no results");
+    return [];
+  }
+  $rows[$id] = $row;
+  foreach ($GLOBALS['extra_ids'] as $id) {
+    $rows[$id] = select_note($id);
+  }
+  return $rows;
+}
+function update_links($id, $content) {
+  global $dbh;
+  if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
+  if (!($res = $dbh->query("DELETE FROM link WHERE source = $id"))) {
+    error_log("update_links delete query failed: " . $dbh->errorInfo()[2]);
+    return;
+  }
+  for ($i = 0; $matches[1][$i]; $i++) {
+    $text = $matches[1][$i];
+    $link = $matches[2][$i];
+    if (strpos($text, '=') === 0) $text = "NULL";
+    else $text = "'$text'";
+    if (!($res = $dbh->query("INSERT INTO link (source, target, name) VALUES ($id, $link, $text)"))) {
+      error_log("update_links insert query failed: " . $dbh->errorInfo()[2]);
+      return;
+    }
+  }
+}
+function update_backlinks($id, $target, $title) {
+  $content = sql_single("SELECT content FROM note WHERE id = $id");
+  $content = preg_replace("/\[=[^]]*\]\(#$target\)/", "[=$title](#$target)", $content);
+  if (!sql_updateone("UPDATE note SET content = ? WHERE id = $id", [ $content ])) fatalerr("Failed to update backlinks in note $id");
+}
+function update_note_pinned($id, $note) {
+  global $dbh;
+  if ($note['pinned']) {
+    if ($note['pinned'] === true) {
+      if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
+        $err = $dbh->errorInfo();
+        error_log("update_note() pinned select failed: " . $err[2]);
+        $pinned = 'NULL';
+      }
+      $pinned = $res->fetch(PDO::FETCH_NUM)[0];
+    }
+    else $pinned = $note['pinned'];
+  }
+  else $pinned = 0;
+  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ? WHERE id = ?"))) {
+    $err = $dbh->errorInfo();
+    error_log("update_note_pinned() update prepare failed: " . $err[2]);
+    return 0;
+  }
+  if (!($stmt->execute([ $pinned, $id ]))) {
+    $err = $stmt->errorInfo();
+    $processUser = posix_getpwuid(posix_geteuid());
+    error_log("update_note_pinned() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    return 0;
+  }
+  return $pinned;
+}
+
+/* * * * * * * * * * * * * *
+ *                         *
+ *   SQL helper functions  *
+ *                         *
+ * * * * * * * * * * * * * */
 function sql_if($query, $params = []) {
   global $dbh;
   if (!empty($params)) {
@@ -208,97 +317,47 @@ function sql_foreach($query, $function, $params = []) {
   }
   while ($row = $stmt->fetch()) $function($row);
 }
-function update_note($id, $note) {
+function sql_single($query, $params = []) {
   global $dbh;
-  if ($note['pinned']) {
-    if ($note['pinned'] === true) {
-      if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
-        $err = $dbh->errorInfo();
-        error_log("update_note() pinned select failed: " . $err[2]);
-        $pinned = 'NULL';
-      }
-      $pinned = $res->fetch(PDO::FETCH_NUM)[0];
+  if (!empty($params)) {
+    if (!($stmt = $dbh->prepare($query))) {
+      error_log("if_query() prepare failed: " . $dbh->errorInfo()[2]);
+      return "";
     }
-    else $pinned = $note['pinned'];
+    if (!($stmt->execute($params))) {
+      error_log("if_query() execute failed: " . $stmt->errorInfo()[2]);
+      return "";
+    }
   }
-  else $pinned = 0;
-  if (!sql_if("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) {
-    error_log("Note #$id changed title");
-    sql_foreach("SELECT * FROM link WHERE target = $id", function($row) { error_log("Would update " . $row['source']); });
+  else {
+    if (!($stmt = $dbh->query($query))) {
+      error_log("if_query() query failed: " . $dbh->errorInfo()[2]);
+      return "";
+    }
   }
-  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ? WHERE id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("update_note() update prepare failed: " . $err[2]);
-    return;
-  }
-  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $id ]))) {
-    $err = $stmt->errorInfo();
-    $processUser = posix_getpwuid(posix_geteuid());
-    error_log("update_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
-    return;
-  }
-  update_links($id, $note['content']);
-
-  if (!($stmt = $dbh->prepare("SELECT modified, pinned FROM note WHERE id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("update_note() select prepare failed: " . $err[2]);
-    return [];
-  }
-  if (!($stmt->execute([ $id ]))) {
-    $err = $stmt->errorInfo();
-    error_log("update_note() select execute failed: " . $err[2]);
-    return [];
-  }
-  if (!($row = $stmt->fetch(PDO::FETCH_ASSOC))) {
-    error_log("update_note() select for id $id returned no rows");
-    return [];
-  }
-  return $row;
+  if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return "";
+  return $row[0];
 }
-function update_links($id, $content) {
+function sql_updateone($query, $params = []) {
   global $dbh;
-  if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
-  if (!($res = $dbh->query("DELETE FROM link WHERE source = $id"))) {
-    error_log("update_links delete query failed: " . $dbh->errorInfo()[2]);
-    return;
-  }
-  for ($i = 0; $matches[1][$i]; $i++) {
-    $text = $matches[1][$i];
-    $link = $matches[2][$i];
-    if (strpos($text, '=') === 0) $text = "NULL";
-    else $text = "'$text'";
-    if (!($res = $dbh->query("INSERT INTO link (source, target, name) VALUES ($id, $link, $text)"))) {
-      error_log("update_links insert query failed: " . $dbh->errorInfo()[2]);
-      return;
+  if (!empty($params)) {
+    if (!($stmt = $dbh->prepare($query))) {
+      error_log("sql_updateone() prepare failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+    if (!($stmt->execute($params))) {
+      error_log("sql_updateone() execute failed: " . $stmt->errorInfo()[2]);
+      return false;
     }
   }
-}
-function update_note_pinned($id, $note) {
-  global $dbh;
-  if ($note['pinned']) {
-    if ($note['pinned'] === true) {
-      if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
-        $err = $dbh->errorInfo();
-        error_log("update_note() pinned select failed: " . $err[2]);
-        $pinned = 'NULL';
-      }
-      $pinned = $res->fetch(PDO::FETCH_NUM)[0];
+  else {
+    if (!($stmt = $dbh->query($query))) {
+      error_log("sql_updateone() query failed: " . $dbh->errorInfo()[2]);
+      return false;
     }
-    else $pinned = $note['pinned'];
   }
-  else $pinned = 0;
-  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ? WHERE id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("update_note_pinned() update prepare failed: " . $err[2]);
-    return 0;
-  }
-  if (!($stmt->execute([ $pinned, $id ]))) {
-    $err = $stmt->errorInfo();
-    $processUser = posix_getpwuid(posix_geteuid());
-    error_log("update_note_pinned() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
-    return 0;
-  }
-  return $pinned;
+  if ($stmt->rowCount() != 1) return false;
+  return true;
 }
 
 function fatalerr($msg) {
