@@ -133,6 +133,18 @@ $().ready(function() {
       $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
     }
   });
+  $('#button-links').on('click', function() {
+    if (app.showlinks) {
+      app.showlinks = false;
+      $('#links-overlay').remove();
+      $(this).removeClass('button-active');
+    }
+    else {
+      app.showlinks = true;
+      $('#panel-main').append('<div id="links-overlay"/>');
+      $(this).addClass('button-active');
+    }
+  });
 });
 
 function unpinNote(id) {
@@ -220,6 +232,8 @@ function parseFromServer(data, textStatus, xhr) {
       if (app.notes[i].intransit) delete app.notes[i].intransit;
     }
     if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
+    if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
+    if (data.notes[i].blinks !== undefined) app.notes[i].blinks = data.notes[i].blinks;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
       if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;

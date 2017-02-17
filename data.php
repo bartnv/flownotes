@@ -95,7 +95,7 @@ function add_note() {
 }
 function select_note($id) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT * FROM note WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT note.*, group_concat(flink.target) AS flinks, group_concat(blink.source) AS blinks FROM note LEFT JOIN link AS flink ON flink.source = note.id LEFT JOIN link AS blink ON blink.target = note.id WHERE note.id = ?"))) {
     $err = $dbh->errorInfo();
     error_log("select_note() select prepare failed: " . $err[2]);
     return [];
@@ -109,6 +109,8 @@ function select_note($id) {
     error_log("select_note() select for id $id returned no rows");
     return [];
   }
+  if ($row['flinks']) $row['flinks'] = array_unique(explode(',', $row['flinks']));
+  if ($row['blinks']) $row['blinks'] = array_unique(explode(',', $row['blinks']));
   return $row;
 }
 function select_recent_notes($count) {
@@ -220,11 +222,11 @@ function update_note($id, $note) {
 }
 function update_links($id, $content) {
   global $dbh;
-  if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
   if (!($res = $dbh->query("DELETE FROM link WHERE source = $id"))) {
     error_log("update_links delete query failed: " . $dbh->errorInfo()[2]);
     return;
   }
+  if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
   for ($i = 0; $matches[1][$i]; $i++) {
     $text = $matches[1][$i];
     $link = $matches[2][$i];
