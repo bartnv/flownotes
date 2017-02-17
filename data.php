@@ -50,7 +50,7 @@ switch ($data['req']) {
     $ret['notes'][$activenote] = select_note($activenote);
     break;
   default:
-    fatalerr('Invalid req requested');
+    fatalerr('Invalid request');
 }
 
 print json_encode($ret);
@@ -88,7 +88,7 @@ function add_note() {
   global $dbh;
   if (!$dbh->query("INSERT INTO note (content) VALUES ('')")) {
     $err = $dbh->errorInfo();
-    error_log("select_note() select prepare failed: " . $err[2]);
+    error_log("add_note() query failed: " . $err[2]);
     return null;
   }
   return $dbh->lastInsertId();

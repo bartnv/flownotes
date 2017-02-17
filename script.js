@@ -87,8 +87,34 @@ $().ready(function() {
       $('#panel-left').css('margin-left', '-20em');
     }
   });
+  $('#panel-left').on('mousedown', '.note-li', function (evt) {
+    app.linkid = $(evt.currentTarget).addClass('note-selected').data('id');
+    $('body').css('cursor', 'alias');
+    $('#input').css('cursor', 'inherit');
+    return false;
+  });
+  $('#input').on('mouseup', function() {
+    if (!app.linkid) return;
+    let input = $(this);
+    let content = input.val();
+    if (this.selectionStart != this.selectionEnd) { // We have text selected, use as linktext
+      var linkstr = '[' + content.substring(this.selectionStart, this.selectionEnd) + '](#' + app.linkid + ')';
+    }
+    else var linkstr = '[=' + app.notes[app.linkid].title + '](#' + app.linkid + ')';
+    let pos = this.selectionStart + linkstr.length;
+    input.val(content.substr(0, this.selectionStart) + linkstr + content.substr(this.selectionEnd));
+    this.setSelectionRange(pos, pos);
+    input.trigger('input');
+  });
+  $(window).on('mouseup', function() {
+    if (app.linkid) {
+      $('.note-li[data-id="' + app.linkid + '"]').removeClass('note-selected');
+      $('body').css('cursor', 'auto');
+      $('#input').css('cursor', 'auto');
+      app.linkid = null;
+    }
+  });
   $('#panel-buttons').on('click', '.button-mode', function(e) {
-    console.log(this);
     switchMode(this.id.split('-')[2]);
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
   });
@@ -257,7 +283,7 @@ function updatePanels() {
       let note = notes[i];
       let extraclass = '';
       if (note.id == app.activenote) extraclass = ' note-active';
-      last20 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
+      last20 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
       last20 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
       if (++count >= 20) break;
     }
@@ -272,7 +298,7 @@ function updatePanels() {
       if (!note.pinned) break;
       let extraclass = '';
       if (note.id == app.activenote) extraclass = ' note-active';
-      pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '">';
+      pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
       pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
       pinned += '<span class="note-title">' + note.title + '</span><br>';
       pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
@@ -327,7 +353,7 @@ function listSearchResults(items) {
     let note = app.notes[items[i]];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
-    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '"><span class="note-title">' + note.title + '</span><br>';
+    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
     results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
