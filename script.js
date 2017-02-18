@@ -10,10 +10,7 @@ var app = {
 $(document).on('keydown', function(evt) {
   if (evt.key == 'F2') {
     if (app.mode == 'graph') switchMode(app.prev);
-    else {
-      app.prev = app.mode;
-      switchMode('graph');
-    }
+    else switchMode('graph');
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
     return false;
   }
@@ -38,6 +35,16 @@ $().ready(function() {
     return '<a href="' + href + '" target="_blank">' + text + '</a>';
   }
   app.graph = new sigma('graph');
+  app.graph.settings({
+    labelSize: 'proportional',
+    labelSizeRatio: 2,
+    labelThreshold: 4,
+    defaultNodeColor: '#9ABCBD',
+    sideMargin: 10
+  });
+  app.graph.bind('clickNode', function(evt) {
+    location.hash = '#' + evt.data.node.id;
+  });
   let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
   sendToServer(data).always(function() { setInterval(tick, 5000); });
@@ -133,18 +140,6 @@ $().ready(function() {
       $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
     }
   });
-  $('#button-links').on('click', function() {
-    if (app.showlinks) {
-      app.showlinks = false;
-      $('#links-overlay').remove();
-      $(this).removeClass('button-active');
-    }
-    else {
-      app.showlinks = true;
-      $('#panel-main').append('<div id="links-overlay"/>');
-      $(this).addClass('button-active');
-    }
-  });
 });
 
 function unpinNote(id) {
@@ -158,6 +153,7 @@ function unpinNote(id) {
 }
 function loadNote(id) {
   if (app.mode == 'view') $('#render').html(marked(app.notes[id].content, { renderer: app.renderer }));
+  else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
   else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
   $('#input').val(app.notes[id].content).attr('disabled', false);
@@ -207,7 +203,6 @@ function parseFromServer(data, textStatus, xhr) {
   }
 
   $('#status').css('opacity', '0');
-  if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
   if (data.activenote) {
     if (app.addlink) {
       let input = $('#input')[0];
@@ -241,6 +236,7 @@ function parseFromServer(data, textStatus, xhr) {
   }
   if (reload) loadNote(app.activenote);
   if (data.searchresults) listSearchResults(data.searchresults);
+  if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
   updatePanels();
 }
 function offline() {
@@ -263,6 +259,7 @@ function offline() {
 }
 
 function switchMode(newmode) {
+  app.prev = app.mode;
   app.mode = newmode;
   if (app.mode == 'edit') {
     $('#render').hide().empty();
@@ -278,15 +275,40 @@ function switchMode(newmode) {
     $('#input').hide();
     $('#render').hide().empty();
     $('#graph').show();
-    app.graph.graph.clear();
-    for (let i in app.notes) {
-      let note = app.notes[i];
-      app.graph.graph.addNode({ id: String(i), label: note.title, x: 5, y: 5, size: 1 });
-    }
-    app.graph.refresh();
+    loadGraph();
   }
   $('#button-mode-' + app.mode).addClass('button-active').siblings('.button-mode').removeClass('button-active');
 }
+function loadGraph() {
+  app.graph.graph.clear();
+  app.graph.refresh();
+  let note = app.notes[app.activenote];
+  app.graph.graph.addNode({ id: String(app.activenote), label: note.title, x: 50, y: 0, size: 1, color: '#6BA2A5' });
+  let y = 0;
+  for (let i in note.flinks) {
+    let link = app.notes[note.flinks[i]];
+    try {
+      app.graph.graph.addNode({ id: String(note.flinks[i]), label: link && link.title || 'not loaded', x: 75, y: y, size: 1 });
+      app.graph.graph.addEdge({ id: app.activenote + '-' + note.flinks[i], source: String(app.activenote), target: String(note.flinks[i]) });
+    }
+    catch (e) {}
+    if (y > 0) y = -y;
+    else y = -y+10;
+  }
+  y = 0;
+  for (let i in note.blinks) {
+    let link = app.notes[note.blinks[i]];
+    try {
+      app.graph.graph.addNode({ id: String(note.blinks[i]), label: link && link.title || 'not loaded', x: 25, y: y, size: 1 });
+      app.graph.graph.addEdge({ id: app.activenote + '-' + note.blinks[i], source: String(note.blinks[i]), target: String(app.activenote) });
+    }
+    catch (e) {}
+    if (y > 0) y = -y;
+    else y = -y+10;
+  }
+  app.graph.refresh();
+}
+
 function updatePanels() {
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
   if ($('#label-recent').hasClass('tab-active')) {
@@ -339,7 +361,7 @@ function activateNote(id, nopost) {
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
     if (app.notes[id].content !== undefined) {
-      if (app.mode == 'graph') switchMode(app.prev);
+//      if (app.mode == 'graph') switchMode(app.prev);
       loadNote(app.activenote);
       updatePanels();
       data.lazy = true;
