@@ -156,7 +156,7 @@ function loadNote(id) {
   else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
   else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
-  $('#input').val(app.notes[id].content).attr('disabled', false);
+  $('#input').val(app.notes[id].content).attr('disabled', false).focus();
 }
 
 function tick() {
