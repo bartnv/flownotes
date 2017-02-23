@@ -169,7 +169,7 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.offline && (app.inactive%12 == 0)) sendToServer({ req: 'update' });
+  else if (app.inactive%12 == 0) sendToServer({ req: 'idle' });
 }
 
 function pushUpdate(sync, retransmit) {
