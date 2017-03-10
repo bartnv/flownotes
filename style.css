@@ -1,6 +1,7 @@
 HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; }
 BODY { margin: 0; background-color: grey; font-family: 'Lato', sans-serif; }
-CODE { background-color: rgb(200,200,200); padding: 0 2px; }
+PRE { background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; }
+CODE { background-color: rgb(251, 244, 208); }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
