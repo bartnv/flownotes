@@ -140,6 +140,12 @@ $().ready(function() {
       $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
     }
   });
+  $('#button-note-mail').on('click', function() {
+    var link = $('<a target="_blank" href="mailto:?body=' + encodeURIComponent($('#input').val()).replace(/%0A/gi, '%0D%0A') + '"></a>');
+    $('body').append(link);
+    link[0].click();
+    link.remove();
+  });
 });
 
 function unpinNote(id) {
