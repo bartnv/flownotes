@@ -22,6 +22,7 @@ H3 { margin-bottom: 15px; }
 .note-li { margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-active { background-color: #6BA2A5 !important; }
 .note-selected { border: solid black 1px; }
+.note-deleted { text-decoration: line-through; }
 .note-title { font-weight: bold; line-height: 1.4; }
 .note-modified { font-size: 0.9em; }
 .tabbar { display: flex; }

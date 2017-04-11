@@ -31,7 +31,7 @@ switch ($data['req']) {
     if (!empty($data['notes'])) {
       foreach ($data['notes'] as $id => $note) {
         if (isset($note['content'])) {
-          if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ?", [ $id, $data['lastupdate']])) {
+          if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ?", [ $id, $data['lastupdate'] ])) {
             fatalerr('Note has been edited from another location; save your edits and reload the window to continue');
           }
           $ret['notes'] = update_note($id, $note) + $ret['notes'];
@@ -57,6 +57,16 @@ switch ($data['req']) {
     $activenote = add_note();
     $ret['activenote'] = $activenote;
     $ret['notes'][$activenote] = select_note($activenote);
+    break;
+  case 'delete':
+    if (empty($data['id']) || !is_numeric($data['id'])) fatalerr('Invalid id passed in req delete');
+    if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ?", [ $data['id'], $data['lastupdate'] ])) {
+      fatalerr('Note has been edited from another location; delete not executed; reload the window to continue');
+    }
+    if (!sql_updateone("UPDATE note SET deleted = 'true', modified = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr('Failed to delete note');
+    $ret['notes'] = [];
+    $ret['notes'][$data['id']] = [];
+    $ret['notes'][$data['id']]['deleted'] = 'true';
     break;
   default:
     fatalerr('Invalid request');
@@ -118,7 +128,8 @@ function select_note($id) {
     error_log("select_note() select execute failed: " . $err[2]);
     return [];
   }
-  if (!($row = $stmt->fetch(PDO::FETCH_ASSOC))) {
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (empty($row['id'])) {
     error_log("select_note() select for id $id returned no rows");
     return [];
   }
@@ -128,7 +139,7 @@ function select_note($id) {
 }
 function select_recent_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note ORDER BY modified DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 'false' ORDER BY modified DESC LIMIT $count"))) {
     $err = $dbh->errorInfo();
     error_log("select_recent_notes() prepare failed: " . $err[2]);
     return [];
@@ -146,7 +157,7 @@ function select_recent_notes($count) {
 }
 function select_pinned_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned, deleted FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
     $err = $dbh->errorInfo();
     error_log("select_pinned_notes() prepare failed: " . $err[2]);
     return [];
@@ -165,7 +176,7 @@ function select_pinned_notes($count) {
 function select_notes_since($lastupdate) {
   global $dbh;
   global $activenote;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE modified > ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
     $err = $dbh->errorInfo();
     error_log("select_notes_since() prepare failed: " . $err[2]);
     return [];
@@ -184,7 +195,7 @@ function select_notes_since($lastupdate) {
 }
 function search_notes($term) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE content LIKE ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content LIKE ?"))) {
     $err = $dbh->errorInfo();
     error_log("search_notes() prepare failed: " . $err[2]);
     return [];
