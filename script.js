@@ -4,20 +4,21 @@ var app = {
   notes: [],
   inactive: 0,
   changed: 0,
-  offline: 0
+  offline: 0,
+  lastupdate: 0
 }
 
 $(document).on('keydown', function(evt) {
   if (evt.key == 'F2') {
     if (app.mode == 'graph') switchMode(app.prev);
     else switchMode('graph');
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
     return false;
   }
   else if (evt.key == 'F4') {
     if (app.mode == 'view') switchMode('edit');
     else switchMode('view');
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
     return false;
   }
 });
@@ -51,7 +52,7 @@ $().ready(function() {
   $('#input').on('keydown', function(e) {
     if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
       app.addlink = true;
-      sendToServer({ req: 'add' });
+      sendToServer({ req: 'add', lastupdate: app.lastupdate });
     }
   }).on('input', function() {
     if (!app.changed) app.changed = Date.now();
@@ -79,7 +80,7 @@ $().ready(function() {
     if (e.originalEvent.code == 'Enter') $('#search-button').click();
   });
   $('#search-button').on('click', function() {
-    sendToServer({ req: 'search', term: $('#search-input').val() });
+    sendToServer({ req: 'search', term: $('#search-input').val(), lastupdate: app.lastupdate });
     $('#search-input').select();
   });
   $('#button-panel-hide').on('click', function() {
@@ -123,16 +124,16 @@ $().ready(function() {
   });
   $('#panel-buttons').on('click', '.button-mode', function(e) {
     switchMode(this.id.split('-')[2]);
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true });
+    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
   });
   $('#button-note-add').on('click', function() {
-    sendToServer({ req: 'add' });
+    sendToServer({ req: 'add', lastupdate: app.lastupdate });
   });
   $('#button-note-pin').on('click', function() {
     if (app.notes[app.activenote].pinned) unpinNote(app.activenote);
     else {
       app.notes[app.activenote].pinned = true;
-      let data = { req: 'update', notes: {} };
+      let data = { req: 'update', notes: {}, lastupdate: app.lastupdate };
       data.notes[app.activenote] = {};
       data.notes[app.activenote].pinned = true;
       sendToServer(data);
@@ -150,7 +151,7 @@ $().ready(function() {
 
 function unpinNote(id) {
   app.notes[id].pinned = 0;
-  let data = { req: 'update', notes: {} };
+  let data = { req: 'update', notes: {}, lastupdate: app.lastupdate };
   data.notes[id] = {};
   data.notes[id].pinned = 0;
   sendToServer(data);
@@ -175,11 +176,11 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.inactive%12 == 0) sendToServer({ req: 'idle' });
+  else if (app.inactive%12 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
 }
 
 function pushUpdate(sync, retransmit) {
-  let data = { req: 'update', activenote: app.activenote, notes: {} };
+  let data = { req: 'update', activenote: app.activenote, notes: {}, lastupdate: app.lastupdate };
   for (let i in app.notes) {
     if (app.notes[i].touched) {
       data.notes[i] = app.notes[i];
@@ -231,6 +232,7 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.notes[i].modified) {
       app.notes[i].modified = data.notes[i].modified;
       if (app.notes[i].intransit) delete app.notes[i].intransit;
+      if (data.notes[i].modified > app.lastupdate) app.lastupdate = data.notes[i].modified;
     }
     if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
     if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
@@ -365,7 +367,7 @@ function activateNote(id, nopost) {
   }
   app.activenote = id;
   if (!nopost) {
-    let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified };
+    let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified, lastupdate: app.lastupdate };
     if (app.notes[id].content !== undefined) {
 //      if (app.mode == 'graph') switchMode(app.prev);
       loadNote(app.activenote);

@@ -57,6 +57,10 @@ switch ($data['req']) {
     fatalerr('Invalid request');
 }
 
+if (!empty($data['lastupdate']) && ($data['lastupdate'] < query_setting('lastupdate', 0))) {
+  if (empty($ret['notes'])) $ret['notes'] = select_notes_since($data['lastupdate']);
+  else $ret['notes'] = select_notes_since($data['lastupdate']) + $ret['notes'];
+}
 print json_encode($ret);
 exit();
 
@@ -153,6 +157,26 @@ function select_pinned_notes($count) {
   }
   return $notes;
 }
+function select_notes_since($lastupdate) {
+  global $dbh;
+  global $activenote;
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE modified > ?"))) {
+    $err = $dbh->errorInfo();
+    error_log("select_notes_since() prepare failed: " . $err[2]);
+    return [];
+  }
+  if (!($stmt->execute([ $lastupdate ]))) {
+    $err = $stmt->errorInfo();
+    error_log("select_notes_since() execute failed: " . $err[2]);
+    return [];
+  }
+  $notes = [];
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $notes[$row['id']] = array_slice($row, 1);
+  }
+  if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
+  return $notes;
+}
 function search_notes($term) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE content LIKE ?"))) {
@@ -222,6 +246,7 @@ function update_note($id, $note) {
   foreach ($GLOBALS['extra_ids'] as $id) {
     $rows[$id] = select_note($id);
   }
+  if ($row['modified'] > query_setting('lastupdate', 0)) store_setting('lastupdate', $row['modified']);
   return $rows;
 }
 function update_links($id, $content) {
