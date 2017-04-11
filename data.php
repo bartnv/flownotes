@@ -30,7 +30,12 @@ switch ($data['req']) {
     $ret['notes'] = [];
     if (!empty($data['notes'])) {
       foreach ($data['notes'] as $id => $note) {
-        if (isset($note['content'])) $ret['notes'] = update_note($id, $note) + $ret['notes'];
+        if (isset($note['content'])) {
+          if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ?", [ $id, $data['lastupdate']])) {
+            fatalerr('Note has been edited from another location; save your edits and reload the window to continue');
+          }
+          $ret['notes'] = update_note($id, $note) + $ret['notes'];
+        }
         else $ret['notes'][$id]['pinned'] = update_note_pinned($id, $note);
       }
     }
