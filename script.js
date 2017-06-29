@@ -429,6 +429,10 @@ function listSearchResults(items) {
     results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
+  if (items.length == 1) {
+    location.hash = '#' + app.notes[items[0]].id;
+    setTimeout("$('#search-input').focus();", 100);
+  }
 }
 
 $.fn.getCursorPosition = function() {
