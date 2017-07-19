@@ -188,7 +188,7 @@ function copy(btn) {
 
 function tick() {
   app.inactive++;
-  if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
+  if (app.changed && ((app.inactive > 0) || (Date.now()-app.changed > 60000))) {
     app.changed = 0;
     if (app.notes[app.activenote].touched) {
       app.notes[app.activenote].content = $('#input').val();
