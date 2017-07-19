@@ -5,7 +5,8 @@ var app = {
   inactive: 0,
   changed: 0,
   offline: 0,
-  lastupdate: 0
+  lastupdate: 0,
+  lastcomm: Date.now()
 }
 
 $(document).on('keydown', function(evt) {
@@ -197,6 +198,7 @@ function tick() {
     pushUpdate();
   }
   else if (app.inactive%12 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
+  if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No data from server').css('opacity', 1);
 }
 
 function pushUpdate(sync, retransmit) {
@@ -228,6 +230,7 @@ function parseFromServer(data, textStatus, xhr) {
     app.offline = 0;
     pushUpdate(false, true);
   }
+  app.lastcomm = Date.now();
 
   $('#status').css('opacity', '0');
   if (data.activenote) {
