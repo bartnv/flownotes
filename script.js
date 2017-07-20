@@ -55,11 +55,28 @@ $().ready(function() {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
     }
-  }).on('input', function() {
+    else if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'ArrowUp')) {
+      console.log('Transpose up');
+    }
+    else if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'ArrowDown')) {
+      console.log('Transpose down');
+    }
+    if (!e.originalEvent.code.startsWith('F')) e.stopPropagation();
+  }).on('input', function(e) {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
+  });
+  $(document).on('keydown', function(e) {
+    switch (e.originalEvent.code) {
+      case 'KeyS': $('#label-search').click();
+                   return false;
+      case 'KeyR': $('#label-recent').click();
+                   return false;
+      case 'KeyP': $('#label-pinned').click();
+                   return false;
+    }
   });
   $(window).on('hashchange', function(e) {
     if (location.hash.match(/^#[0-9]+$/)) {
@@ -78,8 +95,9 @@ $().ready(function() {
     $('#search-input').select();
   });
   $('#label-pinned').on('click', function() { activateTab('pinned'); });
-  $('#search-input').on('keyup', function(e) {
+  $('#search-input').on('keydown', function(e) {
     if (e.originalEvent.code == 'Enter') $('#search-button').click();
+    if (!e.originalEvent.code.startsWith('F')) e.stopPropagation();
   });
   $('#search-button').on('click', function() {
     sendToServer({ req: 'search', term: $('#search-input').val(), lastupdate: app.lastupdate });
