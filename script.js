@@ -59,6 +59,7 @@ $().ready(function() {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
+    if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
   });
   $(window).on('hashchange', function(e) {
     if (location.hash.match(/^#[0-9]+$/)) {
@@ -200,7 +201,6 @@ function tick() {
     pushUpdate();
   }
   else if (app.inactive%12 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
-  if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No data from server').css('opacity', 1);
 }
 
 function pushUpdate(sync, retransmit) {
