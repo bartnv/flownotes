@@ -49,7 +49,7 @@ $().ready(function() {
   });
   let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
-  sendToServer(data).always(function() { setInterval(tick, 5000); });
+  sendToServer(data);
   $('#input').on('keydown', function(e) {
     if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
       app.addlink = true;
@@ -156,6 +156,8 @@ $().ready(function() {
       // location.hash = '#' + notes[0]['id'];
     }
   });
+  console.log('Event handlers initialized; starting interval timer');
+  setInterval(tick, 5000);
 });
 
 function unpinNote(id) {
