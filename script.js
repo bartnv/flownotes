@@ -146,6 +146,21 @@ $().ready(function() {
     switchMode(this.id.split('-')[2]);
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
   });
+  $('#panel-buttons').on('touchstart', function(e) {
+    app.dragbuttons = e.changedTouches[0].pageX;
+  });
+  $(window).on('touchend', function(e) {
+    if (app.dragbuttons != undefined) {
+      if (e.changedTouches[0].pageX > app.dragbuttons+10) {
+        if (app.hidepanelleft) $('#button-panel-hide').click();
+      }
+      else if (e.changedTouches[0].pageX < app.dragbuttons-10) {
+        if (!app.hidepanelleft) $('#button-panel-hide').click();
+      }
+      delete app.dragbuttons;
+    }
+    return false;
+  });
   $('#button-note-add').on('click', function() {
     sendToServer({ req: 'add', lastupdate: app.lastupdate });
   });
