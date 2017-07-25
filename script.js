@@ -159,7 +159,6 @@ $().ready(function() {
       }
       delete app.dragbuttons;
     }
-    return false;
   });
   $('#button-note-add').on('click', function() {
     sendToServer({ req: 'add', lastupdate: app.lastupdate });
@@ -208,7 +207,8 @@ function loadNote(id) {
   else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
   else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
-  $('#input').val(app.notes[id].content).attr('disabled', false).focus();
+  $('#input').val(app.notes[id].content).attr('disabled', false);
+  if (app.mode == 'edit') $('#input').focus();
 }
 
 function render(content) {
@@ -301,13 +301,13 @@ function parseFromServer(data, textStatus, xhr) {
       if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
     }
   }
-  if (reload) loadNote(app.activenote);
   if (data.searchresults) listSearchResults(data.searchresults);
   if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
   if (app.notes[app.activenote].deleted) {
     $('#input').attr('disabled', true);
     $('#status').html('Note #' + app.activenote + ' has been deleted').css('opacity', 1);
   }
+  if (reload) loadNote(app.activenote);
   updatePanels();
 }
 function offline() {
