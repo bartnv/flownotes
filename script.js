@@ -51,17 +51,17 @@ $().ready(function() {
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
   sendToServer(data);
   $('#input').on('keydown', function(e) {
-    if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'Enter')) {
+    if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
     }
-    else if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'ArrowUp')) {
+    else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       console.log('Transpose up');
     }
-    else if (e.originalEvent.ctrlKey && (e.originalEvent.code == 'ArrowDown')) {
+    else if (e.ctrlKey && (e.key == 'ArrowDown')) {
       console.log('Transpose down');
     }
-    if (!e.originalEvent.code.startsWith('F')) e.stopPropagation();
+    if (!e.key.startsWith('F')) e.stopPropagation();
   }).on('input', function(e) {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
@@ -69,12 +69,12 @@ $().ready(function() {
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
   });
   $(document).on('keydown', function(e) {
-    switch (e.originalEvent.code) {
-      case 'KeyS': $('#label-search').click();
+    switch (e.keyCode) {
+      case 83: $('#label-search').click();
                    return false;
-      case 'KeyR': $('#label-recent').click();
+      case 82: $('#label-recent').click();
                    return false;
-      case 'KeyP': $('#label-pinned').click();
+      case 80: $('#label-pinned').click();
                    return false;
     }
   });
@@ -96,8 +96,8 @@ $().ready(function() {
   });
   $('#label-pinned').on('click', function() { activateTab('pinned'); });
   $('#search-input').on('keydown', function(e) {
-    if (e.originalEvent.code == 'Enter') $('#search-button').click();
-    if (!e.originalEvent.code.startsWith('F')) e.stopPropagation();
+    if (e.key == 'Enter') $('#search-button').click();
+    if (!e.key.startsWith('F')) e.stopPropagation();
   });
   $('#search-button').on('click', function() {
     sendToServer({ req: 'search', term: $('#search-input').val(), lastupdate: app.lastupdate });
