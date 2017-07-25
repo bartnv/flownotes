@@ -23,7 +23,6 @@ switch ($data['req']) {
     $ret['notes'][$activenote] = select_note($activenote);
     break;
   case 'idle':
-    $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = $activenote;
     break;
   case 'update':
