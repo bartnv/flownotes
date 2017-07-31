@@ -424,10 +424,11 @@ function updatePanels() {
 }
 
 function findTitle(text) {
-  matches = text.match(/^\s*#+\s*([^#\r\n]+)/m);
-  if (matches) return matches[1];
-  matches = text.match(/^\s*([A-Za-z0-9][A-Za-z0-9 ]+[A-Za-z0-9 ])/m);
-  if (matches) return matches[1];
+  matches = text.substr(0, 100).match(/([A-Za-z0-9][A-Za-z0-9 .-\\']+[A-Za-z0-9])/mg);
+  if (matches) {
+    if (((matches[0] == 'http') || (matches[0] == 'https')) && matches[1]) return matches[1];
+    return matches[0];
+  }
   return '{no title}';
 }
 
