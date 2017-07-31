@@ -271,10 +271,16 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.activenote) {
     if (app.addlink) {
       let input = $('#input')[0];
-      let pos = input.selectionStart;
+      let start = input.selectionStart;
+      let end = input.selectionEnd;
       let val = input.value;
-      let link = '[=](#' + data.activenote + ')';
-      input.value = val.substring(0, pos) + link + val.substring(pos);
+      let name = '=';
+      if (start != end) {
+        name = val.substring(start, end);
+        data.notes[data.activenote].content = '# ' + name;
+      }
+      let link = '[' + name + '](#' + data.activenote + ')';
+      input.value = val.substring(0, start) + link + val.substring(end);
       app.notes[app.activenote].touched = true;
       app.addlink = false;
     }
