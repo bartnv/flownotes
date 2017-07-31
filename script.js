@@ -439,12 +439,13 @@ function activateNote(id, nopost) {
   }
   app.activenote = id;
   if (!nopost) {
-    let data = { req: 'activate', activenote: app.activenote, modified: app.notes[app.activenote].modified, lastupdate: app.lastupdate };
-    if (app.notes[id].content !== undefined) {
+    let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
+    if (app.notes[id] && (app.notes[id].content !== undefined)) {
 //      if (app.mode == 'graph') switchMode(app.prev);
       loadNote(app.activenote);
       updatePanels();
       data.lazy = true;
+      data.modified = app.notes[id].modified;
     }
     else {
       data.lazy = false;
