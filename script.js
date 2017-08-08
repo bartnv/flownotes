@@ -424,7 +424,7 @@ function updatePanels() {
 }
 
 function findTitle(text) {
-  matches = text.substr(0, 100).match(/([A-Za-z0-9][A-Za-z0-9 .-\\']+[A-Za-z0-9])/mg);
+  matches = text.substr(0, 100).match(/([A-Za-z0-9][A-Za-z0-9 .\\'-]+[A-Za-z0-9])/mg);
   if (matches) {
     if (((matches[0] == 'http') || (matches[0] == 'https')) && matches[1]) return matches[1];
     return matches[0];
