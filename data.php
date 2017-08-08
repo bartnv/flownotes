@@ -225,7 +225,7 @@ function update_note($id, $note) {
   }
   else $pinned = 0;
 
-  $GLOBALS['extra_ids'] = [ $id ];
+  $GLOBALS['extra_ids'] = [];
   if (!sql_if("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) { // Note changed title
     sql_foreach("SELECT * FROM link WHERE target = $id AND name IS NULL",
       function($row) use ($note) {
