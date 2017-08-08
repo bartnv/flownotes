@@ -54,6 +54,7 @@ $().ready(function() {
     if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
+      $('#status').html('Loading...').css('opacity', 1);
     }
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       console.log('Transpose up');
@@ -275,14 +276,16 @@ function parseFromServer(data, textStatus, xhr) {
       let end = input.selectionEnd;
       let val = input.value;
       let name = '=';
-      if (start != end) {
+      if (start != end) { // There is a text selection; use it as link text
         name = val.substring(start, end);
         data.notes[data.activenote].content = '# ' + name;
       }
       let link = '[' + name + '](#' + data.activenote + ')';
       input.value = val.substring(0, start) + link + val.substring(end);
+      app.notes[app.activenote].content = input.value;
       app.notes[app.activenote].touched = true;
       app.addlink = false;
+      pushUpdate();
     }
     if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
     else activateNote(parseInt(data.activenote), true);
