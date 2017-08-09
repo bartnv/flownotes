@@ -9,6 +9,7 @@ TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 H2 { display: inline-block; padding-bottom: 3px; margin-bottom: 0; border-bottom: solid #ccc 1px; }
 H3 { margin-bottom: 15px; }
+BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 #panels { display: flex; height: 100vh; }
 #panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
 #panel-left A { text-decoration: none; color: inherit; }
