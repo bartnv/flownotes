@@ -1,6 +1,6 @@
 HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; }
 BODY { margin: 0; background-color: grey; font-family: 'Lato', sans-serif; }
-PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; }
+PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
 PRE:hover .code-copy { display: block; }
 CODE { background-color: rgb(251, 244, 208); }
@@ -17,7 +17,7 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 #panel-buttons > DIV { cursor: pointer; padding: 5px; }
 .button-svg { display: block; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
-#panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; }
+#panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 0 /* override `auto` value implied by flex */; }
 #status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; }
 .button-unpin { float: right; margin-right: -3px; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
