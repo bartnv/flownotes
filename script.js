@@ -47,6 +47,7 @@ $().ready(function() {
   app.graph.bind('clickNode', function(evt) {
     location.hash = '#' + evt.data.node.id;
   });
+
   let data = { req: 'init' };
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
   sendToServer(data);
@@ -69,6 +70,7 @@ $().ready(function() {
     app.inactive = 0;
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
   });
+  $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
     switch (e.keyCode) {
       case 83: $('#label-search').click();
@@ -269,6 +271,25 @@ function parseFromServer(data, textStatus, xhr) {
   app.lastcomm = Date.now();
 
   $('#status').css('opacity', '0');
+
+  if (data.needpass) {
+    let modal = $('#modal-overlay');
+    modal.css({ opacity: 1, pointerEvents: 'auto' });
+    modal.empty().append('<div><p>Please enter your password</p><form><input type="password" id="password"><input type="submit" id="submit" value="Submit"></form><p id="error"></p></div>');
+    if (data.needpass == 'invalid') modal.find('#error').html('Invalid password; please try again');
+    modal.find('#submit').on('click', function() {
+      let data = { req: 'init', password: $(this).parent().find('#password').val() };
+      if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+      sendToServer(data);
+      modal.empty();
+      $('#status').html('Loading...').css('opacity', 1);
+    });
+    modal.find('#password').focus();
+    return;
+  }
+
+  $('#modal-overlay').css({ opacity: 0, pointerEvents: 'none' });
+
   if (data.activenote) {
     if (app.addlink) {
       let input = $('#input')[0];

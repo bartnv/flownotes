@@ -18,7 +18,7 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 .button-svg { display: block; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
 #panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 0 /* override `auto` value implied by flex */; }
-#status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; }
+#status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 .button-unpin { float: right; margin-right: -3px; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 #render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
@@ -35,7 +35,9 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 #search-box { display: flex; }
 #search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 .search-controls { margin: 5px 5px 0 5px; }
-#links-overlay { position: absolute; left: 0px; top: 0px; right: 0px; bottom: 0px; background-color: rgba(0,0,0,0.5); }
+#modal-overlay { position: absolute; left: 0px; top: 0px; right: 0px; bottom: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: opacity 1s ease-in; }
+#modal-overlay DIV { padding: 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
+#modal-overlay #error { color: rgb(255,0,0); }
 
 @media (max-width: 1024px) {
   HTML { font-size: 14px; }

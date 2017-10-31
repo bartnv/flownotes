@@ -8,6 +8,27 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
 if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
 if (empty($data['req'])) fatalerr('No req specified in POST request');
 
+$password = query_setting('password', '');
+if (!empty($password)) {
+  session_start();
+  if (empty($_SESSION['login'])) {
+    if (!empty($data['password'])) {
+      if (password_verify($data['password'], $password)) $_SESSION['login'] = 1;
+      else {
+        usleep(rand(100000, 1500000));
+        $ret['needpass'] = 'invalid';
+        print json_encode($ret);
+        exit();
+      }
+    }
+    else {
+      $ret['needpass'] = 'missing';
+      print json_encode($ret);
+      exit();
+    }
+  }
+}
+
 if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
 else $activenote = query_setting('activenote', '1');
 
