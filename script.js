@@ -78,11 +78,11 @@ $().ready(function() {
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
     switch (e.keyCode) {
-      case 83: $('#label-search').click();
+      case 83: $('#label-search').click().focus();
                    return false;
-      case 82: $('#label-recent').click();
+      case 82: $('#label-recent').click().focus();
                    return false;
-      case 80: $('#label-pinned').click();
+      case 80: $('#label-pinned').click().focus();
                    return false;
     }
   });
@@ -128,6 +128,8 @@ $().ready(function() {
     $('body').css('cursor', 'alias');
     $('#input').css('cursor', 'inherit');
     return false;
+  }).on('keyup', 'a', function(evt) {
+    if (evt.originalEvent.code == 'Space') this.click();
   });
   $('#input').on('mouseup', function() {
     if (!app.linkid) return;
