@@ -6,7 +6,9 @@ var app = {
   changed: 0,
   offline: 0,
   lastupdate: 0,
-  lastcomm: Date.now()
+  lastcomm: Date.now(),
+  modal: null,
+  password: false
 }
 
 $(document).on('keydown', function(evt) {
@@ -21,6 +23,9 @@ $(document).on('keydown', function(evt) {
     else switchMode('view');
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
     return false;
+  }
+  else if (evt.key == 'Escape') {
+    if (app.modal && (app.modal != 'password')) hideModal();
   }
 });
 
@@ -192,6 +197,7 @@ $().ready(function() {
       // location.hash = '#' + notes[0]['id'];
     }
   });
+  $('#button-settings').on('click', loadSettings);
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 5000);
 });
@@ -273,22 +279,30 @@ function parseFromServer(data, textStatus, xhr) {
   $('#status').css('opacity', '0');
 
   if (data.needpass) {
+    if (app.modal == 'password') return;
     let modal = $('#modal-overlay');
-    modal.css({ opacity: 1, pointerEvents: 'auto' });
-    modal.empty().append('<div><p>Please enter your password</p><form><input type="password" id="password"><input type="submit" id="submit" value="Submit"></form><p id="error"></p></div>');
-    if (data.needpass == 'invalid') modal.find('#error').html('Invalid password; please try again');
+    let content = '<div><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password"></p><p><input type="submit" id="submit" class="modal-button" value="Submit"></p></form><p id="modal-error"></p></div>';
+    showModal('password', content, false);
+    if (data.modalerror) modal.find('#modal-error').html(data.modalerror);
     modal.find('#submit').on('click', function() {
-      let data = { req: 'init', password: $(this).parent().find('#password').val() };
+      let data = { req: 'init', password: modal.find('#password').val() };
       if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
       sendToServer(data);
       modal.empty();
+      app.modal = null;
       $('#status').html('Loading...').css('opacity', 1);
     });
     modal.find('#password').focus();
     return;
   }
 
-  $('#modal-overlay').css({ opacity: 0, pointerEvents: 'none' });
+  if (app.modal && data.modalerror) $('#modal-error').html(data.modalerror);
+
+  if (data.settings == 'stored') {
+    let modal = $('#modal-overlay');
+    hideModal();
+    app.modal = null;
+  }
 
   if (data.activenote) {
     if (app.addlink) {
@@ -336,6 +350,10 @@ function parseFromServer(data, textStatus, xhr) {
   if (app.notes[app.activenote].deleted) {
     $('#input').attr('disabled', true);
     $('#status').html('Note #' + app.activenote + ' has been deleted').css('opacity', 1);
+  }
+  if (data.password != undefined) {
+    app.password = data.password;
+    hideModal();
   }
   if (reload) loadNote(app.activenote);
   updatePanels();
@@ -503,6 +521,51 @@ function listSearchResults(items) {
     location.hash = '#' + app.notes[items[0]].id;
     setTimeout("$('#search-input').focus();", 100);
   }
+}
+
+function loadSettings() {
+  let div = $('<div><h1>Settings</h1></div>');
+  div.append('<h2>Password</h2>');
+  if (app.password) div.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old"></p>');
+  div.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1"></p>');
+  div.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2"></p>');
+  div.append('<p id="settings-save-p"><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
+  div.append('<p id="modal-error"></p>');
+  div.find('#settings-save').on('click', function() {
+    let old = div.find('input[name=old]');
+    let new1 = div.find('input[name=new1]');
+    let new2 = div.find('input[name=new2]');
+    let data = { req: 'settings' };
+    if (new1.val().length || new2.val().length || (old.length && old.val().length)) {
+      if (new1.val() != new2.val()) {
+        div.find('#modal-error').html('Please verify your new password entries');
+        return;
+      }
+      div.find('#modal-error').empty();
+      if (old.length) data.oldpw = old.val();
+      data.newpw = new1.val();
+      if (data.newpw.length) app.password = true;
+      else app.password = false;
+    }
+    sendToServer(data);
+    if (data.length > 1) $('#status').html('Saving settings...').css('opacity', 1);
+  });
+  showModal('settings', div, true);
+}
+
+function showModal(type, content, escapable) {
+  app.modal = type;
+  let modal = $('#modal-overlay');
+  modal.append(content).css({ opacity: 1, pointerEvents: 'auto' });
+  if (escapable) modal.on('click', function(evt) {
+    if (evt.target == this) hideModal();
+  });
+}
+function hideModal() {
+  app.modal = null;
+  let modal = $('#modal-overlay');
+  modal.empty().css({ opacity: 0, pointerEvents: 'none' });
+  modal.off('click');
 }
 
 $.fn.getCursorPosition = function() {

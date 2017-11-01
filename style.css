@@ -15,8 +15,9 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 #panel-left A { text-decoration: none; color: inherit; }
 #panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 #panel-buttons > DIV { cursor: pointer; padding: 5px; }
-.button-svg { display: block; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
+.button-svg { display: block; margin-left: auto; margin-right: auto; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
+#button-settings { margin-top: auto; }
 #panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 0 /* override `auto` value implied by flex */; }
 #status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 .button-unpin { float: right; margin-right: -3px; }
@@ -35,9 +36,15 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 #search-box { display: flex; }
 #search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 .search-controls { margin: 5px 5px 0 5px; }
-#modal-overlay { position: absolute; left: 0px; top: 0px; right: 0px; bottom: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: opacity 1s ease-in; }
-#modal-overlay DIV { padding: 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
-#modal-overlay #error { color: rgb(255,0,0); }
+#modal-overlay { position: fixed; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: opacity 1s ease-in; }
+#modal-overlay DIV { padding: 5px 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
+#modal-overlay HR { background-color: #ccc; }
+#modal-error { color: rgb(255,0,0); }
+.modal-button { background-color: rgb(204,204,204); border-radius: 8px; border: none; padding: 0.7em 1em; font-size: 1em; }
+.modal-button:hover { background-color: white; cursor: pointer; }
+.settings-label { display: inline-block; min-width: 10em; }
+.input-password { width: 10em; }
+#settings-save-p { border-top: solid #ccc 1px; padding-top: 10px; }
 
 @media (max-width: 1024px) {
   HTML { font-size: 14px; }

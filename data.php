@@ -16,16 +16,10 @@ if (!empty($password)) {
       if (password_verify($data['password'], $password)) $_SESSION['login'] = 1;
       else {
         usleep(rand(100000, 1500000));
-        $ret['needpass'] = 'invalid';
-        print json_encode($ret);
-        exit();
+        send_and_exit([ 'needpass' => 'invalid', 'modalerror' => 'Invalid password; please try again' ]);
       }
     }
-    else {
-      $ret['needpass'] = 'missing';
-      print json_encode($ret);
-      exit();
-    }
+    else send_and_exit([ 'needpass' => 'missing' ]);
   }
 }
 
@@ -42,6 +36,7 @@ switch ($data['req']) {
     $ret['notes'] = select_recent_notes(20);
     $ret['notes'] = select_pinned_notes(20) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
+    $ret['password'] = !empty($password);
     break;
   case 'idle':
     $ret['activenote'] = $activenote;
@@ -88,6 +83,17 @@ switch ($data['req']) {
     $ret['notes'][$data['id']] = [];
     $ret['notes'][$data['id']]['deleted'] = 'true';
     break;
+  case 'settings':
+    if (isset($data['newpw'])) { // Setting/changing password
+      if (!empty($password)) {
+        if (empty($data['oldpw'])) send_and_exit([ 'modalerror' => 'Please enter your current password' ]);
+        if (!password_verify($data['oldpw'], $password)) send_and_exit([ 'modalerror' => 'Invalid current password entered' ]);
+      }
+      if ($data['newpw'] === '') store_setting('password', '');
+      else store_setting('password', password_hash($data['newpw'], PASSWORD_DEFAULT));
+    }
+    send_and_exit([ 'settings' => 'stored' ]);
+    break;
   default:
     fatalerr('Invalid request');
 }
@@ -96,8 +102,7 @@ if (!empty($data['lastupdate']) && ($data['lastupdate'] < query_setting('lastupd
   if (empty($ret['notes'])) $ret['notes'] = select_notes_since($data['lastupdate']);
   else $ret['notes'] = select_notes_since($data['lastupdate']) + $ret['notes'];
 }
-print json_encode($ret);
-exit();
+send_and_exit($ret);
 
 function query_setting($setting, $def = '') {
   global $dbh;
@@ -427,6 +432,10 @@ function sql_updateone($query, $params = []) {
   return true;
 }
 
+function send_and_exit($data) {
+  print json_encode($data);
+  exit();
+}
 function fatalerr($msg) {
   print json_encode([ 'error' => $msg ]);
   exit(1);
