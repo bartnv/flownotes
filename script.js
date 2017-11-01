@@ -510,6 +510,7 @@ function activateTab(name) {
 
 function listSearchResults(items) {
   let results = "";
+  items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
   for (let i in items) {
     let note = app.notes[items[i]];
     let extraclass = '';
