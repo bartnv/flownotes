@@ -78,7 +78,7 @@ $().ready(function() {
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
     switch (e.keyCode) {
-      case 83: $('#label-search').click().focus();
+      case 83: $('#label-search').click();
                    return false;
       case 82: $('#label-recent').click().focus();
                    return false;
@@ -353,7 +353,7 @@ function parseFromServer(data, textStatus, xhr) {
     $('#input').attr('disabled', true);
     $('#status').html('Note #' + app.activenote + ' has been deleted').css('opacity', 1);
   }
-  if (data.password != undefined) {
+  if (data.password !== undefined) {
     app.password = data.password;
     hideModal();
   }
