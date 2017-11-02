@@ -351,7 +351,7 @@ function parseFromServer(data, textStatus, xhr) {
   }
   if (data.searchresults) listSearchResults(data.searchresults);
   if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
-  if (app.notes[app.activenote].deleted) {
+  if (app.notes[app.activenote] && app.notes[app.activenote].deleted) {
     $('#input').attr('disabled', true);
     $('#status').html('Note #' + app.activenote + ' has been deleted').css('opacity', 1);
   }
