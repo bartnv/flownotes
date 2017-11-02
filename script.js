@@ -84,6 +84,8 @@ $().ready(function() {
                    return false;
       case 80: $('#label-pinned').click().focus();
                    return false;
+      case 78: $('#button-note-add').click();
+                   return false;
     }
   });
   $(window).on('hashchange', function(e) {
