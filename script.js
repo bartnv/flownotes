@@ -561,7 +561,7 @@ function loadSettings() {
 function showModal(type, content, escapable) {
   app.modal = type;
   let modal = $('#modal-overlay');
-  modal.append(content).css({ opacity: 1, pointerEvents: 'auto' });
+  modal.append(content).css({ backgroundColor: 'rgba(0,0,0,0.5)', pointerEvents: 'auto' });
   if (escapable) modal.on('click', function(evt) {
     if (evt.target == this) hideModal();
   });
@@ -569,7 +569,7 @@ function showModal(type, content, escapable) {
 function hideModal() {
   app.modal = null;
   let modal = $('#modal-overlay');
-  modal.empty().css({ opacity: 0, pointerEvents: 'none' });
+  modal.empty().css({ backgroundColor: 'rgba(0,0,0,0)', pointerEvents: 'none' });
   modal.off('click');
 }
 

@@ -36,7 +36,7 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 #search-box { display: flex; }
 #search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 .search-controls { margin: 5px 5px 0 5px; }
-#modal-overlay { position: fixed; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: opacity 1s ease-in; }
+#modal-overlay { position: fixed; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: background 1s ease-in; }
 #modal-overlay DIV { padding: 5px 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
 #modal-overlay HR { background-color: #ccc; }
 #modal-error { color: rgb(255,0,0); }
