@@ -7,7 +7,7 @@ CODE { background-color: rgb(251, 244, 208); }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
-H2 { display: inline-block; padding-bottom: 3px; margin-bottom: 0; border-bottom: solid #ccc 1px; }
+H2 { display: inline-block; margin-top: 0; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
 H3 { margin-bottom: 15px; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 #panels { display: flex; height: 100vh; }
@@ -42,6 +42,8 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 #modal-error { color: rgb(255,0,0); }
 .modal-button { background-color: rgb(204,204,204); border-radius: 8px; border: none; padding: 0.7em 1em; font-size: 1em; }
 .modal-button:hover { background-color: white; cursor: pointer; }
+.modal-button-small { background-color: rgb(204,204,204); border-radius: 5px; border: none; padding: 0.35em 0.6em; font-size: 0.9em; }
+.modal-button-small:hover { background-color: white; cursor: pointer; }
 .settings-label { display: inline-block; min-width: 10em; }
 .input-password { width: 10em; }
 #settings-save-p { border-top: solid #ccc 1px; padding-top: 10px; }

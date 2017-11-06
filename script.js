@@ -274,29 +274,18 @@ function sendToServer(data, sync) {
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline();
   if (data.error) return alert('Error: ' + data.error);
+  if (data.logout) return logout();
+  app.lastcomm = Date.now();
   if (app.offline) {
     app.offline = 0;
     pushUpdate(false, true);
   }
-  app.lastcomm = Date.now();
 
   $('#status').css('opacity', '0');
 
   if (data.needpass) {
-    if (app.modal == 'password') return;
-    let modal = $('#modal-overlay');
-    let content = '<div><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password"></p><p><input type="submit" id="submit" class="modal-button" value="Submit"></p></form><p id="modal-error"></p></div>';
-    showModal('password', content, false);
-    if (data.modalerror) modal.find('#modal-error').html(data.modalerror);
-    modal.find('#submit').on('click', function() {
-      let data = { req: 'init', password: modal.find('#password').val() };
-      if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
-      sendToServer(data);
-      modal.empty();
-      app.modal = null;
-      $('#status').html('Loading...').css('opacity', 1);
-    });
-    modal.find('#password').focus();
+    if ((app.modal == 'password') || (app.modal == 'logout')) return;
+    login(data.modalerror);
     return;
   }
 
@@ -530,12 +519,23 @@ function listSearchResults(items) {
 
 function loadSettings() {
   let div = $('<div><h1>Settings</h1></div>');
+  div.append('<h2>Logout</h2>');
+  div.append('<p><input type="button" id="logout-this" class="modal-button-small" value="Logout this session"></p>');
+  div.append('<p><input type="button" id="logout-all" class="modal-button-small" value="Logout all sessions"></p>');
   div.append('<h2>Password</h2>');
   if (app.password) div.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old"></p>');
   div.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1"></p>');
   div.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2"></p>');
   div.append('<p id="settings-save-p"><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
   div.append('<p id="modal-error"></p>');
+  div.find('#logout-this').on('click', function() {
+    sendToServer({ req: 'logout', session: 'this' });
+    showModal('logout', '', false);
+  });
+  div.find('#logout-all').on('click', function() {
+    sendToServer({ req: 'logout', session: 'all' });
+    showModal('logout', '', false);
+  });
   div.find('#settings-save').on('click', function() {
     let old = div.find('input[name=old]');
     let new1 = div.find('input[name=new1]');
@@ -561,16 +561,47 @@ function loadSettings() {
 function showModal(type, content, escapable) {
   app.modal = type;
   let modal = $('#modal-overlay');
-  modal.append(content).css({ backgroundColor: 'rgba(0,0,0,0.5)', pointerEvents: 'auto' });
+  modal.empty().append(content).css({ backgroundColor: 'rgba(0,0,0,0.5)', pointerEvents: 'auto' });
   if (escapable) modal.on('click', function(evt) {
     if (evt.target == this) hideModal();
   });
+  else modal.off('click');
 }
 function hideModal() {
   app.modal = null;
   let modal = $('#modal-overlay');
   modal.empty().css({ backgroundColor: 'rgba(0,0,0,0)', pointerEvents: 'none' });
   modal.off('click');
+}
+
+function login(error) {
+  let modal = $('#modal-overlay');
+  let content = '<div><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password"></p>'
+  content += '<p><input type="checkbox" id="remember"> Remember for this device</p>';
+  content += '<p><input type="submit" id="submit" class="modal-button" value="Submit"></p></form><p id="modal-error"></p></div>';
+  showModal('password', content, false);
+  if (error) modal.find('#modal-error').html(error);
+  modal.find('#submit').on('click', function() {
+    let data = { req: 'init', password: modal.find('#password').val() };
+    if (modal.find('#remember')[0].checked) data.remember = true;
+    if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+    sendToServer(data);
+    modal.empty();
+    app.modal = null;
+    $('#status').html('Loading...').css('opacity', 1);
+  });
+  modal.find('#password').focus();
+}
+function logout() {
+  app.notes = [];
+  app.graph.graph.clear();
+  app.graph.refresh();
+  $('#input').val(null).attr('disabled', true);
+  $('#render').empty();
+  $('#tab-recent').empty();
+  $('#tab-pinned').empty();
+  $('#search-results').empty();
+  showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="login()"></p></div>', false);
 }
 
 $.fn.getCursorPosition = function() {

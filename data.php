@@ -13,14 +13,60 @@ if (!empty($password)) {
   session_start();
   if (empty($_SESSION['login'])) {
     if (!empty($data['password'])) {
-      if (password_verify($data['password'], $password)) $_SESSION['login'] = 1;
+      if (password_verify($data['password'], $password)) {
+        $_SESSION['login'] = true;
+        $_SESSION['since'] = time();
+        if (isset($data['remember']) && $data['remember']) {
+          $token = base64_encode(openssl_random_pseudo_bytes(32));
+          $hash = hash('sha256', $token, FALSE);
+          $expire = time()+60*60*24*30;
+          $id = sql_insert_id("INSERT INTO auth_token (hash, expires) VALUES ('$hash', $expire)");
+          if (!$id) fatalerr('Failed to add authentication token to database');
+          $_SESSION['login'] = $id;
+          setcookie('flownotes_remember', "$id:$token", $expire);
+        }
+      }
       else {
         usleep(rand(100000, 1500000));
         send_and_exit([ 'needpass' => 'invalid', 'modalerror' => 'Invalid password; please try again' ]);
       }
     }
+    elseif (!empty($_COOKIE['flownotes_remember'])) {
+      list($id, $token) = explode(':', $_COOKIE['flownotes_remember']);
+      if (empty($id) || empty($token) || !is_numeric($id) || ($id <= 0)) {
+        send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie invalid; please login with your password' ]);
+      }
+      $hash = sql_single("SELECT hash FROM auth_token WHERE id = $id AND expires > strftime('%s', 'now')");
+      if (empty($hash)) send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie expired; please login with your password' ]);
+      if (hash_equals(hash('sha256', $token, FALSE), $hash)) {
+        $_SESSION['login'] = $id;
+        $_SESSION['since'] = time();
+        sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
+      }
+      else send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Please login with your password' ]);
+    }
     else send_and_exit([ 'needpass' => 'missing' ]);
   }
+}
+
+$logout = query_setting('logout', 1500000000);
+if ($_SESSION['since'] < $logout) {
+  unset($_SESSION['login']);
+  unset($_SESSION['since']);
+  setcookie('flownotes_remember', "", time()-3600);
+  send_and_exit([ 'logout' => 'true']);
+}
+
+if (($data['req'] == 'logout') && !empty($data['session'])) {
+  if ($data['session'] == 'all') {
+    sql_single('DELETE FROM auth_token');
+    store_setting('logout', time());
+  }
+  elseif (is_numeric($_SESSION['login'])) sql_single('DELETE FROM auth_token WHERE id = ' . $_SESSION['login']);
+  unset($_SESSION['login']);
+  unset($_SESSION['since']);
+  setcookie('flownotes_remember', "", time()-3600);
+  send_and_exit([ 'logout' => 'true' ]);
 }
 
 if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
@@ -409,6 +455,27 @@ function sql_single($query, $params = []) {
   }
   if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return "";
   return $row[0];
+}
+function sql_insert_id($query, $params = []) {
+  global $dbh;
+  if (!empty($params)) {
+    if (!($stmt = $dbh->prepare($query))) {
+      error_log("sql_insert_id() prepare failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+    if (!($stmt->execute($params))) {
+      error_log("sql_insert_id() execute failed: " . $stmt->errorInfo()[2]);
+      return false;
+    }
+  }
+  else {
+    if (!($stmt = $dbh->query($query))) {
+      error_log("sql_insert_id() query failed: " . $dbh->errorInfo()[2]);
+      return false;
+    }
+  }
+  if ($stmt->rowCount() != 1) return false;
+  return $dbh->lastInsertId();
 }
 function sql_updateone($query, $params = []) {
   global $dbh;
