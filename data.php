@@ -47,26 +47,27 @@ if (!empty($password)) {
     }
     else send_and_exit([ 'needpass' => 'missing' ]);
   }
-}
+  else {
+    $logout = query_setting('logout', 1500000000);
+    if ($_SESSION['since'] < $logout) {
+      unset($_SESSION['login']);
+      unset($_SESSION['since']);
+      setcookie('flownotes_remember', "", time()-3600);
+      send_and_exit([ 'logout' => 'true']);
+    }
 
-$logout = query_setting('logout', 1500000000);
-if ($_SESSION['since'] < $logout) {
-  unset($_SESSION['login']);
-  unset($_SESSION['since']);
-  setcookie('flownotes_remember', "", time()-3600);
-  send_and_exit([ 'logout' => 'true']);
-}
-
-if (($data['req'] == 'logout') && !empty($data['session'])) {
-  if ($data['session'] == 'all') {
-    sql_single('DELETE FROM auth_token');
-    store_setting('logout', time());
+    if (($data['req'] == 'logout') && !empty($data['session'])) {
+      if ($data['session'] == 'all') {
+        sql_single('DELETE FROM auth_token');
+        store_setting('logout', time());
+      }
+      elseif (is_numeric($_SESSION['login'])) sql_single('DELETE FROM auth_token WHERE id = ' . $_SESSION['login']);
+      unset($_SESSION['login']);
+      unset($_SESSION['since']);
+      setcookie('flownotes_remember', "", time()-3600);
+      send_and_exit([ 'logout' => 'true' ]);
+    }
   }
-  elseif (is_numeric($_SESSION['login'])) sql_single('DELETE FROM auth_token WHERE id = ' . $_SESSION['login']);
-  unset($_SESSION['login']);
-  unset($_SESSION['since']);
-  setcookie('flownotes_remember', "", time()-3600);
-  send_and_exit([ 'logout' => 'true' ]);
 }
 
 if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
