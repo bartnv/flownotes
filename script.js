@@ -74,6 +74,11 @@ $().ready(function() {
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
+  }).on('focus', function() {
+    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) $('#button-panel-hide').click();
+  });
+  $('#render').on('click', function() {
+    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) $('#button-panel-hide').click();
   });
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
@@ -158,7 +163,7 @@ $().ready(function() {
     switchMode(this.id.split('-')[2]);
     sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
   });
-  $('#panel-buttons').on('touchstart', function(e) {
+  $('#panel-left,#panel-buttons').on('touchstart', function(e) {
     app.dragbuttons = e.changedTouches[0].pageX;
   });
   $(window).on('touchend', function(e) {

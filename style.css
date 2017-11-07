@@ -7,7 +7,8 @@ CODE { background-color: rgb(251, 244, 208); }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
-H2 { display: inline-block; margin-top: 0; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
+H2 { display: inline-block; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
+H2:not(:first-child) { margin-top: 0; }
 H3 { margin-bottom: 15px; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 #panels { display: flex; height: 100vh; }
@@ -18,7 +19,7 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 .button-svg { display: block; margin-left: auto; margin-right: auto; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
 #button-settings { margin-top: auto; }
-#panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 0 /* override `auto` value implied by flex */; }
+#panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 300px /* needs a min-width to override `auto` value implied by flex */; }
 #status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 .button-unpin { float: right; margin-right: -3px; }
 #input,#render,#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
