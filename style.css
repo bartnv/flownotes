@@ -48,6 +48,15 @@ BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; 
 .settings-label { display: inline-block; min-width: 10em; }
 .input-password { width: 10em; }
 #settings-save-p { border-top: solid #ccc 1px; padding-top: 10px; }
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
 
 @media (max-width: 1024px) {
   HTML { font-size: 14px; }
