@@ -11,18 +11,19 @@ if (empty($data['req'])) fatalerr('No req specified in POST request');
 $password = query_setting('password', '');
 if (!empty($password)) {
   session_start();
-  if (empty($_SESSION['login'])) {
+  $instance = str_replace('/', '-', dirname($_SERVER['REQUEST_URI']));
+  if (empty($_SESSION['login'.$instance])) {
     if (!empty($data['password'])) {
       if (password_verify($data['password'], $password)) {
-        $_SESSION['login'] = true;
-        $_SESSION['since'] = time();
+        $_SESSION['login'.$instance] = true;
+        $_SESSION['since'.$instance] = time();
         if (isset($data['remember']) && $data['remember']) {
           $token = base64_encode(openssl_random_pseudo_bytes(32));
           $hash = hash('sha256', $token, FALSE);
           $expire = time()+60*60*24*30;
           $id = sql_insert_id("INSERT INTO auth_token (hash, expires) VALUES ('$hash', $expire)");
           if (!$id) fatalerr('Failed to add authentication token to database');
-          $_SESSION['login'] = $id;
+          $_SESSION['login'.$instance] = $id;
           setcookie('flownotes_remember', "$id:$token", $expire);
         }
       }
@@ -39,8 +40,8 @@ if (!empty($password)) {
       $hash = sql_single("SELECT hash FROM auth_token WHERE id = $id AND expires > strftime('%s', 'now')");
       if (empty($hash)) send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie expired; please login with your password' ]);
       if (hash_equals(hash('sha256', $token, FALSE), $hash)) {
-        $_SESSION['login'] = $id;
-        $_SESSION['since'] = time();
+        $_SESSION['login'.$instance] = $id;
+        $_SESSION['since'.$instance] = time();
         sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
       }
       else send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Please login with your password' ]);
@@ -49,9 +50,9 @@ if (!empty($password)) {
   }
   else {
     $logout = query_setting('logout', 1500000000);
-    if ($_SESSION['since'] < $logout) {
-      unset($_SESSION['login']);
-      unset($_SESSION['since']);
+    if ($_SESSION['since'.$instance] < $logout) {
+      unset($_SESSION['login'.$instance]);
+      unset($_SESSION['since'.$instance]);
       setcookie('flownotes_remember', "", time()-3600);
       send_and_exit([ 'logout' => 'true']);
     }
@@ -61,13 +62,14 @@ if (!empty($password)) {
         sql_single('DELETE FROM auth_token');
         store_setting('logout', time());
       }
-      elseif (is_numeric($_SESSION['login'])) sql_single('DELETE FROM auth_token WHERE id = ' . $_SESSION['login']);
-      unset($_SESSION['login']);
-      unset($_SESSION['since']);
+      elseif (is_numeric($_SESSION['login'.$instance])) sql_single('DELETE FROM auth_token WHERE id = ' . $_SESSION['login'.$instance]);
+      unset($_SESSION['login'.$instance]);
+      unset($_SESSION['since'.$instance]);
       setcookie('flownotes_remember', "", time()-3600);
       send_and_exit([ 'logout' => 'true' ]);
     }
   }
+  session_write_close();
 }
 
 if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
