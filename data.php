@@ -140,7 +140,8 @@ switch ($data['req']) {
       else store_setting('password', password_hash($data['newpw'], PASSWORD_DEFAULT));
     }
     send_and_exit([ 'settings' => 'stored' ]);
-    break;
+  case 'logout':
+    send_and_exit([ 'modalerror' => 'Logout has no function without a configured password' ]);
   default:
     fatalerr('Invalid request');
 }

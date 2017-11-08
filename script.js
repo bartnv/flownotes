@@ -294,13 +294,13 @@ function parseFromServer(data, textStatus, xhr) {
     return;
   }
 
-  if (app.modal && data.modalerror) $('#modal-error').html(data.modalerror);
-
-  if (data.settings == 'stored') {
-    let modal = $('#modal-overlay');
-    hideModal();
-    app.modal = null;
+  if (data.modalerror) {
+    let error = $('#modal-error');
+    if (error.length) error.html(data.modalerror);
+    else showModal('error', '<div><p id="modal-error">' + data.modalerror + '</p></div>', true);
   }
+
+  if (data.settings == 'stored') hideModal();
 
   if (data.activenote) {
     if (app.addlink) {
