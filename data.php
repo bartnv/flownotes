@@ -161,10 +161,7 @@ function query_setting($setting, $def = '') {
     error_log("query_setting() failed: " . $err[2]);
     return $def;
   }
-  if (!($row = $res->fetch())) {
-    error_log("query_setting() for setting $setting returned no rows");
-    return $def;
-  }
+  if (!($row = $res->fetch())) return $def;
   return $row[0];
 }
 function store_setting($setting, $value) {
