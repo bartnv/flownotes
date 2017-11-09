@@ -81,7 +81,6 @@ switch ($data['req']) {
   case 'init':
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = $activenote;
-    $ret['activetableft'] = query_setting('activetableft', 'recent');
     $ret['notes'] = select_recent_notes(20);
     $ret['notes'] = select_pinned_notes(20) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
