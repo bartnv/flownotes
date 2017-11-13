@@ -256,6 +256,7 @@ function tick() {
 
 function pushUpdate(sync, retransmit) {
   let data = { req: 'update', activenote: app.activenote, notes: {}, lastupdate: app.lastupdate };
+  if ($('#label-search').hasClass('tab-active') && $('#search-input').val().length) data.term = $('#search-input').val();
   for (let i in app.notes) {
     if (app.notes[i].touched) {
       data.notes[i] = app.notes[i];

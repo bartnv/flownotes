@@ -106,6 +106,11 @@ switch ($data['req']) {
         else $ret['notes'][$id]['pinned'] = update_note_pinned($id, $note);
       }
     }
+    if (!empty($data['term'])) {
+      $results = search_notes($data['term']);
+      $ret['notes'] = $results + $ret['notes'];
+      $ret['searchresults'] = array_keys($results);
+    }
     break;
   case 'activate':
     $ret['notes'] = [];
