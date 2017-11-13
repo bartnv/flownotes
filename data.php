@@ -4,8 +4,11 @@ $dbh = new PDO('sqlite:db/notes.sq3');
 
 header('Content-type: application/json');
 
+$input = file_get_contents("php://input");
+//error_log('IN:  ' . $input);
+
 if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
-if (!($data = json_decode(file_get_contents("php://input"), true))) fatalerr('Invalid JSON data in request body');
+if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
 if (empty($data['req'])) fatalerr('No req specified in POST request');
 
 $password = query_setting('password', '');
@@ -502,6 +505,7 @@ function sql_updateone($query, $params = []) {
 
 function send_and_exit($data) {
   print json_encode($data);
+//  error_log('OUT: ' . json_encode($data));
   exit();
 }
 function fatalerr($msg) {
