@@ -1,4 +1,4 @@
-HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; }
+HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: pan-y; }
 BODY { margin: 0; background-color: grey; font-family: 'Lato', sans-serif; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
