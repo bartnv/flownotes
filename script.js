@@ -63,10 +63,34 @@ $().ready(function() {
       $('#status').html('Loading...').css('opacity', 1);
     }
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
-      console.log('Transpose up');
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition();
+      let start1 = content.lastIndexOf("\n", cursor-1);
+      if (start1 == -1) return false;
+      else if (start1 == 0) start1 = 1; // Empty first line
+      let end1 = content.indexOf("\n", cursor);
+      if (end1 == -1) {
+        end1 = content.length;
+        if (end1-start1 == 1) return false;
+      }
+      let start2 = content.lastIndexOf("\n", start1-1);
+      if (start2 == -1) start2 = 0;
+      let newcontent = content.substring(0, start2) + content.substring(start1, end1) + content.substring(start2, start1) + content.substring(end1);
+      $('#input').val(newcontent).setCursorPosition(start2+cursor-start1).trigger('input');
+      return false;
     }
     else if (e.ctrlKey && (e.key == 'ArrowDown')) {
-      console.log('Transpose down');
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition();
+      let start1 = content.lastIndexOf("\n", cursor-1);
+      if (start1 == -1) start1 = 0;
+      let end1 = content.indexOf("\n", cursor);
+      if (end1 == -1) return false;
+      let end2 = content.indexOf("\n", end1+1);
+      if (end2 == -1) end2 = content.length;
+      let newcontent = content.substring(0, start1) + content.substring(end1, end2) + content.substring(start1, end1) + content.substring(end2);
+      $('#input').val(newcontent).setCursorPosition(start1+end2-end1+cursor-start1).trigger('input');
+      return false;
     }
     if (!e.key.startsWith('F')) e.stopPropagation();
   }).on('input', function(e) {
