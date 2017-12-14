@@ -38,9 +38,9 @@ $().ready(function() {
   app.renderer.link = function(href, title, text) {
     if (href.match(/^#[0-9]+$/)) {
       if (text.startsWith('=') && (text != '=')) text = text.substr(1);
-      return '<a href="' + href + '">' + text + '</a>';
+      return '<a class="link-note" href="' + href + '">' + text + '</a>';
     }
-    return '<a href="' + href + '" target="_blank">' + text + '</a>';
+    return '<a class="link-ext" href="' + href + '" target="_blank">' + text + '</a>';
   }
   app.graph = new sigma('graph');
   app.graph.settings({
