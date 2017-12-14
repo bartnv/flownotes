@@ -31,7 +31,8 @@ $(document).on('keydown', function(evt) {
 
 $().ready(function() {
   marked.setOptions({
-    breaks: true
+    breaks: true,
+    smartypants: true
   });
   app.renderer = new marked.Renderer();
   app.renderer.link = function(href, title, text) {
