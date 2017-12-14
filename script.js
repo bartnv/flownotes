@@ -256,9 +256,19 @@ function loadNote(id) {
 
 function render(content) {
   let el = $('#render');
+  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
+    return '<input type="checkbox"' + (sub == 'x'?'checked':'') + ' onchange="checkboxChange(this, ' + offset + ')">';
+  });
   el.html(marked(content, { renderer: app.renderer }));
   el.find('PRE').append('<img class="code-copy" src="clippy.svg" onclick="copy(this);">');
   return el;
+}
+function checkboxChange(checkbox, offset) {
+  let input = $('#input');
+  let content = input.val();
+  if (checkbox.checked) input.val(content.substring(0, offset+1) + 'x' + content.substring(offset+2));
+  else input.val(content.substring(0, offset+1) + ' ' + content.substring(offset+2));
+  input.trigger('input');
 }
 function copy(btn) {
   selectText($(btn).parent().find('code').get(0));
