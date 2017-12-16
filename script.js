@@ -8,7 +8,8 @@ var app = {
   lastupdate: 0,
   lastcomm: Date.now(),
   modal: null,
-  password: false
+  password: false,
+  scroll: { recent: 0, search: 0, pinned: 0 }
 }
 
 $(document).on('keydown', function(evt) {
@@ -190,6 +191,21 @@ $().ready(function() {
   });
   $('#panel-left,#panel-buttons').on('touchstart', function(e) {
     app.dragbuttons = e.changedTouches[0].pageX;
+  });
+  $('#panel-left').on('wheel', function (evt) {
+    let id;
+    let active = $('.tab-active').get(0).id.substr(6);
+    if (active == 'search') id = '#search-results';
+    else id = '#tab-' + active;
+    if (evt.originalEvent.deltaY < 0) {
+      if (app.scroll[active]) app.scroll[active] -= 1;
+    }
+    else {
+      let last = $(id + ' .note-li').last();
+      if (!last.length || last.offset().top+last.height()+20 < window.innerHeight) return;
+      app.scroll[active] += 1;
+    }
+    $(id).css('top', (-$(id + ' .note-li').eq(app.scroll[active]).position().top-4) + 'px');
   });
   $(window).on('touchend', function(e) {
     if (app.dragbuttons != undefined) {

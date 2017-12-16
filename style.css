@@ -40,11 +40,13 @@ DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .note-title { font-weight: bold; line-height: 1.4; }
 .note-modified { font-size: 0.9em; }
 .tabbar { display: flex; }
-.tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; }
+.tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; z-index: 1000; }
 .tab-active { background-color: rgb(200,200,200) !important; }
-.tab { width: 20em; }
+.tab { width: 20em; position: relative; }
 DIV#search-box { display: flex; }
+DIV#search-results { position: relative; }
 INPUT#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
+DIV.mask { overflow: hidden; }
 .search-controls { margin: 5px 5px 0 5px; }
 DIV#modal-overlay { position: fixed; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: background 1s ease-in; }
 DIV#modal-overlay DIV { padding: 5px 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
