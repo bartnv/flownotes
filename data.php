@@ -132,13 +132,13 @@ switch ($data['req']) {
     break;
   case 'delete':
     if (empty($data['id']) || !is_numeric($data['id'])) fatalerr('Invalid id passed in req delete');
-    if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ?", [ $data['id'], $data['lastupdate'] ])) {
-      fatalerr('Note has been edited from another location; delete not executed; reload the window to continue');
-    }
-    if (!sql_updateone("UPDATE note SET deleted = 'true', modified = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr('Failed to delete note');
+    if (!empty($data['undelete'])) $change = 'false';
+    else $change = 'true';
+
+    if (!sql_updateone("UPDATE note SET deleted = '$change', modified = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
     $ret['notes'] = [];
     $ret['notes'][$data['id']] = [];
-    $ret['notes'][$data['id']]['deleted'] = 'true';
+    $ret['notes'][$data['id']]['deleted'] = $change;
     break;
   case 'settings':
     if (isset($data['newpw'])) { // Setting/changing password

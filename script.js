@@ -240,11 +240,10 @@ $().ready(function() {
     link.remove();
   });
   $('#button-note-del').on('click', function() {
-    if (confirm('Are you sure you want to delete note #' + app.activenote + ' "' + app.notes[app.activenote].title + '"?')) {
+    if (app.notes[app.activenote].deleted) sendToServer({ req: 'delete', undelete: true, id: app.activenote, lastupdate: app.lastupdate });
+    else if (confirm('Are you sure you want to delete note #' + app.activenote + ' "' + app.notes[app.activenote].title + '"?')) {
       sendToServer({ req: 'delete', id: app.activenote, lastupdate: app.lastupdate });
-      // let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
-      // notes.sort(function(a, b) { return b.modified - a.modified; });
-      // location.hash = '#' + notes[0]['id'];
+      $('#tab-recent .note-li').not('[data-id="' + app.activenote + '"]').first().click();
     }
   });
   $('#button-settings').on('click', loadSettings);
@@ -266,6 +265,14 @@ function loadNote(id) {
   else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
   else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
+  if (app.notes[id].deleted) {
+    $('#input').attr('disabled', true);
+    $('#button-note-del').addClass('button-active').attr('title', 'Undelete note');
+  }
+  else {
+    $('#input').attr('disabled', false);
+    $('#button-note-del').removeClass('button-active').attr('title', 'Delete note');
+  }
   $('#input').val(app.notes[id].content).attr('disabled', false);
   if (app.mode == 'edit') $('#input').focus();
 }
@@ -388,6 +395,7 @@ function parseFromServer(data, textStatus, xhr) {
     }
     if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
     if (data.notes[i].deleted === 'true') app.notes[i].deleted = true;
+    else if (data.notes[i].deleted === 'false') app.notes[i].deleted = false;
     if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
     if (data.notes[i].blinks !== undefined) app.notes[i].blinks = data.notes[i].blinks;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
@@ -397,9 +405,16 @@ function parseFromServer(data, textStatus, xhr) {
   }
   if (data.searchresults) listSearchResults(data.searchresults);
   if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
-  if (app.notes[app.activenote] && app.notes[app.activenote].deleted) {
-    $('#input').attr('disabled', true);
-    $('#status').html('Note #' + app.activenote + ' has been deleted').css('opacity', 1);
+  if (app.notes[app.activenote]) {
+    if (app.notes[app.activenote].deleted) {
+      $('#input').attr('disabled', true);
+      $('#status').html('Note #' + app.activenote + ' has been deleted').css('opacity', 1);
+      $('#button-note-del').addClass('button-active').attr('title', 'Undelete note');
+    }
+    else {
+      $('#input').attr('disabled', false);
+      $('#button-note-del').removeClass('button-active').attr('title', 'Delete note');
+    }
   }
   if (data.password !== undefined) {
     app.password = data.password;
@@ -513,6 +528,7 @@ function updatePanels() {
     }
     $('#tab-recent').empty().html(last20);
   }
+  else updateSearchResults();
 }
 
 function findTitle(text) {
@@ -557,8 +573,18 @@ function activateTab(name) {
 }
 
 function listSearchResults(items) {
-  let results = "";
+  app.searchresults = items;
+  updateSearchResults();
+  if (items.length == 1) {
+    location.hash = '#' + app.notes[items[0]].id;
+    setTimeout("$('#search-input').focus();", 100);
+  }
+}
+function updateSearchResults() {
+  items = app.searchresults;
+  if (!items) return;
   items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
+  let results = "";
   for (let i in items) {
     let note = app.notes[items[i]];
     let extraclass = '';
@@ -568,10 +594,6 @@ function listSearchResults(items) {
     results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
-  if (items.length == 1) {
-    location.hash = '#' + app.notes[items[0]].id;
-    setTimeout("$('#search-input').focus();", 100);
-  }
 }
 
 function loadSettings() {
