@@ -44,11 +44,9 @@ $().ready(function() {
     return '<a class="link-ext" href="' + href + '" target="_blank">' + text + '</a>';
   }
   app.renderer.code = function(code, language, escaped) {
-    console.log('code', code);
     return '<pre><code>' + code + '</code><img class="code-copy" src="clippy.svg" onclick="copy(this);"></pre>';
   }
   app.renderer.codespan = function(code) {
-    console.log('span', code);
     return '<code>' + code.replace('&amp;', '&') + '</code>';
   }
   app.graph = new sigma('graph');
