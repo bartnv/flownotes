@@ -280,7 +280,7 @@ function loadNote(id) {
 function render(content) {
   let el = $('#render');
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
-    return '<input type="checkbox"' + (sub == 'x'?'checked':'') + ' onchange="checkboxChange(this, ' + offset + ')">';
+    return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
   el.html(marked(content, { renderer: app.renderer }));
   el.find('PRE').append('<img class="code-copy" src="clippy.svg" onclick="copy(this);">');
