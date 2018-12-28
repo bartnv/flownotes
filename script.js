@@ -43,6 +43,14 @@ $().ready(function() {
     }
     return '<a class="link-ext" href="' + href + '" target="_blank">' + text + '</a>';
   }
+  app.renderer.code = function(code, language, escaped) {
+    console.log('code', code);
+    return '<pre><code>' + code + '</code><img class="code-copy" src="clippy.svg" onclick="copy(this);"></pre>';
+  }
+  app.renderer.codespan = function(code) {
+    console.log('span', code);
+    return '<code>' + code.replace('&amp;', '&') + '</code>';
+  }
   app.graph = new sigma('graph');
   app.graph.settings({
     labelSize: 'proportional',
@@ -279,11 +287,11 @@ function loadNote(id) {
 
 function render(content) {
   let el = $('#render');
+  content = content.replace(/</g, '&lt;');
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
   el.html(marked(content, { renderer: app.renderer }));
-  el.find('PRE').append('<img class="code-copy" src="clippy.svg" onclick="copy(this);">');
   return el;
 }
 function checkboxChange(checkbox, offset) {
