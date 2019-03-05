@@ -30,10 +30,10 @@ DIV#panel-buttons > DIV { cursor: pointer; padding: 5px; }
 DIV#button-settings { margin-top: auto; }
 DIV#panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 300px /* needs a min-width to override `auto` value implied by flex */; background-color: grey; }
 DIV#status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
-.button-unpin { float: right; margin-right: -3px; }
+.button-unpin { position: absolute; top: 3px; right: 3px; }
 TEXTAREA#input,DIV#render,DIV#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
-.note-li { margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-li { position: relative; margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-active { background-color: #6BA2A5 !important; }
 .note-selected { border: solid black 1px; }
 .note-deleted { text-decoration: line-through; }

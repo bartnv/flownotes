@@ -535,8 +535,8 @@ function updatePanels() {
       if (note.id == app.activenote) extraclass = ' note-active';
       if (note.deleted) extraclass += ' note-deleted';
       pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
-      pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
       pinned += '<span class="note-title">' + note.title + '</span><br>';
+      pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
       pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
       if (++count >= 20) break;
     }
