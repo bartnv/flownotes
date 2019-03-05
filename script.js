@@ -1,4 +1,6 @@
-var app = {
+'use strict';
+
+let app = {
   mode: 'edit',
   activenote: 1,
   notes: [],
@@ -243,7 +245,7 @@ $().ready(function() {
     }
   });
   $('#button-note-mail').on('click', function() {
-    var link = $('<a target="_blank" href="mailto:?body=' + encodeURIComponent($('#input').val()).replace(/%0A/gi, '%0D%0A') + '"></a>');
+    let link = $('<a target="_blank" href="mailto:?body=' + encodeURIComponent($('#input').val()).replace(/%0A/gi, '%0D%0A') + '"></a>');
     $('body').append(link);
     link[0].click();
     link.remove();
@@ -523,7 +525,7 @@ function updatePanels() {
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
   if ($('#label-pinned').hasClass('tab-active')) {
     notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
-    count = 0;
+    let count = 0;
     let pinned = "";
     for (let i in notes) {
       let note = notes[i];
@@ -558,7 +560,7 @@ function updatePanels() {
 }
 
 function findTitle(text) {
-  matches = text.substr(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'-]+[a-zA-Z\u00C0-\u024F0-9])/mg);
+  let matches = text.substr(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'-]+[a-zA-Z\u00C0-\u024F0-9])/mg);
   if (matches) {
     if (((matches[0] == 'http') || (matches[0] == 'https')) && matches[1]) return matches[1];
     return matches[0];
@@ -607,7 +609,7 @@ function listSearchResults(items) {
   }
 }
 function updateSearchResults() {
-  items = app.searchresults;
+  let items = app.searchresults;
   if (!items) return;
   items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
   let results = "";
@@ -710,14 +712,14 @@ function logout() {
 }
 
 $.fn.getCursorPosition = function() {
-  var el = $(this).get(0);
-  var pos = 0;
+  let el = $(this).get(0);
+  let pos = 0;
   if ('selectionStart' in el) {
     pos = el.selectionStart;
   } else if('selection' in document) {
     el.focus();
-    var Sel = document.selection.createRange();
-    var SelLength = document.selection.createRange().text.length;
+    let Sel = document.selection.createRange();
+    let SelLength = document.selection.createRange().text.length;
     Sel.moveStart('character', -el.value.length);
     pos = Sel.text.length - SelLength;
   }
@@ -728,7 +730,7 @@ $.fn.setCursorPosition = function(pos) {
     if (elem.setSelectionRange) {
       elem.setSelectionRange(pos, pos);
     } else if (elem.createTextRange) {
-      var range = elem.createTextRange();
+      let range = elem.createTextRange();
       range.collapse(true);
       range.moveEnd('character', pos);
       range.moveStart('character', pos);
@@ -739,12 +741,12 @@ $.fn.setCursorPosition = function(pos) {
 };
 function selectText(el) {
   if (document.selection) {
-    var range = document.body.createTextRange();
+    let range = document.body.createTextRange();
     range.moveToElementText(el);
     range.select();
   }
   else if (window.getSelection) {
-    var range = document.createRange();
+    let range = document.createRange();
     range.selectNodeContents(el);
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
