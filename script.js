@@ -29,6 +29,9 @@ $(document).on('keydown', function(evt) {
     if (app.modal && (app.modal != 'password')) hideModal();
   }
 });
+function goFullscreen() {
+  $('#panel-main')[0].requestFullscreen();
+}
 
 $().ready(function() {
   marked.setOptions({
@@ -252,6 +255,9 @@ $().ready(function() {
       $('#tab-recent .note-li').not('[data-id="' + app.activenote + '"]').first().click();
     }
   });
+  $('#button-fullscreen').on('click', function() {
+    goFullscreen();
+  });
   $('#button-settings').on('click', loadSettings);
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 5000);
@@ -292,6 +298,20 @@ function render(content) {
   el.html(marked(content, { renderer: app.renderer }));
   return el;
 }
+function renderToWindow(content) {
+  content = content.replace(/</g, '&lt;');
+  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
+    return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
+  });
+  let win = window.open('', 'print', 'height=400,width=400');
+  win.document.write('<html><head><title>' + app.notes[app.activenote].title + '</title>');
+  win.document.write('<link rel="stylesheet" href="style.css"/></head><body>');
+  win.document.write(marked(content, { renderer: app.renderer }));
+  win.document.write('</body></html>');
+  win.document.close();
+  win.focus();
+}
+
 function checkboxChange(checkbox, offset) {
   let input = $('#input');
   let content = input.val();
