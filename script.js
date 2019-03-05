@@ -119,6 +119,7 @@ $().ready(function() {
   });
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
+    if (e.ctrlKey) return;
     switch (e.keyCode) {
       case 83: $('#label-search').click();
                    return false;
