@@ -84,11 +84,15 @@ switch ($data['req']) {
   case 'init':
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = $activenote;
-    $ret['activetableft'] = query_setting('activetableft', 'recent');
     $ret['notes'] = select_recent_notes(20);
     $ret['notes'] = select_pinned_notes(20) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
     $ret['password'] = !empty($password);
+    if (!empty($data['term'])) {
+      $results = search_notes($data['term']);
+      $ret['notes'] = $results + $ret['notes'];
+      $ret['searchresults'] = array_keys($results);
+    }
     break;
   case 'idle':
     $ret['activenote'] = $activenote;
