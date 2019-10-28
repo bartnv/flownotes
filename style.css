@@ -22,7 +22,7 @@ H3 { display: inline-block; margin-bottom: 0; padding-bottom: 3px; border-bottom
 H3:not(:first-child) { margin-top: 0; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
-DIV#panels { display: flex; height: 100vh; }
+DIV#panels { position: fixed; height: 100vh; width: 100vw; display: flex; }
 DIV#panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
 DIV#panel-left A { text-decoration: none; color: inherit; }
 DIV#panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
