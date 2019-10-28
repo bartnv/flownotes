@@ -350,7 +350,7 @@ function tick() {
     }
     else {
       let cursor = $('#input').getCursorPosition();
-      if ((cursor.start != note.cursor.start) || (cursor.end != note.cursor.end)) {
+      if (!note.cursor || (cursor.start != note.cursor.start) || (cursor.end != note.cursor.end)) {
         note.cursor = cursor;
         note.metatouched = true;
       }

@@ -390,7 +390,7 @@ function update_note_meta($id, $note) {
   }
   else $pinned = 0;
 
-  if ($note['cursor']) $cursor = $note['cursor'];
+  if ($note['cursor']) $cursor = implode(',', $note['cursor']);
   else $cursor = NULL;
 
   if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ? WHERE id = ?"))) {
