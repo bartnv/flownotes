@@ -102,12 +102,12 @@ switch ($data['req']) {
     if (!empty($data['notes'])) {
       foreach ($data['notes'] as $id => $note) {
         if (isset($note['content'])) {
-          if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ? AND content != ?", [ $id, $data['lastupdate'] ])) {
+          if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ? AND content != ?", [ $id, $data['lastupdate'], $note['content'] ])) {
             fatalerr('Note has been edited from another location; save your edits and reload the window to continue');
           }
           $ret['notes'] = update_note($id, $note) + $ret['notes'];
         }
-        else $ret['notes'][$id]['pinned'] = update_note_pinned($id, $note);
+        else $ret['notes'][$id]['pinned'] = update_note_meta($id, $note);
       }
     }
     if (!empty($data['term'])) {
@@ -319,15 +319,17 @@ function update_note($id, $note) {
       }
     );
   }
-  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ? WHERE id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("update_note() update prepare failed: " . $err[2]);
+  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ? WHERE id = ?"))) {
+    error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
     return;
   }
-  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $id ]))) {
-    $err = $stmt->errorInfo();
+
+  if (empty($note['cursor'])) $cursor = null;
+  else $cursor = implode(',', $note['cursor']);
+
+  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $id ]))) {
     $processUser = posix_getpwuid(posix_geteuid());
-    error_log("update_note() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
     return;
   }
   update_links($id, $note['content']);
@@ -372,29 +374,33 @@ function update_backlinks($id, $target, $title) {
   $content = preg_replace("/\[=[^]]*\]\(#$target\)/", "[=$title](#$target)", $content);
   if (!sql_updateone("UPDATE note SET content = ? WHERE id = $id", [ $content ])) fatalerr("Failed to update backlinks in note $id");
 }
-function update_note_pinned($id, $note) {
+function update_note_meta($id, $note) {
   global $dbh;
+
   if ($note['pinned']) {
     if ($note['pinned'] === true) {
       if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
-        $err = $dbh->errorInfo();
-        error_log("update_note() pinned select failed: " . $err[2]);
-        $pinned = 'NULL';
+        error_log("FlowNotes: update_note_meta() pinned select failed: " . $dbh->errorInfo()[2]);
+        $pinned = NULL;
       }
       $pinned = $res->fetch(PDO::FETCH_NUM)[0];
+      if (!is_numeric($pinned)) $pinned = 1;
     }
     else $pinned = $note['pinned'];
   }
   else $pinned = 0;
-  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ? WHERE id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("update_note_pinned() update prepare failed: " . $err[2]);
+
+  if ($note['cursor']) $cursor = $note['cursor'];
+  else $cursor = NULL;
+
+  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ? WHERE id = ?"))) {
+    error_log("FlowNotes: update_note_meta() update prepare failed: " . $dbh->errorInfo()[2]);
     return 0;
   }
-  if (!($stmt->execute([ $pinned, $id ]))) {
+  if (!($stmt->execute([ $pinned, $cursor, $id ]))) {
     $err = $stmt->errorInfo();
     $processUser = posix_getpwuid(posix_geteuid());
-    error_log("update_note_pinned() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    error_log("FlowNotes: update_note_meta() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
     return 0;
   }
   return $pinned;
@@ -432,17 +438,17 @@ function sql_foreach($query, $function, $params = []) {
   global $dbh;
   if (!empty($params)) {
     if (!($stmt = $dbh->prepare($query))) {
-      error_log("if_query() prepare failed: " . $dbh->errorInfo()[2]);
+      error_log("sql_foreach() prepare failed: " . $dbh->errorInfo()[2]);
       return false;
     }
     if (!($stmt->execute($params))) {
-      error_log("if_query() execute failed: " . $stmt->errorInfo()[2]);
+      error_log("sql_foreach() execute failed: " . $stmt->errorInfo()[2]);
       return false;
     }
   }
   else {
     if (!($stmt = $dbh->query($query))) {
-      error_log("if_query() query failed: " . $dbh->errorInfo()[2]);
+      error_log("sql_foreach() query failed: " . $dbh->errorInfo()[2]);
       return false;
     }
   }

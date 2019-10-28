@@ -70,6 +70,11 @@ $().ready(function() {
   if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
   sendToServer(data);
   $('#input').on('keydown', function(e) {
+    if (!e.key.startsWith('F')) {
+      e.stopPropagation();
+      if (!app.changed) app.changed = Date.now();
+    }
+
     if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
@@ -78,10 +83,10 @@ $().ready(function() {
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition();
-      let start1 = content.lastIndexOf("\n", cursor-1);
+      let start1 = content.lastIndexOf("\n", cursor.start-1);
       if (start1 == -1) return false;
       else if (start1 == 0) start1 = 1; // Empty first line
-      let end1 = content.indexOf("\n", cursor);
+      let end1 = content.indexOf("\n", cursor.end);
       if (end1 == -1) {
         end1 = content.length;
         if (end1-start1 == 1) return false;
@@ -89,23 +94,22 @@ $().ready(function() {
       let start2 = content.lastIndexOf("\n", start1-1);
       if (start2 == -1) start2 = 0;
       let newcontent = content.substring(0, start2) + content.substring(start1, end1) + content.substring(start2, start1) + content.substring(end1);
-      $('#input').val(newcontent).setCursorPosition(start2+cursor-start1).trigger('input');
+      $('#input').val(newcontent).setCursorPosition(start2+cursor.start-start1, start2+cursor.end-start1).trigger('input');
       return false;
     }
     else if (e.ctrlKey && (e.key == 'ArrowDown')) {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition();
-      let start1 = content.lastIndexOf("\n", cursor-1);
+      let start1 = content.lastIndexOf("\n", cursor.start-1);
       if (start1 == -1) start1 = 0;
-      let end1 = content.indexOf("\n", cursor);
+      let end1 = content.indexOf("\n", cursor.end);
       if (end1 == -1) return false;
       let end2 = content.indexOf("\n", end1+1);
       if (end2 == -1) end2 = content.length;
       let newcontent = content.substring(0, start1) + content.substring(end1, end2) + content.substring(start1, end1) + content.substring(end2);
-      $('#input').val(newcontent).setCursorPosition(start1+end2-end1+cursor-start1).trigger('input');
+      $('#input').val(newcontent).setCursorPosition(start1+end2-end1+cursor.start-start1, start1+end2-end1+cursor.end-start1).trigger('input');
       return false;
     }
-    if (!e.key.startsWith('F')) e.stopPropagation();
   }).on('input', function(e) {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
@@ -177,8 +181,11 @@ $().ready(function() {
     if (evt.originalEvent.code == 'Space') this.click();
   });
   $('#input').on('mouseup', function() {
-    if (!app.linkid) return;
     let input = $(this);
+    if (!app.linkid) {
+      if (!app.changed) app.changed = Date.now();
+      return;
+    }
     let content = input.val();
     if (this.selectionStart != this.selectionEnd) { // We have text selected, use as linktext
       var linkstr = '[' + content.substring(this.selectionStart, this.selectionEnd) + '](#' + app.linkid + ')';
@@ -288,8 +295,11 @@ function loadNote(id) {
     $('#input').attr('disabled', false);
     $('#button-note-del').removeClass('button-active').attr('title', 'Delete note');
   }
-  $('#input').val(app.notes[id].content).attr('disabled', false);
-  if (app.mode == 'edit') $('#input').focus();
+  $('#input').val(app.notes[id].content);
+  if (app.mode == 'edit') {
+    $('#input').focus();
+    if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end).blur().focus();
+  }
 }
 
 function render(content) {
@@ -332,9 +342,18 @@ function tick() {
   app.inactive++;
   if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
     app.changed = 0;
-    if (app.notes[app.activenote].touched) {
-      app.notes[app.activenote].content = $('#input').val();
-      app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
+    let note = app.notes[app.activenote];
+    if (note.touched) {
+      note.content = $('#input').val();
+      note.cursor = $('#input').getCursorPosition();
+      note.title = findTitle(app.notes[app.activenote].content);
+    }
+    else {
+      let cursor = $('#input').getCursorPosition();
+      if ((cursor.start != note.cursor.start) || (cursor.end != note.cursor.end)) {
+        note.cursor = cursor;
+        note.metatouched = true;
+      }
     }
     pushUpdate();
   }
@@ -348,6 +367,13 @@ function pushUpdate(sync, retransmit) {
     if (app.notes[i].touched) {
       data.notes[i] = app.notes[i];
       delete app.notes[i].touched;
+      delete app.notes[i].metatouched;
+      app.notes[i].intransit = true;
+    }
+    else if (app.notes[i].metatouched) {
+      data.notes[i] = {};
+      data.notes[i].cursor = app.notes[i].cursor;
+      delete app.notes[i].metatouched;
       app.notes[i].intransit = true;
     }
   }
@@ -411,7 +437,6 @@ function parseFromServer(data, textStatus, xhr) {
     if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
     else activateNote(parseInt(data.activenote), true);
   }
-  if (data.activetableft) activateTab(data.activetableft);
   let reload = false;
   for (let i in data.notes) {
     if (!app.notes[i]) app.notes[i] = { id: i };
@@ -430,6 +455,10 @@ function parseFromServer(data, textStatus, xhr) {
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
       app.notes[i].content = data.notes[i].content;
       if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
+    }
+    if (data.notes[i].cursor) {
+      let pos = data.notes[i].cursor.split(',');
+      app.notes[i].cursor = { start: pos[0], end: pos[1] };
     }
   }
   if (data.searchresults) listSearchResults(data.searchresults);
@@ -713,30 +742,27 @@ function logout() {
 }
 
 $.fn.getCursorPosition = function() {
-  let el = $(this).get(0);
-  let pos = 0;
-  if ('selectionStart' in el) {
-    pos = el.selectionStart;
-  } else if('selection' in document) {
-    el.focus();
-    let Sel = document.selection.createRange();
-    let SelLength = document.selection.createRange().text.length;
-    Sel.moveStart('character', -el.value.length);
-    pos = Sel.text.length - SelLength;
-  }
-  return pos;
+  let el = this.get(0);
+  return { start: el.selectionStart, end: el.selectionEnd };
+  // let el = $(this).get(0);
+  // let start = 0;
+  // let end = 0;
+  // if ('selectionStart' in el) {
+  //   start = el.selectionStart;
+  //   end = el.selectionEnd;
+  // } else if('selection' in document) {
+  //   el.focus();
+  //   let Sel = document.selection.createRange();
+  //   let SelLength = document.selection.createRange().text.length;
+  //   Sel.moveStart('character', -el.value.length);
+  //   pos = Sel.text.length - SelLength;
+  // }
+  // return pos;
 }
-$.fn.setCursorPosition = function(pos) {
+$.fn.setCursorPosition = function(start, end) {
+  if (end === undefined) end = start;
   this.each(function(index, elem) {
-    if (elem.setSelectionRange) {
-      elem.setSelectionRange(pos, pos);
-    } else if (elem.createTextRange) {
-      let range = elem.createTextRange();
-      range.collapse(true);
-      range.moveEnd('character', pos);
-      range.moveStart('character', pos);
-      range.select();
-    }
+    elem.setSelectionRange(start, end);
   });
   return this;
 };
