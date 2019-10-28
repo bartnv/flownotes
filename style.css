@@ -18,7 +18,9 @@ TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 H2 { display: inline-block; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
 H2:not(:first-child) { margin-top: 0; }
-H3 { margin-bottom: 15px; }
+H3 { display: inline-block; margin-bottom: 0; padding-bottom: 3px; border-bottom: dotted #ccc 1px; font-size: 18px; }
+H3:not(:first-child) { margin-top: 0; }
+P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 DIV#panels { display: flex; height: 100vh; }
 DIV#panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
