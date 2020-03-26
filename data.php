@@ -1,5 +1,9 @@
 <?
 
+require('3rdparty/WebAuthn/WebAuthn.php');
+require('3rdparty/CBOR/CBOREncoder.php');
+require('3rdparty/CBOR/Types/CBORByteString.php');
+
 $dbh = new PDO('sqlite:db/notes.sq3');
 
 header('Content-type: application/json');
@@ -16,6 +20,9 @@ if (!empty($password)) {
   session_start();
   $instance = str_replace('/', '-', dirname($_SERVER['REQUEST_URI']));
   if (empty($_SESSION['login'.$instance])) {
+    $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
+    $keys = query_setting('webauthnkeys', '');
+    if (!empty($keys)) $challenge = $webauthn->prepareForLogin($keys);
     if (!empty($data['password'])) {
       if (password_verify($data['password'], $password)) {
         $_SESSION['login'.$instance] = true;
@@ -32,24 +39,31 @@ if (!empty($password)) {
       }
       else {
         usleep(rand(100000, 1500000));
-        send_and_exit([ 'needpass' => 'invalid', 'modalerror' => 'Invalid password; please try again' ]);
+        send_and_exit([ 'needpass' => 'invalid', 'modalerror' => 'Invalid password; please try again', 'challenge' => $challenge ]);
       }
     }
     elseif (!empty($_COOKIE['flownotes_remember'])) {
       list($id, $token) = explode(':', $_COOKIE['flownotes_remember']);
       if (empty($id) || empty($token) || !is_numeric($id) || ($id <= 0)) {
-        send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie invalid; please login with your password' ]);
+        send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie invalid; please login with your password', 'challenge' => $challenge ]);
       }
       $hash = sql_single("SELECT hash FROM auth_token WHERE id = $id AND expires > strftime('%s', 'now')");
-      if (empty($hash)) send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie expired; please login with your password' ]);
+      if (empty($hash)) send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Remember cookie expired; please login with your password', 'challenge' => $challenge ]);
       if (hash_equals(hash('sha256', $token, FALSE), $hash)) {
         $_SESSION['login'.$instance] = $id;
         $_SESSION['since'.$instance] = time();
         sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
       }
-      else send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Please login with your password' ]);
+      else send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Please login with your password', 'challenge' => $challenge ]);
     }
-    else send_and_exit([ 'needpass' => 'missing' ]);
+    elseif (!empty($data['response']) && !empty($keys)) {
+      if ($webauthn->authenticate($data['response'], $keys)) {
+        $_SESSION['login'.$instance] = true;
+        $_SESSION['since'.$instance] = time();
+      }
+      else send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Failed to login with U2F key', 'challenge' => $challenge ]);
+    }
+    else send_and_exit([ 'needpass' => 'missing', 'challenge' => $challenge ]);
   }
   else {
     $logout = query_setting('logout', 1500000000);
@@ -136,10 +150,10 @@ switch ($data['req']) {
     break;
   case 'delete':
     if (empty($data['id']) || !is_numeric($data['id'])) fatalerr('Invalid id passed in req delete');
-    if (!empty($data['undelete'])) $change = 'false';
-    else $change = 'true';
+    if (!empty($data['undelete'])) $change = 0;
+    else $change = 1;
 
-    if (!sql_updateone("UPDATE note SET deleted = '$change', modified = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
+    if (!sql_updateone("UPDATE note SET deleted = $change, modified = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
     $ret['notes'] = [];
     $ret['notes'][$data['id']] = [];
     $ret['notes'][$data['id']]['deleted'] = $change;
@@ -154,6 +168,31 @@ switch ($data['req']) {
       else store_setting('password', password_hash($data['newpw'], PASSWORD_DEFAULT));
     }
     send_and_exit([ 'settings' => 'stored' ]);
+  case 'webauthn':
+    if (empty($data['mode'])) fatalerr('Invalid webauthn request');
+    $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
+    switch ($data['mode']) {
+      case 'prepare':
+        send_and_exit([ 'webauthn' => 'register', 'challenge' => $webauthn->prepareChallengeForRegistration('FlowNotes', '1', true) ]);
+        break;
+      case 'register':
+        if (empty($data['response'])) fatalerr('Invalid webauthn response');
+        $keys = $webauthn->register($data['response'], query_setting('webauthnkeys', ''));
+        if (empty($keys)) send_and_exit([ 'modalerror' => 'Failed to register U2F key on the server' ]);
+        store_setting('webauthnkeys', $keys);
+        send_and_exit([ 'webauthn' => 'registered' ]);
+        break;
+      case 'list':
+        $keys = json_decode(query_setting('webauthnkeys', '[]'));
+        foreach ($keys as $key) {
+          $ret[] = dechex(crc32(implode('', $key->id)));
+        }
+        send_and_exit([ 'webauthn' => 'list', 'keys' => $ret ]);
+        break;
+      default:
+        fatalerr('Invalid webauthn mode');
+    }
+    break;
   case 'logout':
     send_and_exit([ 'modalerror' => 'Logout has no function without a configured password' ]);
   default:
@@ -223,7 +262,7 @@ function select_note($id) {
 }
 function select_recent_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 'false' ORDER BY modified DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 0 ORDER BY modified DESC LIMIT $count"))) {
     $err = $dbh->errorInfo();
     error_log("select_recent_notes() prepare failed: " . $err[2]);
     return [];

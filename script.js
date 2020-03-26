@@ -11,6 +11,7 @@ let app = {
   lastcomm: Date.now(),
   modal: null,
   password: false,
+  keys: [],
   scroll: { recent: 0, search: 0, pinned: 0 }
 }
 
@@ -67,7 +68,17 @@ $().ready(function() {
   });
 
   let data = { req: 'init' };
-  if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+  if (location.hash.match(/^#[^:]+:[0-9]+$/)) {
+    let split = location.hash.indexOf(':');
+    activateTab('search');
+    data.term = location.hash.substring(1, split);
+    $('#search-input').val(data.term);
+    data.activenote = location.hash.substring(split+1);
+  }
+  else {
+    activateTab('recent');
+    if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+  }
   sendToServer(data);
   $('#input').on('keydown', function(e) {
     if (!e.key.startsWith('F')) {
@@ -265,6 +276,10 @@ $().ready(function() {
       $('#tab-recent .note-li').not('[data-id="' + app.activenote + '"]').first().click();
     }
   });
+  $('#button-note-print').on('click', function() {
+    if (app.mode == 'edit') iframePrint('<pre>' + $('#input').val() + '</pre>');
+    else if (app.mode == 'view') iframePrint('<html><head><link rel="stylesheet" type="text/css" href="style.css"></head><body>' + $('#render').html() + '</body></html>');
+  });
   $('#button-fullscreen').on('click', function() {
     goFullscreen();
   });
@@ -272,6 +287,22 @@ $().ready(function() {
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 5000);
 });
+
+function iframePrint(content) {
+  let iframe = $('<iframe height="0" width="0" border="0" wmode="Opaque"/>')
+    .prependTo('body')
+    .css({
+        "position": "absolute",
+        "top": -999,
+        "left": -999
+    });
+  let iwindow = iframe.get(0).contentWindow;
+  iwindow.document.write(content);
+  iwindow.document.close();
+  iframe.on('load', function() {
+    iwindow.print();
+  });
+}
 
 function unpinNote(id) {
   app.notes[id].pinned = 0;
@@ -308,6 +339,7 @@ function render(content) {
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
+  content = content.replace(/!!\s*(.*?)\s*!!/g, '<code onclick="passwordToClipboard(this)" data-pass="$1">*****</code>');
   el.html(marked(content, { renderer: app.renderer }));
   return el;
 }
@@ -331,6 +363,14 @@ function checkboxChange(checkbox, offset) {
   if (checkbox.checked) input.val(content.substring(0, offset+1) + 'x' + content.substring(offset+2));
   else input.val(content.substring(0, offset+1) + ' ' + content.substring(offset+2));
   input.trigger('input');
+}
+function passwordToClipboard(el) {
+  if (!navigator.clipboard) {
+    console.err("Browser doesn't support the Clipboard API");
+    return;
+  }
+  navigator.clipboard.writeText($(el).data('pass'));
+  selectText(el);
 }
 function copy(btn) {
   selectText($(btn).parent().find('code').get(0));
@@ -404,7 +444,11 @@ function parseFromServer(data, textStatus, xhr) {
 
   if (data.needpass) {
     if ((app.modal == 'password') || (app.modal == 'logout')) return;
-    login(data.modalerror);
+    login(data.modalerror, data.challenge);
+    return;
+  }
+  if (data.webauthn) {
+    handleWebauthn(data);
     return;
   }
 
@@ -448,8 +492,8 @@ function parseFromServer(data, textStatus, xhr) {
       if (data.notes[i].modified > app.lastupdate) app.lastupdate = data.notes[i].modified;
     }
     if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
-    if (data.notes[i].deleted === 'true') app.notes[i].deleted = true;
-    else if (data.notes[i].deleted === 'false') app.notes[i].deleted = false;
+    if (data.notes[i].deleted == 1) app.notes[i].deleted = true;
+    else app.notes[i].deleted = false;
     if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
     if (data.notes[i].blinks !== undefined) app.notes[i].blinks = data.notes[i].blinks;
     if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
@@ -497,6 +541,26 @@ function offline() {
   if (app.notes[app.activenote].content === undefined) {
     $('#input').val('');
     $('#render').empty();
+  }
+}
+
+function handleWebauthn(data) {
+  if (data.webauthn == 'register') {
+    webauthnRegister(data.challenge, function(success, info) {
+      if (success) {
+        sendToServer({ req: 'webauthn', mode: 'register', response: info });
+        showModal('webauthn', '<div><h2>Please wait...</h2><p>Registering U2F key on the server</p></div>', false);
+      }
+      else showModal('error', '<div><p id="modal-error">' + info + '</p></div>', true);
+    });
+  }
+  else if (data.webauthn == 'registered') hideModal();
+  else if (data.webauthn == 'list') {
+    let str = '';
+    for (let i in data.keys) {
+      str += 'Key ' + (Number(i)+1) + ': ' + data.keys[i] + '<br>';
+    }
+    $('p#list-u2f').html(str);
   }
 }
 
@@ -563,7 +627,7 @@ function updatePanels() {
       let extraclass = '';
       if (note.id == app.activenote) extraclass = ' note-active';
       if (note.deleted) extraclass += ' note-deleted';
-      pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
+      pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '" draggable="true" ondragstart="drag(event)">';
       pinned += '<span class="note-title">' + note.title + '</span><br>';
       pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
       pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
@@ -663,7 +727,10 @@ function loadSettings() {
   if (app.password) div.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old"></p>');
   div.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1"></p>');
   div.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2"></p>');
-  div.append('<p id="settings-save-p"><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
+  div.append('<p><input type="button" id="settings-save" class="modal-button-small" value="Save"></p>');
+  div.append('<h2>U2F keys</h2>');
+  div.append('<p id="list-u2f">Loading...</p>');
+  div.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
   div.append('<p id="modal-error"></p>');
   div.find('#logout-this').on('click', function() {
     sendToServer({ req: 'logout', session: 'this' });
@@ -672,6 +739,9 @@ function loadSettings() {
   div.find('#logout-all').on('click', function() {
     sendToServer({ req: 'logout', session: 'all' });
     showModal('logout', '', false);
+  });
+  div.find('#register-u2f').on('click', function() {
+    sendToServer({ req: 'webauthn', mode: 'prepare' });
   });
   div.find('#settings-save').on('click', function() {
     let old = div.find('input[name=old]');
@@ -692,6 +762,7 @@ function loadSettings() {
     sendToServer(data);
     if (data.length > 1) $('#status').html('Saving settings...').css('opacity', 1);
   });
+  sendToServer({ req: 'webauthn', mode: 'list' });
   showModal('settings', div, true);
 }
 
@@ -711,14 +782,16 @@ function hideModal() {
   modal.off('click');
 }
 
-function login(error) {
+function login(error, challenge) {
   let modal = $('#modal-overlay');
-  let content = '<div><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password"></p>'
+  let content = '<div><h2>Login with password</h2><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password"></p>'
   content += '<p><input type="checkbox" id="remember"> Remember for this device</p>';
-  content += '<p><input type="submit" id="submit" class="modal-button" value="Submit"></p></form><p id="modal-error"></p></div>';
+  content += '<p><input type="submit" id="login-pw" class="modal-button" value="Submit"></p></form><p id="modal-error"></p>';
+  if (challenge) content += '<h2>Login with U2F key</h2><p><input type="button" id="login-u2f" class="modal-button" value="Activate key"></p>';
+  content += '</div>';
   showModal('password', content, false);
   if (error) modal.find('#modal-error').html(error);
-  modal.find('#submit').on('click', function() {
+  modal.find('#login-pw').on('click', function() {
     let data = { req: 'init', password: modal.find('#password').val() };
     if (modal.find('#remember')[0].checked) data.remember = true;
     if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
@@ -726,6 +799,15 @@ function login(error) {
     modal.empty();
     app.modal = null;
     $('#status').html('Loading...').css('opacity', 1);
+  });
+  modal.find('#login-u2f').on('click', function() {
+    webauthnAuthenticate(challenge, function(success, info) {
+      if (success) {
+        sendToServer({ req: 'init', response: info });
+        $('#modal-error').empty();
+      }
+      else $('#modal-error').html(info);
+    });
   });
   modal.find('#password').focus();
 }
@@ -738,7 +820,7 @@ function logout() {
   $('#tab-recent').empty();
   $('#tab-pinned').empty();
   $('#search-results').empty();
-  showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="login()"></p></div>', false);
+  showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
 
 $.fn.getCursorPosition = function() {
@@ -778,6 +860,116 @@ function selectText(el) {
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
   }
+}
+
+function drag(evt) {
+  console.log('drag');
+  let id = $(evt.target).data('id');
+  evt.dataTransfer.setData("id", id);
+  if (app.notes[id].pinned) evt.dataTransfer.setData("rank", app.notes[id].pinned);
+}
+function drop(evt) {
+  console.log('drop', evt);
+  console.log('rank', evt.dataTransfer.getData('rank'));
+}
+function allowDrop(evt) {
+  evt.preventDefault();
+}
+
+// WebAuthn support by David Earl - https://github.com/davidearl/webauthn/
+function webauthnRegister(key, callback){
+	key = JSON.parse(key);
+	key.publicKey.attestation = undefined;
+	key.publicKey.challenge = new Uint8Array(key.publicKey.challenge); // convert type for use by key
+	key.publicKey.user.id = new Uint8Array(key.publicKey.user.id);
+
+	navigator.credentials.create({publicKey: key.publicKey})
+		.then(function (aNewCredentialInfo) {
+			var cd = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(aNewCredentialInfo.response.clientDataJSON)));
+			if (key.b64challenge != cd.challenge) {
+				callback(false, 'key returned something unexpected (1)');
+			}
+			if ('https://'+key.publicKey.rp.name != cd.origin) {
+				return callback(false, 'key returned something unexpected (2)');
+			}
+			if (! ('type' in cd)) {
+				return callback(false, 'key returned something unexpected (3)');
+			}
+			if (cd.type != 'webauthn.create') {
+				return callback(false, 'key returned something unexpected (4)');
+			}
+
+			var ao = [];
+			(new Uint8Array(aNewCredentialInfo.response.attestationObject)).forEach(function(v){
+				ao.push(v);
+			});
+			var rawId = [];
+			(new Uint8Array(aNewCredentialInfo.rawId)).forEach(function(v){
+				rawId.push(v);
+			});
+			var info = {
+				rawId: rawId,
+				id: aNewCredentialInfo.id,
+				type: aNewCredentialInfo.type,
+				response: {
+					attestationObject: ao,
+					clientDataJSON:
+					  JSON.parse(String.fromCharCode.apply(null, new Uint8Array(aNewCredentialInfo.response.clientDataJSON)))
+				}
+			};
+			callback(true, JSON.stringify(info));
+		})
+		.catch(function (aErr) {
+			if (
+				("name" in aErr) && (aErr.name == "AbortError" || aErr.name == "NS_ERROR_ABORT")
+				|| aErr.name == 'NotAllowedError'
+			) {
+				callback(false, 'abort');
+			} else {
+				callback(false, aErr.toString());
+			}
+		});
+}
+function webauthnAuthenticate(key, cb){
+	var pk = JSON.parse(key);
+	var originalChallenge = pk.challenge;
+	pk.challenge = new Uint8Array(pk.challenge);
+	pk.allowCredentials.forEach(function(k, idx){
+		pk.allowCredentials[idx].id = new Uint8Array(k.id);
+	});
+	navigator.credentials.get({publicKey: pk})
+		.then(function(aAssertion) {
+			var ida = [];
+			(new Uint8Array(aAssertion.rawId)).forEach(function(v){ ida.push(v); });
+			var cd = JSON.parse(String.fromCharCode.apply(null,
+														  new Uint8Array(aAssertion.response.clientDataJSON)));
+			var cda = [];
+			(new Uint8Array(aAssertion.response.clientDataJSON)).forEach(function(v){ cda.push(v); });
+			var ad = [];
+			(new Uint8Array(aAssertion.response.authenticatorData)).forEach(function(v){ ad.push(v); });
+			var sig = [];
+			(new Uint8Array(aAssertion.response.signature)).forEach(function(v){ sig.push(v); });
+			var info = {
+				type: aAssertion.type,
+				originalChallenge: originalChallenge,
+				rawId: ida,
+				response: {
+					authenticatorData: ad,
+					clientData: cd,
+					clientDataJSONarray: cda,
+					signature: sig
+				}
+			};
+			cb(true, JSON.stringify(info));
+		})
+		.catch(function (aErr) {
+			if (("name" in aErr) && (aErr.name == "AbortError" || aErr.name == "NS_ERROR_ABORT" ||
+									 aErr.name == "NotAllowedError")) {
+				cb(false, 'abort');
+			} else {
+				cb(false, aErr.toString());
+			}
+		});
 }
 
 // date.format library (https://github.com/jacwright/date.format) by Jacob Wright and others - MIT license
