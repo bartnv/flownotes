@@ -295,7 +295,7 @@ function unpinNote(id) {
   data.notes[id] = {};
   data.notes[id].pinned = 0;
   sendToServer(data);
-  if ($('#label-pinned').hasClass('tab-active')) updatePanels();
+  if ($('#label-pinned').hasClass('tab-active')) updatePinned();
   if (id == app.activenote) $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
 }
 function loadNote(id) {
@@ -467,28 +467,31 @@ function parseFromServer(data, textStatus, xhr) {
     else activateNote(parseInt(data.activenote), true);
   }
   let reload = false;
-  for (let i in data.notes) {
-    if (!app.notes[i]) app.notes[i] = { id: i };
-    if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
-    else if (!app.notes[i].title) app.notes[i].title = '{no title}';
-    if (data.notes[i].modified) {
-      app.notes[i].modified = data.notes[i].modified;
-      if (app.notes[i].intransit) delete app.notes[i].intransit;
-      if (data.notes[i].modified > app.lastupdate) app.lastupdate = data.notes[i].modified;
+  if (data.notes) {
+    for (let i in data.notes) {
+      if (!app.notes[i]) app.notes[i] = { id: i };
+      if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
+      else if (!app.notes[i].title) app.notes[i].title = '{no title}';
+      if (data.notes[i].modified) {
+        app.notes[i].modified = data.notes[i].modified;
+        if (app.notes[i].intransit) delete app.notes[i].intransit;
+        if (data.notes[i].modified > app.lastupdate) app.lastupdate = data.notes[i].modified;
+      }
+      if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
+      if (data.notes[i].deleted == 1) app.notes[i].deleted = true;
+      else app.notes[i].deleted = false;
+      if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
+      if (data.notes[i].blinks !== undefined) app.notes[i].blinks = data.notes[i].blinks;
+      if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
+        app.notes[i].content = data.notes[i].content;
+        if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
+      }
+      if (data.notes[i].cursor) {
+        let pos = data.notes[i].cursor.split(',');
+        app.notes[i].cursor = { start: pos[0], end: pos[1] };
+      }
     }
-    if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
-    if (data.notes[i].deleted == 1) app.notes[i].deleted = true;
-    else app.notes[i].deleted = false;
-    if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
-    if (data.notes[i].blinks !== undefined) app.notes[i].blinks = data.notes[i].blinks;
-    if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
-      app.notes[i].content = data.notes[i].content;
-      if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
-    }
-    if (data.notes[i].cursor) {
-      let pos = data.notes[i].cursor.split(',');
-      app.notes[i].cursor = { start: pos[0], end: pos[1] };
-    }
+    updatePanels();
   }
   if (data.searchresults) listSearchResults(data.searchresults);
   if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
@@ -508,7 +511,6 @@ function parseFromServer(data, textStatus, xhr) {
     hideModal();
   }
   if (reload) loadNote(app.activenote);
-  updatePanels();
 }
 function offline() {
   if (!app.offline) {
@@ -601,41 +603,60 @@ function loadGraph() {
 }
 
 function updatePanels() {
+  if ($('#label-pinned').hasClass('tab-active')) updatePinned();
+  else if ($('#label-recent').hasClass('tab-active')) updateRecent();
+  else updateSearch();
+}
+
+function updateRecent() {
   let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
-  if ($('#label-pinned').hasClass('tab-active')) {
-    notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
-    let count = 0;
-    let pinned = "";
-    for (let i in notes) {
-      let note = notes[i];
-      if (!note.pinned) break;
-      let extraclass = '';
-      if (note.id == app.activenote) extraclass = ' note-active';
-      if (note.deleted) extraclass += ' note-deleted';
-      pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '" draggable="true" ondragstart="drag(event)">';
-      pinned += '<span class="note-title">' + note.title + '</span><br>';
-      pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
-      pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-      if (++count >= 20) break;
-    }
-    $('#tab-pinned').empty().html(pinned);
+  notes = notes.filter(function(x) { return !x.deleted; });
+  notes.sort(function(a, b) { return b.modified - a.modified; });
+  let count = 0;
+  let last20 = "";
+  for (let i in notes) {
+    let note = notes[i];
+    let extraclass = '';
+    if (note.id == app.activenote) extraclass = ' note-active';
+    last20 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
+    last20 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    if (++count >= 20) break;
   }
-  else if ($('#label-recent').hasClass('tab-active')) {
-    notes = notes.filter(function(x) { return !x.deleted; });
-    notes.sort(function(a, b) { return b.modified - a.modified; });
-    let count = 0;
-    let last20 = "";
-    for (let i in notes) {
-      let note = notes[i];
-      let extraclass = '';
-      if (note.id == app.activenote) extraclass = ' note-active';
-      last20 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
-      last20 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-      if (++count >= 20) break;
-    }
-    $('#tab-recent').empty().html(last20);
+  $('#tab-recent').empty().html(last20);
+}
+function updateSearch() {
+  let items = app.searchresults;
+  if (!items) return;
+  items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
+  let results = "";
+  for (let i in items) {
+    let note = app.notes[items[i]];
+    let extraclass = '';
+    if (note.id == app.activenote) extraclass = ' note-active';
+    if (note.deleted) extraclass += ' note-deleted';
+    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
+    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
-  else updateSearchResults();
+  $('#search-results').empty().html(results);
+}
+function updatePinned() {
+  let notes = Object.keys(app.notes).map(function(x) { return app.notes[x]; });
+  notes.sort(function(a, b) { return (b.pinned||-1) - (a.pinned||-1); });
+  let count = 0;
+  let pinned = "";
+  for (let i in notes) {
+    let note = notes[i];
+    if (!note.pinned) break;
+    let extraclass = '';
+    if (note.id == app.activenote) extraclass = ' note-active';
+    if (note.deleted) extraclass += ' note-deleted';
+    pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '" draggable="true" ondragstart="drag(event)">';
+    pinned += '<span class="note-title">' + note.title + '</span><br>';
+    pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
+    pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    if (++count >= 20) break;
+  }
+  $('#tab-pinned').empty().html(pinned);
 }
 
 function findTitle(text) {
@@ -681,26 +702,11 @@ function activateTab(name) {
 
 function listSearchResults(items) {
   app.searchresults = items;
-  updateSearchResults();
+  updateSearch();
   if (items.length == 1) {
     location.hash = '#' + app.notes[items[0]].id;
     setTimeout("$('#search-input').focus();", 100);
   }
-}
-function updateSearchResults() {
-  let items = app.searchresults;
-  if (!items) return;
-  items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
-  let results = "";
-  for (let i in items) {
-    let note = app.notes[items[i]];
-    let extraclass = '';
-    if (note.id == app.activenote) extraclass = ' note-active';
-    if (note.deleted) extraclass += ' note-deleted';
-    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
-    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-  }
-  $('#search-results').empty().html(results);
 }
 
 function loadSettings() {
