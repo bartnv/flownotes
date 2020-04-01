@@ -23,7 +23,7 @@ H3:not(:first-child) { margin-top: 0; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 DIV#panels { position: fixed; height: 100vh; width: 100vw; display: flex; }
-DIV#panel-left { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
+DIV#panel-left { display: flex; flex-direction: column; width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
 DIV#panel-left A { text-decoration: none; color: inherit; }
 DIV#panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 DIV#panel-buttons > DIV { cursor: pointer; padding: 5px; }
@@ -44,7 +44,8 @@ DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .tabbar { display: flex; }
 .tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; z-index: 1000; }
 .tab-active { background-color: rgb(200,200,200) !important; }
-.tab { width: 20em; position: relative; }
+.tab { width: 20em; position: relative; overflow-y: scroll; scrollbar-width: none; }
+.tab::-webkit-scrollbar { display: none; }
 DIV#search-box { display: flex; }
 DIV#search-results { position: relative; }
 INPUT#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
