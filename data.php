@@ -4,16 +4,14 @@ require('3rdparty/WebAuthn/WebAuthn.php');
 require('3rdparty/CBOR/CBOREncoder.php');
 require('3rdparty/CBOR/Types/CBORByteString.php');
 
-$dbh = new PDO('sqlite:db/notes.sq3');
-
 header('Content-type: application/json');
 
 $input = file_get_contents("php://input");
-//error_log('IN:  ' . $input);
-
 if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
 if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
 if (empty($data['req'])) fatalerr('No req specified in POST request');
+
+$dbh = new PDO('sqlite:db/notes.sq3');
 
 $password = query_setting('password', '');
 if (!empty($password)) {
