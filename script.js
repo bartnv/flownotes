@@ -4,6 +4,7 @@ let app = {
   mode: 'edit',
   activenote: 1,
   notes: [],
+  recent: 0,
   inactive: 0,
   changed: 0,
   offline: 0,
@@ -12,7 +13,8 @@ let app = {
   modal: null,
   password: false,
   keys: [],
-  scroll: { recent: 0, search: 0, pinned: 0 }
+  scroll: { recent: 0, search: 0, pinned: 0 },
+  loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
 
 $(document).on('keydown', function(evt) {
@@ -74,10 +76,12 @@ $().ready(function() {
     data.term = location.hash.substring(1, split);
     $('#search-input').val(data.term);
     data.activenote = location.hash.substring(split+1);
+    $('#search-results').append(app.loader);
   }
   else {
     activateTab('recent');
     if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+    $('#tab-recent').append(app.loader);
   }
   sendToServer(data);
   $('#input').on('keydown', function(e) {
@@ -170,6 +174,7 @@ $().ready(function() {
   $('#search-button').on('click', function() {
     sendToServer({ req: 'search', term: $('#search-input').val(), lastupdate: app.lastupdate });
     $('#search-input').select();
+    $('#search-results').empty().append(app.loader);
   });
   $('#button-panel-hide').on('click', function() {
     if (app.hidepanelleft) {
@@ -222,6 +227,28 @@ $().ready(function() {
   $('#panel-left,#panel-buttons').on('touchstart', function(e) {
     app.dragbuttons = e.changedTouches[0].pageX;
   });
+  $('.tab').on('scroll', function(evt) {
+    if (this.scrollTop == 0) $('#scrolled').hide();
+    else $('#scrolled').show();
+  });
+  $('#tab-recent').on('scroll', function(evt) {
+    if (this.offsetHeight + this.scrollTop >= this.scrollHeight) {
+      let loader = $(this).find('.loader');
+      if (app.recent == 'all') {
+        loader.detach();
+        return;
+      }
+      if (!loader.length) {
+        $(this).append(app.loader);
+        this.scrollBy({ top: app.loader.height(), behavior: 'smooth' });
+        sendToServer({ req: 'recent', offset: app.recent });
+      }
+    }
+  });
+  $('#scrolled').on('click', function() {
+    if ('scrollBehavior' in document.documentElement.style) $('.tab:visible')[0].scrollTo({ top: 0, behavior: 'smooth' });
+    else $('.tab:visible')[0].scrollTo(0, 0);
+  });
   $(window).on('touchend', function(e) {
     if (app.dragbuttons != undefined) {
       if (e.changedTouches[0].pageX > app.dragbuttons+10) {
@@ -235,6 +262,7 @@ $().ready(function() {
   });
   $('#button-note-add').on('click', function() {
     sendToServer({ req: 'add', lastupdate: app.lastupdate });
+    $('#tab-recent').prepend(app.loader);
   });
   $('#button-note-pin').on('click', function() {
     if (app.notes[app.activenote].pinned) unpinNote(app.activenote);
@@ -491,6 +519,7 @@ function parseFromServer(data, textStatus, xhr) {
         app.notes[i].cursor = { start: pos[0], end: pos[1] };
       }
     }
+    if (data.recent) app.recent = data.recent;
     updatePanels();
   }
   if (data.searchresults) listSearchResults(data.searchresults);
@@ -613,16 +642,16 @@ function updateRecent() {
   notes = notes.filter(function(x) { return !x.deleted; });
   notes.sort(function(a, b) { return b.modified - a.modified; });
   let count = 0;
-  let last20 = "";
+  let str = '';
   for (let i in notes) {
     let note = notes[i];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
-    last20 += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
-    last20 += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-    if (++count >= 20) break;
+    str += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
+    str += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    if (++count >= app.recent) break;
   }
-  $('#tab-recent').empty().html(last20);
+  $('#tab-recent').html(str);
 }
 function updateSearch() {
   let items = app.searchresults;
@@ -654,7 +683,6 @@ function updatePinned() {
     pinned += '<span class="note-title">' + note.title + '</span><br>';
     pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
     pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
-    if (++count >= 20) break;
   }
   $('#tab-pinned').empty().html(pinned);
 }
@@ -696,6 +724,8 @@ function activateNote(id, nopost) {
 function activateTab(name) {
   $('#label-' + name).addClass('tab-active').siblings().removeClass('tab-active');
   $('#tab-' + name).show().siblings('.tab').hide();
+  if ($('#tab-' + name).prop('scrollTop') == 0) $('#scrolled').hide();
+  else $('#scrolled').show();
   if (name == 'search') $('#search-input').focus();
   updatePanels();
 }

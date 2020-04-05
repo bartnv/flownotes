@@ -98,15 +98,22 @@ switch ($data['req']) {
   case 'init':
     $ret['mode'] = query_setting('mode', 'edit');
     $ret['activenote'] = $activenote;
-    $ret['notes'] = select_recent_notes(20);
-    $ret['notes'] = select_pinned_notes(20) + $ret['notes'];
+    $ret['notes'] = select_recent_notes(25);
+    $ret['notes'] = select_pinned_notes(25) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
+    $ret['recent'] = 25;
     $ret['password'] = !empty($password);
     if (!empty($data['term'])) {
       $results = search_notes($data['term']);
       $ret['notes'] = $results + $ret['notes'];
       $ret['searchresults'] = array_keys($results);
     }
+    break;
+  case 'recent':
+    if (empty($data['offset'])) fatalerr('No offset in recent request');
+    $ret['notes'] = select_recent_notes(25, $data['offset']);
+    if (count($ret['notes']) < 25) $ret['recent'] = 'all';
+    else $ret['recent'] = 25 + $data['offset'];
     break;
   case 'idle':
     $ret['activenote'] = $activenote;
@@ -260,9 +267,9 @@ function select_note($id) {
   if ($row['blinks']) $row['blinks'] = array_map('intval', array_unique(explode(',', $row['blinks'])));
   return $row;
 }
-function select_recent_notes($count) {
+function select_recent_notes($count, $offset = 0) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 0 ORDER BY modified DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 0 ORDER BY modified DESC LIMIT $count OFFSET $offset"))) {
     $err = $dbh->errorInfo();
     error_log("select_recent_notes() prepare failed: " . $err[2]);
     return [];
