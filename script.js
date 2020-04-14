@@ -139,6 +139,15 @@ $().ready(function() {
   $('#render').on('click', function() {
     if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) $('#button-panel-hide').click();
   });
+  $('#render').on('click', 'code', function () {
+    if (window.getSelection().type == 'Range') return;
+    if (!navigator.clipboard) {
+      console.err("Browser doesn't support the Clipboard API");
+      return;
+    }
+    navigator.clipboard.writeText($(this).text());
+    selectText(this);
+  });
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
     if (e.ctrlKey) return;
@@ -355,7 +364,7 @@ function render(content) {
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
-  content = content.replace(/!!\s*(.*?)\s*!!/g, '<code onclick="passwordToClipboard(this)" data-pass="$1">*****</code>');
+  content = content.replace(/!!\s*(.*?)\s*!!/g, '<code onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
   el.html(marked(content, { renderer: app.renderer }));
   return el;
 }
@@ -380,13 +389,14 @@ function checkboxChange(checkbox, offset) {
   else input.val(content.substring(0, offset+1) + ' ' + content.substring(offset+2));
   input.trigger('input');
 }
-function passwordToClipboard(el) {
+function passwordToClipboard(el, evt) {
   if (!navigator.clipboard) {
     console.err("Browser doesn't support the Clipboard API");
     return;
   }
   navigator.clipboard.writeText($(el).data('pass'));
   selectText(el);
+  evt.stopPropagation();
 }
 function copy(btn) {
   selectText($(btn).parent().find('code').get(0));
