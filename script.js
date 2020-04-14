@@ -364,7 +364,7 @@ function render(content) {
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
-  content = content.replace(/!!\s*(.*?)\s*!!/g, '<code onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
+  content = content.replace(/\*`([^`]+)`/g, '<code onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
   el.html(marked(content, { renderer: app.renderer }));
   return el;
 }
