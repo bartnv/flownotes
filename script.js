@@ -2,7 +2,7 @@
 
 let app = {
   mode: 'edit',
-  activenote: 1,
+  activenote: null,
   notes: [],
   recent: 0,
   inactive: 0,
@@ -80,7 +80,10 @@ $().ready(function() {
   }
   else {
     activateTab('recent');
-    if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substr(1);
+    if (location.hash.match(/^#[0-9]+$/)) {
+      app.activenote = location.hash.substr(1);
+      data.activenote = app.activenote;
+    }
     $('#tab-recent').append(app.loader);
   }
   sendToServer(data);
@@ -491,8 +494,9 @@ function parseFromServer(data, textStatus, xhr) {
       app.addlink = false;
       pushUpdate();
     }
-    if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
-    else activateNote(parseInt(data.activenote), true);
+    if (!app.activenote) location.hash = '#'+data.activenote;
+    // if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
+    // else activateNote(parseInt(data.activenote), true);
   }
   let reload = false;
   if (data.notes) {
