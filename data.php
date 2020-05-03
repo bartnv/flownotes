@@ -94,8 +94,7 @@ $ret = [];
 
 switch ($data['req']) {
   case 'init':
-    $ret['mode'] = query_setting('mode', 'edit');
-    $ret['activenote'] = $activenote;
+    if (empty($data['activenote'])) $ret['switchnote'] = $activenote;
     $ret['notes'] = select_recent_notes(25);
     $ret['notes'] = select_pinned_notes(25) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
@@ -139,7 +138,6 @@ switch ($data['req']) {
     $ret['notes'] = [];
     $ret['notes'][$activenote] = select_note($activenote);
     if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
-    if (!empty($data['mode'])) store_setting('mode', $data['mode']);
     break;
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in req search');
@@ -147,10 +145,9 @@ switch ($data['req']) {
     $ret['searchresults'] = array_keys($ret['notes']);
     break;
   case 'add':
-    $ret['mode'] = store_setting('mode', 'edit');
     $ret['notes'] = [];
     $activenote = add_note();
-    $ret['activenote'] = $activenote;
+    $ret['switchnote'] = $activenote;
     $ret['notes'][$activenote] = select_note($activenote);
     break;
   case 'delete':

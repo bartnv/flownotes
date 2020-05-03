@@ -21,13 +21,11 @@ $(document).on('keydown', function(evt) {
   if (evt.key == 'F2') {
     if (app.mode == 'graph') switchMode(app.prev);
     else switchMode('graph');
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
     return false;
   }
   else if (evt.key == 'F4') {
     if (app.mode == 'view') switchMode('edit');
     else switchMode('view');
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
     return false;
   }
   else if (evt.key == 'Escape') {
@@ -234,7 +232,6 @@ $().ready(function() {
   });
   $('#panel-buttons').on('click', '.button-mode', function(e) {
     switchMode(this.id.split('-')[2]);
-    sendToServer({ req: 'activate', mode: app.mode, modified: app.notes[app.activenote].modified, lazy: true, lastupdate: app.lastupdate });
   });
   $('#panel-left,#panel-buttons').on('touchstart', function(e) {
     app.dragbuttons = e.changedTouches[0].pageX;
@@ -473,6 +470,10 @@ function parseFromServer(data, textStatus, xhr) {
     login(data.modalerror, data.challenge);
     return;
   }
+  if (data.password !== undefined) {
+    app.password = data.password;
+    hideModal();
+  }
   if (data.webauthn) {
     handleWebauthn(data);
     return;
@@ -483,31 +484,8 @@ function parseFromServer(data, textStatus, xhr) {
     if (error.length) error.html(data.modalerror);
     else showModal('error', '<div><p id="modal-error">' + data.modalerror + '</p></div>', true);
   }
-
   if (data.settings == 'stored') hideModal();
 
-  if (data.activenote) {
-    if (app.addlink) {
-      let input = $('#input')[0];
-      let start = input.selectionStart;
-      let end = input.selectionEnd;
-      let val = input.value;
-      let name = '=';
-      if (start != end) { // There is a text selection; use it as link text
-        name = val.substring(start, end);
-        data.notes[data.activenote].content = '# ' + name;
-      }
-      let link = '[' + name + '](#' + data.activenote + ')';
-      input.value = val.substring(0, start) + link + val.substring(end);
-      app.notes[app.activenote].content = input.value;
-      app.notes[app.activenote].touched = true;
-      app.addlink = false;
-      pushUpdate();
-    }
-    if (!app.activenote) location.hash = '#'+data.activenote;
-    // if (location.hash != '#'+data.activenote) location.hash = '#'+data.activenote;
-    // else activateNote(parseInt(data.activenote), true);
-  }
   let reload = false;
   if (data.notes) {
     for (let i in data.notes) {
@@ -536,8 +514,9 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.recent) app.recent = data.recent;
     updatePanels();
   }
+  if (reload) loadNote(app.activenote);
+
   if (data.searchresults) listSearchResults(data.searchresults);
-  if (data.mode && (data.mode != app.mode)) switchMode(data.mode);
   if (app.notes[app.activenote]) {
     if (app.notes[app.activenote].deleted) {
       $('#input').attr('disabled', true);
@@ -549,11 +528,29 @@ function parseFromServer(data, textStatus, xhr) {
       $('#button-note-del').removeClass('button-active').attr('title', 'Delete note');
     }
   }
-  if (data.password !== undefined) {
-    app.password = data.password;
-    hideModal();
+
+  if (data.switchnote) { // App launched without note id in location hash OR new note created
+    if (app.addlink) { // New note created with ctrl+enter
+      let input = $('#input')[0];
+      let start = input.selectionStart;
+      let end = input.selectionEnd;
+      let val = input.value;
+      let name = '=';
+      if (start != end) { // There is a text selection; use it as link text
+        name = val.substring(start, end);
+        app.notes[data.switchnote].title = findTitle(name);
+        app.notes[data.switchnote].content = '# ' + name;
+        app.notes[data.switchnote].touched = true;
+      }
+      let link = '[' + name + '](#' + data.switchnote + ')';
+      input.value = val.substring(0, start) + link + val.substring(end);
+      app.notes[app.activenote].content = input.value;
+      app.notes[app.activenote].touched = true;
+      app.addlink = false;
+      pushUpdate();
+    }
+    location.hash = '#'+data.switchnote;
   }
-  if (reload) loadNote(app.activenote);
 }
 function offline() {
   if (!app.offline) {
@@ -702,7 +699,7 @@ function updatePinned() {
 }
 
 function findTitle(text) {
-  let matches = text.substr(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'-]+[a-zA-Z\u00C0-\u024F0-9])/mg);
+  let matches = text.substr(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'&-]+[a-zA-Z\u00C0-\u024F0-9])/mg);
   if (matches) {
     if (((matches[0] == 'http') || (matches[0] == 'https')) && matches[1]) return matches[1];
     return matches[0];
