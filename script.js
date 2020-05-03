@@ -43,14 +43,13 @@ $().ready(function() {
   });
   app.renderer = new marked.Renderer();
   app.renderer.link = function(href, title, text) {
+    if (title === null) title = '';
     if (href.match(/^#[0-9]+$/)) {
-      if (text.startsWith('=') && (text != '=')) text = text.substr(1);
-      return '<a class="link-note" href="' + href + '">' + text + '</a>';
+      if (text.startsWith('=') && (text != '=')) title = text = text.substr(1);
+      else if (app.notes[href.substr(1)]) title = app.notes[href.substr(1)].title;
+      return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
     }
-    return '<a class="link-ext" href="' + href + '" target="_blank">' + text + '</a>';
-  }
-  app.renderer.code = function(code, language, escaped) {
-    return '<pre><code>' + code + '</code><img class="code-copy" src="clippy.svg" onclick="copy(this);"></pre>';
+    return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
   }
   app.renderer.codespan = function(code) {
     return '<code>' + code.replace('&amp;', '&') + '</code>';
