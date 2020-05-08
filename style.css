@@ -3,7 +3,7 @@ BODY { margin: 0; font-family: 'Lato', sans-serif; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
 PRE:hover .code-copy { display: block; }
-CODE { background-color: rgb(251, 244, 208); white-space: pre; }
+CODE { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
 A.link-note { text-decoration-style: dashed; }
 /* A.link-note::before {
   content: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2215%22%20height%3D%2215%22%20viewBox%3D%220%200%203000%203000%22%3E%3Cg%20transform%3D%22rotate%28-180%201500%201500%29%22%3E%3Cpath%20d%3D%22M2265%202921%20c-16%20-10%20-93%20-82%20-170%20-160%20l-140%20-141%20335%20-335%20335%20-335%20153%20153%20c105%20105%20155%20162%20161%20185%2020%2071%207%2089%20-267%20366%20-142%20142%20-271%20264%20-289%20272%20-44%2019%20-82%2017%20-118%20-5z%22%3E%3C%2Fpath%3E%3Cpath%20d%3D%22M1072%201737%20l-763%20-764%20332%20-331%20c182%20-183%20335%20-332%20338%20-332%203%200%20350%20344%20771%20765%20l765%20765%20-330%20330%20c-181%20181%20-334%20330%20-340%20330%20-6%200%20-353%20-343%20-773%20-763z%22%3E%3C%2Fpath%3E%3Cpath%20d%3D%22M206%20848%20c-2%20-7%20-12%20-60%20-20%20-118%20-18%20-112%20-42%20-252%20-76%20-445%20-40%20-223%20-39%20-215%20-21%20-214%209%200%2036%204%2061%209%2046%209%20203%2036%20395%2070%2061%2011%20157%2027%20215%2036%2058%209%20107%2019%20110%2021%205%205%20-642%20653%20-653%20653%20-4%200%20-9%20-6%20-11%20-12z%22%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E");
