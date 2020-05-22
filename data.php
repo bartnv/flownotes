@@ -146,7 +146,7 @@ switch ($data['req']) {
     break;
   case 'add':
     $ret['notes'] = [];
-    $activenote = add_note();
+    $activenote = add_note($data['content'] ?? '');
     $ret['switchnote'] = $activenote;
     $ret['notes'][$activenote] = select_note($activenote);
     break;
@@ -232,12 +232,17 @@ function store_setting($setting, $value) {
   return $value;
 }
 
-function add_note() {
+function add_note($content) {
   global $dbh;
-  if (!$dbh->query("INSERT INTO note (content) VALUES ('')")) {
+  if (!($stmt = $dbh->prepare("INSERT INTO note (content) VALUES (?)"))) {
     $err = $dbh->errorInfo();
-    error_log("add_note() query failed: " . $err[2]);
+    error_log("add_note() query prepare failed: " . $err[2]);
     return null;
+  }
+  if (!($stmt->execute([ $content ]))) {
+    $err = $stmt->errorInfo();
+    error_log("add_note() query execute failed: " . $err[2]);
+    return [];
   }
   return $dbh->lastInsertId();
 }
