@@ -43,7 +43,7 @@ $().ready(function() {
   });
   app.renderer = new marked.Renderer();
   app.renderer.link = function(href, title, text) {
-    if (title === null) title = '';
+    if (title == null) title = '';
     if (href.match(/^#[0-9]+$/)) {
       if (text.startsWith('=') && (text != '=')) title = text = text.substring(1);
       else if (app.notes[href.substring(1)]) title = app.notes[href.substring(1)].title;
