@@ -730,6 +730,9 @@ function activateNote(id, nopost) {
   }
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
+  if (!app.hidepanelleft && ($('#panel-main')[0].getBoundingClientRect().right > window.innerWidth)) {
+    $('#button-panel-hide').click();
+  }
 }
 function activateTab(name) {
   $('#label-' + name).addClass('tab-active').siblings().removeClass('tab-active');
