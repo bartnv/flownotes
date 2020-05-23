@@ -662,6 +662,8 @@ function updateRecent() {
     if (++count >= app.recent) break;
   }
   $('#tab-recent').html(str);
+  let active = $('#tab-recent .note-active')[0];
+  if (active && !active.isInView()) active.customScrollIntoView();
 }
 function updateSearch() {
   let items = app.searchresults;
@@ -908,6 +910,20 @@ function drop(evt) {
 }
 function allowDrop(evt) {
   evt.preventDefault();
+}
+
+Element.prototype.isInView = function(margin = 0) {
+  let rect = this.getBoundingClientRect();
+  return (rect.top >= margin &&
+          rect.left >= margin &&
+          rect.bottom <= window.innerHeight-margin &&
+          rect.right <= window.innerWidth-margin);
+}
+Element.prototype.customScrollIntoView = function() {
+  if ('scrollBehavior' in document.documentElement.style) {
+    this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  else this.scrollIntoView();
 }
 
 // WebAuthn support by David Earl - https://github.com/davidearl/webauthn/
