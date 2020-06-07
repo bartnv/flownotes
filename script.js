@@ -355,6 +355,8 @@ function loadNote(id) {
     $('#input').focus();
     if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end).blur().focus();
   }
+  let active = $('#tab-recent .note-active')[0];
+  if (active && !active.isInView()) active.customScrollIntoView();
 }
 
 function render(content) {
@@ -665,8 +667,6 @@ function updateRecent() {
     if (++count >= app.recent) break;
   }
   $('#tab-recent').html(str);
-  let active = $('#tab-recent .note-active')[0];
-  if (active && !active.isInView()) active.customScrollIntoView();
 }
 function updateSearch() {
   let items = app.searchresults;
@@ -717,6 +717,8 @@ function activateNote(id, nopost) {
     app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
   }
   app.activenote = id;
+  $('.note-li').removeClass('note-active');
+  $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
     if (app.notes[id] && (app.notes[id].content !== undefined)) {
@@ -733,8 +735,6 @@ function activateNote(id, nopost) {
     }
     sendToServer(data);
   }
-  $('.note-li').removeClass('note-active');
-  $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
   if (!app.hidepanelleft && ($('#panel-main')[0].getBoundingClientRect().right > window.innerWidth)) {
     $('#button-panel-hide').click();
   }
