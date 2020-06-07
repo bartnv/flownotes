@@ -233,7 +233,7 @@ $().ready(function() {
     switchMode(this.id.split('-')[2]);
   });
   $('#panel-left,#panel-buttons').on('touchstart', function(e) {
-    app.dragbuttons = e.changedTouches[0].pageX;
+    app.touchstart = { pageX: e.changedTouches[0].pageX, pageY: e.changedTouches[0].pageY };
   });
   $('.tab').on('scroll', function(evt) {
     if (this.scrollTop == 0) $('#scrolled').hide();
@@ -258,14 +258,17 @@ $().ready(function() {
     else $('.tab:visible')[0].scrollTo(0, 0);
   });
   $(window).on('touchend', function(e) {
-    if (app.dragbuttons != undefined) {
-      if (e.changedTouches[0].pageX > app.dragbuttons+10) {
-        if (app.hidepanelleft) $('#button-panel-hide').click();
+    if (app.touchstart) {
+      let end = e.changedTouches[0];
+      if (Math.abs(app.touchstart.pageX-end.pageX) > Math.abs(app.touchstart.pageY-end.pageY)) {
+        if (end.pageX > app.touchstart.pageX+10) {
+          if (app.hidepanelleft) $('#button-panel-hide').click();
+        }
+        else if (end.pageX < app.touchstart.pageX-10) {
+          if (!app.hidepanelleft) $('#button-panel-hide').click();
+        }
       }
-      else if (e.changedTouches[0].pageX < app.dragbuttons-10) {
-        if (!app.hidepanelleft) $('#button-panel-hide').click();
-      }
-      delete app.dragbuttons;
+      app.touchstart = null;
     }
   });
   $('#button-note-add').on('click', function() {
