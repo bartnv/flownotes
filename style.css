@@ -5,14 +5,6 @@ PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width:
 PRE:hover .code-copy { display: block; }
 CODE { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
 A.link-note { text-decoration-style: dashed; }
-/* A.link-note::before {
-  content: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2215%22%20height%3D%2215%22%20viewBox%3D%220%200%203000%203000%22%3E%3Cg%20transform%3D%22rotate%28-180%201500%201500%29%22%3E%3Cpath%20d%3D%22M2265%202921%20c-16%20-10%20-93%20-82%20-170%20-160%20l-140%20-141%20335%20-335%20335%20-335%20153%20153%20c105%20105%20155%20162%20161%20185%2020%2071%207%2089%20-267%20366%20-142%20142%20-271%20264%20-289%20272%20-44%2019%20-82%2017%20-118%20-5z%22%3E%3C%2Fpath%3E%3Cpath%20d%3D%22M1072%201737%20l-763%20-764%20332%20-331%20c182%20-183%20335%20-332%20338%20-332%203%200%20350%20344%20771%20765%20l765%20765%20-330%20330%20c-181%20181%20-334%20330%20-340%20330%20-6%200%20-353%20-343%20-773%20-763z%22%3E%3C%2Fpath%3E%3Cpath%20d%3D%22M206%20848%20c-2%20-7%20-12%20-60%20-20%20-118%20-18%20-112%20-42%20-252%20-76%20-445%20-40%20-223%20-39%20-215%20-21%20-214%209%200%2036%204%2061%209%2046%209%20203%2036%20395%2070%2061%2011%20157%2027%20215%2036%2058%209%20107%2019%20110%2021%205%205%20-642%20653%20-653%20653%20-4%200%20-9%20-6%20-11%20-12z%22%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-  position: relative; top: 2px; margin-right: 2px; opacity: 0.5;
-}
-A.link-ext::before {
-  content: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2215%22%20height%3D%2215%22%20viewBox%3D%220%200%20498.455%20498.455%22%3E%0D%0A%3Cpath%20d%3D%22M492.201%2C111.423L389.768%2C46.398c-8.338-5.278-15.146-1.53-15.146%2C8.338v23.333%20c-85.223%2C0.459-154.225%2C69.691-154.225%2C155.065c0%2C14.917%2C2.142%2C29.376%2C6.12%2C43.07c18.513-64.413%2C77.8-111.614%2C148.105-111.996%20v23.333c0%2C9.945%2C6.809%2C13.617%2C15.146%2C8.338l102.434-65.025C500.615%2C125.346%2C500.463%2C116.702%2C492.201%2C111.423z%22%2F%3E%0D%0A%3Cpath%20d%3D%22M376.533%2C379.173c0%2C11.858-9.717%2C21.497-21.496%2C21.497H75.276c-11.934%2C0-21.497-9.716-21.497-21.497V207.048%20c0-11.857%2C9.715-21.497%2C21.497-21.497h136.399c5.891-19.813%2C14.382-38.021%2C25.475-53.779H21.496%20C9.639%2C131.772%2C0%2C141.335%2C0%2C153.269v279.685c0%2C11.857%2C9.715%2C21.496%2C21.496%2C21.496h387.32c11.857%2C0%2C21.496-9.562%2C21.496-21.496%20V189.683l-53.779%2C34.196V379.173L376.533%2C379.173z%22%2F%3E%0D%0A%3C%2Fsvg%3E");
-  position: relative; top: 2px; margin-right: 2px; opacity: 0.5;
-} */
 A.link-note:hover::before,A.link-ext:hover::before { opacity: 1; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
@@ -33,7 +25,7 @@ DIV#panel-buttons > DIV { cursor: pointer; padding: 5px; }
 DIV#button-settings { margin-top: auto; }
 DIV#panel-main { position: relative; flex-grow: 1; display: flex; height: 100vh; margin: auto; justify-content: center; min-width: 300px /* needs a min-width to override `auto` value implied by flex */; background-color: grey; }
 DIV#status { position: absolute; right: 0px; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
-.button-unpin { position: absolute; top: 3px; right: 3px; }
+.button-unpin { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; background: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDEyMCAxMjAiPgogIDxwYXRoIHN0cm9rZT0iI0YwMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGQ9Im0xNCwxNCA5Miw5Mm0wLTkyLTkyLDkyIi8+Cjwvc3ZnPgo=) }
 TEXTAREA#input,DIV#render,DIV#graph { align-self: center; width: 80%; height: 80%; background-color: white; }
 DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .note-li { position: relative; margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

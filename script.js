@@ -693,7 +693,7 @@ function updatePinned() {
     if (note.deleted) extraclass += ' note-deleted';
     pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '" draggable="true" ondragstart="drag(event)">';
     pinned += '<span class="note-title">' + note.title + '</span><br>';
-    pinned += '<img class="button-unpin" src="cross.svg" onclick="unpinNote(' + note.id + '); return false;" title="Unpin">';
+    pinned += '<div class="button-unpin" onclick="unpinNote(' + note.id + '); return false;" title="Unpin"></div>';
     pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#tab-pinned').empty().html(pinned);
