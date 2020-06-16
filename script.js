@@ -84,6 +84,11 @@ $().ready(function() {
     $('#tab-recent').append(app.loader);
   }
   sendToServer(data);
+
+  if (localStorage.getItem('flownotes_mode') && (localStorage.getItem('flownotes_mode') != 'edit')) {
+    switchMode(localStorage.getItem('flownotes_mode'));
+  }
+
   $('#input').on('keydown', function(e) {
     if (!e.key.startsWith('F')) {
       e.stopPropagation();
@@ -616,6 +621,7 @@ function switchMode(newmode) {
     loadGraph();
   }
   $('#button-mode-' + app.mode).addClass('button-active').siblings('.button-mode').removeClass('button-active');
+  localStorage.setItem('flownotes_mode', app.mode);
 }
 function loadGraph() {
   app.graph.graph.clear();
