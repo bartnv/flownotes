@@ -472,6 +472,7 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.needpass) {
     if ((app.modal == 'password') || (app.modal == 'logout')) return;
     login(data.modalerror, data.challenge);
+    $('.loader').detach();
     return;
   }
   if (data.password !== undefined) {
@@ -838,6 +839,7 @@ function login(error, challenge) {
     modal.empty();
     app.modal = null;
     $('#status').html('Loading...').css('opacity', 1);
+    $('#tab-recent').prepend(app.loader);
   });
   modal.find('#login-u2f').on('click', function() {
     webauthnAuthenticate(challenge, function(success, info) {
@@ -859,6 +861,8 @@ function logout() {
   $('#tab-recent').empty();
   $('#tab-pinned').empty();
   $('#search-results').empty();
+  $('#scrolled').hide();
+  $('.loader').detach();
   showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
 
