@@ -174,6 +174,7 @@ $().ready(function() {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
     }
+    $('#input').val(null); // Clear textarea because browsers tend to save the state
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
