@@ -550,7 +550,7 @@ function parseFromServer(data, textStatus, xhr) {
       if (start != end) { // There is a text selection; use it as link text
         name = val.substring(start, end);
         app.notes[data.switchnote].title = findTitle(name);
-        app.notes[data.switchnote].content = '# ' + name;
+        app.notes[data.switchnote].content = '# ' + name + '\n\n';
         app.notes[data.switchnote].touched = true;
       }
       let link = '[' + name + '](#' + data.switchnote + ')';
