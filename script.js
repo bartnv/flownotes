@@ -560,6 +560,7 @@ function parseFromServer(data, textStatus, xhr) {
       app.addlink = false;
       pushUpdate();
     }
+    if (app.mode != 'edit') switchMode('edit');
     location.hash = '#'+data.switchnote;
   }
 }
