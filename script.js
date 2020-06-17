@@ -555,7 +555,9 @@ function parseFromServer(data, textStatus, xhr) {
       }
       let link = '[' + name + '](#' + data.switchnote + ')';
       input.value = val.substring(0, start) + link + val.substring(end);
+      input.setSelectionRange(start+1, start+1+name.length);
       app.notes[app.activenote].content = input.value;
+      app.notes[app.activenote].cursor = { start: input.selectionStart, end: input.selectionEnd };
       app.notes[app.activenote].touched = true;
       app.addlink = false;
       pushUpdate();
