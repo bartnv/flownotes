@@ -1,4 +1,4 @@
-<?
+<?php
 
 require('3rdparty/WebAuthn/WebAuthn.php');
 require('3rdparty/CBOR/CBOREncoder.php');
