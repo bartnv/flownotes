@@ -21,6 +21,7 @@ if (!empty($password)) {
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $keys = query_setting('webauthnkeys', '');
     if (!empty($keys)) $challenge = $webauthn->prepareForLogin($keys);
+    else $challenge = '';
     if (!empty($data['password'])) {
       if (password_verify($data['password'], $password)) {
         $_SESSION['login'.$instance] = true;
@@ -404,7 +405,7 @@ function update_links($id, $content) {
     return;
   }
   if (!preg_match_all('/\[([^]]+)\]\(#([0-9]+)\)/', $content, $matches)) return;
-  for ($i = 0; $matches[1][$i]; $i++) {
+  for ($i = 0; isset($matches[1][$i]); $i++) {
     $text = $matches[1][$i];
     $link = $matches[2][$i];
     if (strpos($text, '=') === 0) $text = "NULL";
@@ -423,7 +424,7 @@ function update_backlinks($id, $target, $title) {
 function update_note_meta($id, $note) {
   global $dbh;
 
-  if ($note['pinned']) {
+  if (isset($note['pinned'])) {
     if ($note['pinned'] === true) {
       if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
         error_log("FlowNotes: update_note_meta() pinned select failed: " . $dbh->errorInfo()[2]);
@@ -436,7 +437,7 @@ function update_note_meta($id, $note) {
   }
   else $pinned = 0;
 
-  if ($note['cursor']) $cursor = implode(',', $note['cursor']);
+  if (isset($note['cursor'])) $cursor = implode(',', $note['cursor']);
   else $cursor = NULL;
 
   if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ? WHERE id = ?"))) {
