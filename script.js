@@ -100,6 +100,10 @@ $().ready(function() {
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
       $('#status').html('Loading...').css('opacity', 1);
     }
+    else if (e.altKey && (e.key == 'Enter')) {
+      let input = $('#input')[0];
+      cursorActivate(input.value, input.selectionStart);
+    }
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition();
@@ -174,7 +178,6 @@ $().ready(function() {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
     }
-    $('#input').val(null); // Clear textarea because browsers tend to save the state
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
@@ -409,6 +412,33 @@ function copy(btn) {
   selectText($(btn).parent().find('code').get(0));
   document.execCommand('copy');
   selectText(btn);
+}
+
+function cursorActivate(text, cursor) {
+  if (text.charAt(cursor) == '\n') cursor -= 1;
+  let end = text.indexOf('\n', cursor);
+  if (end == -1) end = text.length;
+  let start = text.lastIndexOf('\n', cursor)+1;
+  let line = text.substring(start, end);
+  let res;
+  cursor -= start;
+  if (line.charAt(cursor) == ' ') cursor -= 1;
+  start = line.lastIndexOf('[', cursor);
+  end = line.indexOf(')', cursor);
+  if ((start != -1) && (end != -1)) {
+    let mid = line.indexOf('](');
+    if (mid == -1) return;
+    res = line.substring(mid+2, end);
+  }
+  else {
+    start = line.lastIndexOf(' ', cursor);
+    end = line.indexOf(' ', cursor);
+    if (end == -1) end = line.length;
+    res = line.substring(start+1, end);
+  }
+
+  if (res.substring(0, 1) == '#') window.location = res;
+  else if (res.substring(0, 4) == 'http') window.open(res, '_blank');
 }
 
 function tick() {
