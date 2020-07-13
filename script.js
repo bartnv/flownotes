@@ -139,6 +139,7 @@ $().ready(function() {
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
+    updateStats();
   }).on('focus', function() {
     if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) $('#button-panel-hide').click();
   });
@@ -615,6 +616,11 @@ function offline() {
   }
 }
 
+function updateStats() {
+  let val = $('#input').val();
+  $('#stats').show().text('Chars: ' + val.length + ' / Words: ' + ((val.match(/\W\w/g)??[]).length+(/^(\W|$)/.test(val)?0:1)));
+}
+
 function handleWebauthn(data) {
   if (data.webauthn == 'register') {
     webauthnRegister(data.challenge, function(success, info) {
@@ -639,17 +645,16 @@ function switchMode(newmode) {
   app.prev = app.mode;
   app.mode = newmode;
   if (app.mode == 'edit') {
+    $('#input').show().focus();
     $('#render').hide().empty();
     $('#graph').hide();
-    $('#input').show().focus();
   }
   else if (app.mode == 'view') {
-    $('#input').hide();
+    $('#input,#graph,#stats').hide();
     render($('#input').val()).show();
-    $('#graph').hide();
   }
   else if (app.mode == 'graph') {
-    $('#input').hide();
+    $('#input,#stats').hide();
     $('#render').hide().empty();
     $('#graph').show();
     loadGraph();
