@@ -765,6 +765,7 @@ function activateNote(id, nopost) {
   app.activenote = id;
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
+  $('#stats').hide();
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
     if (app.notes[id] && (app.notes[id].content !== undefined)) {
