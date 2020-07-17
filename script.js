@@ -561,7 +561,7 @@ function parseFromServer(data, textStatus, xhr) {
   }
   if (reload) loadNote(app.activenote);
 
-  if (data.searchresults) listSearchResults(data.searchresults);
+  if (data.searchresults) listSearchResults(data.searchresults, data.search);
   if (app.notes[app.activenote]) {
     if (app.notes[app.activenote].deleted) {
       $('#input').attr('disabled', true);
@@ -798,10 +798,10 @@ function activateTab(name) {
   updatePanels();
 }
 
-function listSearchResults(items) {
+function listSearchResults(items, first) {
   app.searchresults = items;
   updateSearch();
-  if (items.length == 1) {
+  if (first && (items.length == 1)) {
     location.hash = '#' + app.notes[items[0]].id;
     setTimeout("$('#search-input').focus();", 100);
   }

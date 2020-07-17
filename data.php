@@ -142,6 +142,7 @@ switch ($data['req']) {
     break;
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in req search');
+    $ret['search'] = true;
     $ret['notes'] = search_notes($data['term']);
     $ret['searchresults'] = array_keys($ret['notes']);
     break;
