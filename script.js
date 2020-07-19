@@ -81,7 +81,7 @@ $().ready(function() {
   else {
     activateTab('recent');
     if (location.hash.match(/^#[0-9]+$/)) {
-      app.activenote = location.hash.substring(1);
+      app.activenote = parseInt(location.hash.substring(1), 10);
       data.activenote = app.activenote;
     }
     $('#tab-recent').append(app.loader);
@@ -174,7 +174,7 @@ $().ready(function() {
   });
   $(window).on('hashchange', function(e) {
     if (location.hash.match(/^#[0-9]+$/)) {
-      let id = parseInt(location.hash.substring(1));
+      let id = parseInt(location.hash.substring(1), 10);
       if (id != app.activenote) activateNote(id);
     }
   }).on('unload', function() { // Use navigator.sendBeacon for this in the future
