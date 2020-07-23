@@ -342,6 +342,7 @@ function iframePrint(content) {
 }
 
 function unpinNote(id) {
+  if (!confirm('Are you sure you want to unpin note #' + id + ' (' + app.notes[id].title + ')?')) return;
   app.notes[id].pinned = 0;
   let data = { req: 'update', notes: {}, lastupdate: app.lastupdate };
   data.notes[id] = {};
