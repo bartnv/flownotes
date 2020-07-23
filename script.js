@@ -621,7 +621,8 @@ function offline() {
 
 function updateStats() {
   let val = $('#input').val();
-  $('#stats').show().text('Chars: ' + val.length + ' / Words: ' + ((val.match(/\W\w/g)??[]).length+(/^(\W|$)/.test(val)?0:1)));
+  let matches = val.match(/\W\w/g);
+  $('#stats').show().text('Chars: ' + val.length + ' / Words: ' + (matches?matches:[]).length+(/^(\W|$)/.test(val)?0:1)));
 }
 
 function handleWebauthn(data) {
