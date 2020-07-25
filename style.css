@@ -49,7 +49,7 @@ INPUT#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 DIV.mask { overflow: hidden; }
 .search-controls { margin: 5px 5px 0 5px; }
 DIV#modal-overlay { position: fixed; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: background 0.3s linear; }
-DIV#modal-overlay DIV { padding: 5px 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
+DIV#modal-overlay > DIV { padding: 5px 25px; border-radius: 25px; background-color: rgba(50,50,50,1); color: white; }
 DIV#modal-overlay HR { background-color: #ccc; }
 P#modal-error { color: rgb(255,0,0); }
 .modal-button { background-color: rgb(204,204,204); border-radius: 8px; border: none; padding: 0.7em 1em; font-size: 1em; }
