@@ -512,6 +512,7 @@ function parseFromServer(data, textStatus, xhr) {
 
   if (data.needpass) {
     if ((app.modal == 'password') || (app.modal == 'logout')) return;
+    clear();
     login(data.modalerror, data.challenge);
     $('.loader').detach();
     return;
@@ -903,7 +904,7 @@ function login(error, challenge) {
   });
   modal.find('#password').focus();
 }
-function logout() {
+function clear() {
   app.notes = [];
   app.graph.graph.clear();
   app.graph.refresh();
@@ -914,6 +915,9 @@ function logout() {
   $('#search-results').empty();
   $('#scrolled').hide();
   $('.loader').detach();
+}
+function logout() {
+  clear();
   showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
 
