@@ -133,7 +133,7 @@ P#modal-error { color: rgb(255,0,0); }
   HTML { font-size: 12px; }
 }
 @media (max-width: 600px) {
-  HTML { font-size: 9px; }
+  HTML { font-size: 10px; }
 }
 @media print {
   #panel-left,#panel-buttons,#panel-right { display: none; }
