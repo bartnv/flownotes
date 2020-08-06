@@ -481,6 +481,7 @@ function pushUpdate(sync, retransmit) {
     else if (app.notes[i].metatouched) {
       data.notes[i] = {};
       data.notes[i].cursor = app.notes[i].cursor;
+      data.notes[i].pinned = app.notes[i].pinned;
       delete app.notes[i].metatouched;
       app.notes[i].intransit = true;
     }
