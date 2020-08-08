@@ -3,6 +3,7 @@
 let app = {
   mode: 'edit',
   activenote: null,
+  snapshots: null,
   notes: [],
   recent: 0,
   inactive: 0,
@@ -80,9 +81,13 @@ $().ready(function() {
   }
   else {
     activateTab('recent');
-    if (location.hash.match(/^#[0-9]+$/)) {
+    if (location.hash.match(/^#[0-9]/)) {
       app.activenote = parseInt(location.hash.substring(1), 10);
       data.activenote = app.activenote;
+    }
+    if (location.hash.indexOf('@') > -1) {
+      app.snap = location.hash.substring(location.hash.indexOf('@')+1);
+      data.snapshots = true;
     }
     $('#tab-recent').append(app.loader);
   }
@@ -176,6 +181,31 @@ $().ready(function() {
     if (location.hash.match(/^#[0-9]+$/)) {
       let id = parseInt(location.hash.substring(1), 10);
       if (id != app.activenote) activateNote(id);
+      if (app.snap) {
+        app.snap == null;
+        loadNote(id);
+      }
+    }
+    else {
+      let match = location.hash.match(/^#([0-9]+)@([0-9]+)$/);
+      if (match) {
+        let id = parseInt(match[1], 10);
+        app.snap = match[2];
+        if (id != app.activenote) activateNote(id, true);
+        if (app.snapshots === null) {
+          sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
+          $('#status').html('Loading...').css('opacity', 1);
+        }
+        else {
+          for (let snap of app.snapshots) {
+            if (snap.modified == app.snap) {
+              loadSnap(snap);
+              return;
+            }
+          }
+          $('#status').html('Snapshot @' + app.snap + ' not found').css('opacity', 1);
+        }
+      }
     }
   }).on('unload', function() { // Use navigator.sendBeacon for this in the future
     if (app.changed) {
@@ -320,7 +350,27 @@ $().ready(function() {
   $('#button-fullscreen').on('click', function() {
     goFullscreen();
   });
+  $('#button-snapshots').on('click', loadSnapshots);
   $('#button-settings').on('click', loadSettings);
+  $('#button-restore').on('click', function() {
+    if (app.notes[app.activenote].modified > app.snapshots[app.snapshots.length-1].modified) {
+      sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote });
+    }
+    let snapshot = null;
+    for (let snap of app.snapshots) {
+      if (snap.modified == app.snap) {
+        snapshot = snap;
+        break;
+      }
+    }
+    if (!snapshot) return console.error('Snapshot ' + app.snap + ' not found');
+    app.changed = Date.now()-60000; // Force a pushUpdate on the next tick
+    let note = app.notes[app.activenote];
+    note.touched = true;
+    note.content = snapshot.content;
+    note.title = snapshot.title;
+    location.hash = '#' + note.id;
+  });
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 5000);
 });
@@ -352,6 +402,7 @@ function unpinNote(id) {
   if (id == app.activenote) $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
 }
 function loadNote(id) {
+  $('#snap').hide();
   if (app.mode == 'view') render(app.notes[id].content);
   else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
@@ -364,13 +415,19 @@ function loadNote(id) {
     $('#input').attr('disabled', false);
     $('#button-note-del').removeClass('button-active').attr('title', 'Delete note');
   }
-  $('#input').val(app.notes[id].content);
+  $('#input').val(app.notes[id].content).attr('readonly', false);
   if (app.mode == 'edit') {
     $('#input').focus();
     if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end).blur().focus();
   }
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
+}
+function loadSnap(snap) {
+  if (app.mode == 'view') render(snap.content);
+  else if (app.mode == 'graph') switchmode('edit');
+  $('#input').val(snap.content).attr('readonly', 'readonly');
+  $('#snap').css('display', 'flex').find('#snapdate').text(new Date(snap.modified*1000).format('Y-m-d H:i'));
 }
 
 function render(content) {
@@ -534,6 +591,25 @@ function parseFromServer(data, textStatus, xhr) {
   }
   if (data.settings == 'stored') hideModal();
 
+  if ((data.snapshots) && (data.note == app.activenote)) {
+    app.snapshots = data.snapshots;
+    if (app.modal == 'snapshots') {
+      let div = $('#snapshots').empty();
+      for (let snap of data.snapshots) {
+        let str = '<li data-id="' + snap.id + '" data-modified="' + snap.modified + '">';
+        str += '<span class="snap-title">' + snap.title + '</span><br>';
+        str += '<span class="snap-modified">saved at ' + new Date(snap.modified*1000).format('Y-m-d H:i') + '</span><br>';
+        let matches = snap.content.match(/\W\w/g);
+        str += '<span class="snap-stats">chars: ' + snap.content.length + ' / words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(snap.content)?0:1)) + '</span>';
+        if (snap.locked == 1) str += '<div class="snap-action snap-unlock" title="Unlock"></div>';
+        else str += '<div class="snap-action snap-lock" title="Lock"></div><div class="snap-action snap-delete" title="Delete"></div>';
+        str += '</li>';
+        div.append(str);
+      }
+    }
+    $(window).trigger('hashchange');
+  }
+
   let reload = false;
   if (data.notes) {
     for (let i in data.notes) {
@@ -562,7 +638,7 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.recent) app.recent = data.recent;
     updatePanels();
   }
-  if (reload) loadNote(app.activenote);
+  if (reload && !app.snap) loadNote(app.activenote);
 
   if (data.searchresults) listSearchResults(data.searchresults, data.search);
   if (app.notes[app.activenote]) {
@@ -770,6 +846,7 @@ function activateNote(id, nopost) {
     app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
   }
   app.activenote = id;
+  app.snapshots = null;
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
   $('#stats').hide();
@@ -859,6 +936,44 @@ function loadSettings() {
   showModal('settings', div, true);
 }
 
+function loadSnapshots() {
+  let div = $('<div><h1>Snapshots</h1><ul id="snapshots">Loading...</ul><p><input type="button" id="create-snapshot" class="modal-button-small" value="Create new snapshot"></div>');
+  div.find('#create-snapshot').on('click', function() {
+    let note = app.notes[app.activenote];
+    if (note.touched) return alert('Last changes not saved yet; please wait 10 seconds and try again');
+    sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote });
+    $('#status').html('Saving snapshot...').css('opacity', 1);
+  });
+  div.find('#snapshots').on('click', 'LI', function(evt) {
+    let li = $(evt.currentTarget);
+    location.hash = '#' + app.activenote + '@' + li.data('modified');
+    hideModal();
+  });
+  div.find('#snapshots').on('click', '.snap-action', function(evt) {
+    let button = $(evt.currentTarget);
+    let li = button.parent();
+    if (button.hasClass('snap-unlock')) {
+      button.removeClass('snap-unlock').addClass('snap-lock').prop('title', 'Lock');
+      li.append('<div class="snap-action snap-delete" title="Delete"/>');
+      sendToServer({ req: 'snapshot', mode: 'pin', snapshot: li.data('id'), value: 0 });
+    }
+    else if (button.hasClass('snap-lock')) {
+      button.removeClass('snap-lock').addClass('snap-unlock').prop('title', 'Unlock');
+      li.find('.snap-delete').remove();
+      sendToServer({ req: 'snapshot', mode: 'pin', snapshot: li.data('id'), value: 1 });
+    }
+    else if (button.hasClass('snap-delete')) {
+      if (!confirm('Are you sure you want to delete the snapshot ' + li.find('.snap-modified').text() + '?')) return false;
+      sendToServer({ req: 'snapshot', mode: 'del', note: app.activenote, snapshot: li.data('id') });
+      $('#status').html('Deleting snapshot...').css('opacity', 1);
+    }
+    return false;
+  });
+  sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
+  showModal('snapshots', div, true);
+  $('#button-snapshots').addClass('button-active');
+}
+
 function showModal(type, content, escapable) {
   app.modal = type;
   let modal = $('#modal-overlay');
@@ -869,6 +984,7 @@ function showModal(type, content, escapable) {
   else modal.off('click');
 }
 function hideModal() {
+  if (app.modal == 'snapshots') $('#button-snapshots').removeClass('button-active');
   app.modal = null;
   let modal = $('#modal-overlay');
   modal.empty().css({ backgroundColor: 'rgba(0,0,0,0)', pointerEvents: 'none' });

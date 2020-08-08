@@ -12,6 +12,7 @@ if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request
 if (empty($data['req'])) fatalerr('No req specified in POST request');
 
 $dbh = new PDO('sqlite:db/notes.sq3');
+if (query_setting('dbversion') < 4) upgrade_database();
 
 $password = query_setting('password', '');
 if (!empty($password)) {
@@ -106,6 +107,10 @@ switch ($data['req']) {
       $ret['notes'] = $results + $ret['notes'];
       $ret['searchresults'] = array_keys($results);
     }
+    if (!empty($data['snapshots'])) {
+      $ret['note'] = $activenote;
+      $ret['snapshots'] = select_note_snapshots($activenote);
+    }
     break;
   case 'recent':
     if (empty($data['offset'])) fatalerr('No offset in recent request');
@@ -195,6 +200,35 @@ switch ($data['req']) {
         break;
       default:
         fatalerr('Invalid webauthn mode');
+    }
+    break;
+  case 'snapshot':
+    switch ($data['mode']) {
+      case 'list':
+        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
+        $ret['note'] = $data['note'];
+        $ret['snapshots'] = select_note_snapshots($data['note']);
+        break;
+      case 'add':
+        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
+        add_snapshot($data['note'], 1);
+        $ret['note'] = $data['note'];
+        $ret['snapshots'] = select_note_snapshots($data['note']);
+        break;
+      case 'del':
+        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
+        if (empty($data['snapshot']) || !is_numeric($data['snapshot'])) fatalerr('Invalid snapshot request');
+        del_snapshot($data['snapshot']);
+        $ret['note'] = $data['note'];
+        $ret['snapshots'] = select_note_snapshots($data['note']);
+        break;
+      case 'pin':
+        if (empty($data['snapshot']) || !is_numeric($data['snapshot'])) fatalerr('Invalid snapshot request');
+        if (!isset($data['value']) || !is_numeric($data['value'])) fatalerr('Invalid snapshot request');
+        sql_updateone('UPDATE snapshot SET locked = ? WHERE id = ?', [ $data['value'], $data['snapshot'] ]);
+        break;
+      default:
+        fatalerr('Invalid request');
     }
     break;
   case 'logout':
@@ -325,6 +359,44 @@ function select_notes_since($lastupdate) {
   if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
   return $notes;
 }
+function select_note_snapshots($id) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("SELECT id, modified, locked, title, content FROM snapshot WHERE note = ? ORDER BY modified"))) {
+    error_log("select_note_snapshots() prepare failed: " . $dbh->errorInfo()[2]);
+    return [];
+  }
+  if (!($stmt->execute([ $id ]))) {
+    error_log("select_note_snapshots() execute failed: " . $stmt->errorInfo()[2]);
+    return [];
+  }
+  $snapshots = [];
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $snapshots[] = $row;
+  }
+  return $snapshots;
+}
+function add_snapshot($id, $locked = 0) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("INSERT INTO snapshot (note, modified, locked, title, content) SELECT id, modified, $locked, title, content FROM note WHERE id = ?"))) {
+    error_log("add_snapshot() prepare failed: " . $dbh->errorInfo()[2]);
+    return;
+  }
+  if (!($stmt->execute([ $id ]))) {
+    error_log("add_snapshot() execute failed: " . $stmt->errorInfo()[2]);
+    return;
+  }
+}
+function del_snapshot($id) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("DELETE FROM snapshot WHERE id = ?"))) {
+    error_log("del_snapshot() prepare failed: " . $dbh->errorInfo()[2]);
+    return;
+  }
+  if (!($stmt->execute([ $id ]))) {
+    error_log("del_snapshot() execute failed: " . $stmt->errorInfo()[2]);
+    return;
+  }
+}
 function search_notes($term) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content LIKE ?"))) {
@@ -452,6 +524,16 @@ function update_note_meta($id, $note) {
     return 0;
   }
   return $pinned;
+}
+
+function upgrade_database() {
+  switch (query_setting('dbversion')) {
+    case 2:
+      sql_single('ALTER TABLE "note" ADD COLUMN cursor text');
+    case 3:
+      sql_single('CREATE TABLE IF NOT EXISTS "snapshot" (id integer primary key, note integer not null, modified integer not null, content text not null, title text, locked bool default false, FOREIGN KEY(note) REFERENCES note(id))');
+      sql_single('UPDATE "setting" SET value = 4 WHERE name = \'dbversion\'');
+  }
 }
 
 /* * * * * * * * * * * * * *
