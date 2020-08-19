@@ -192,6 +192,7 @@ $().ready(function() {
         let id = parseInt(match[1], 10);
         app.snap = match[2];
         if (id != app.activenote) activateNote(id, true);
+        $('#stats').hide();
         if (app.snapshots === null) {
           sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
           $('#status').html('Loading...').css('opacity', 1);
