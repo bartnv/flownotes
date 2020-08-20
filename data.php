@@ -12,7 +12,7 @@ if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request
 if (empty($data['req'])) fatalerr('No req specified in POST request');
 
 $dbh = new PDO('sqlite:db/notes.sq3');
-if (query_setting('dbversion') < 4) upgrade_database();
+if (query_setting('dbversion') < 5) upgrade_database();
 
 $password = query_setting('password', '');
 if (!empty($password)) {
@@ -168,15 +168,42 @@ switch ($data['req']) {
     $ret['notes'][$data['id']]['deleted'] = $change;
     break;
   case 'settings':
-    if (isset($data['newpw'])) { // Setting/changing password
-      if (!empty($password)) {
-        if (empty($data['oldpw'])) send_and_exit([ 'modalerror' => 'Please enter your current password' ]);
-        if (!password_verify($data['oldpw'], $password)) send_and_exit([ 'modalerror' => 'Invalid current password entered' ]);
-      }
-      if ($data['newpw'] === '') store_setting('password', '');
-      else store_setting('password', password_hash($data['newpw'], PASSWORD_DEFAULT));
+    if (empty($data['mode'])) fatalerr('Invalid settings request');
+    switch ($data['mode']) {
+      case 'save':
+        if (isset($data['newpw'])) { // Setting/changing password
+          if (!empty($password)) {
+            if (empty($data['oldpw'])) send_and_exit([ 'modalerror' => 'Please enter your current password' ]);
+            if (!password_verify($data['oldpw'], $password)) send_and_exit([ 'modalerror' => 'Invalid current password entered' ]);
+          }
+          if ($data['newpw'] === '') store_setting('password', '');
+          else store_setting('password', password_hash($data['newpw'], PASSWORD_DEFAULT));
+        }
+        store_setting('autosnap', $data['autosnap']);
+        store_setting('autoprune', $data['autoprune']);
+        store_setting('snapafter', $data['snapafter']);
+        store_setting('pruneafter', $data['pruneafter']);
+        store_setting('prunedays', $data['prunedays']);
+        store_setting('pruneweeks', $data['pruneweeks']);
+        store_setting('prunemonths', $data['prunemonths']);
+        send_and_exit([ 'settings' => 'stored' ]);
+        break;
+      case 'get':
+        $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
+        $keys = json_decode(query_setting('webauthnkeys', '[]'));
+        foreach ($keys as $key) {
+          $ret[] = dechex(crc32(implode('', $key->id)));
+        }
+        $settings = [];
+        $settings['autosnap'] = query_setting('autosnap', 0);
+        $settings['autoprune'] = query_setting('autoprune', 0);
+        $settings['snapafter'] = query_setting('snapafter', '');
+        $settings['pruneafter'] = query_setting('pruneafter', '');
+        $settings['prunedays'] = query_setting('prunedays', '');
+        $settings['pruneweeks'] = query_setting('pruneweeks', '');
+        $settings['prunemonths'] = query_setting('prunemonths', '');
+        send_and_exit([ 'webauthn' => 'list', 'keys' => $ret, 'settings' => $settings ]);
     }
-    send_and_exit([ 'settings' => 'stored' ]);
   case 'webauthn':
     if (empty($data['mode'])) fatalerr('Invalid webauthn request');
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
@@ -190,13 +217,6 @@ switch ($data['req']) {
         if (empty($keys)) send_and_exit([ 'modalerror' => 'Failed to register U2F key on the server' ]);
         store_setting('webauthnkeys', $keys);
         send_and_exit([ 'webauthn' => 'registered' ]);
-        break;
-      case 'list':
-        $keys = json_decode(query_setting('webauthnkeys', '[]'));
-        foreach ($keys as $key) {
-          $ret[] = dechex(crc32(implode('', $key->id)));
-        }
-        send_and_exit([ 'webauthn' => 'list', 'keys' => $ret ]);
         break;
       default:
         fatalerr('Invalid webauthn mode');
@@ -385,6 +405,7 @@ function add_snapshot($id, $locked = 0) {
     error_log("add_snapshot() execute failed: " . $stmt->errorInfo()[2]);
     return;
   }
+  sql_updateone("UPDATE note SET snapped = strftime('%s', 'now') WHERE id = ?", [ $id ]);
 }
 function del_snapshot($id) {
   global $dbh;
@@ -438,6 +459,12 @@ function update_note($id, $note) {
         update_backlinks($row['source'], $row['target'], $note['title']);
       }
     );
+  }
+  if (query_setting('autosnap')) {
+    $after = query_setting('snapafter', 0);
+    $now = time();
+    $ts = sql_single('SELECT snapped FROM note WHERE id = ?', [ $id ]);
+    if ($now > $ts+$after*3600) add_snapshot($id);
   }
   if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ? WHERE id = ?"))) {
     error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
@@ -532,8 +559,13 @@ function upgrade_database() {
       sql_single('ALTER TABLE "note" ADD COLUMN cursor text');
     case 3:
       sql_single('CREATE TABLE IF NOT EXISTS "snapshot" (id integer primary key, note integer not null, modified integer not null, content text not null, title text, locked bool default false, FOREIGN KEY(note) REFERENCES note(id))');
-      sql_single('UPDATE "setting" SET value = 4 WHERE name = \'dbversion\'');
+    case 4:
+      sql_single('CREATE TABLE "note_new" (id integer primary key, created integer default (strftime(\'%s\', \'now\')), modified integer default (strftime(\'%s\', \'now\')), content text, title text, pinned integer default 0, deleted boolean default 0, cursor text);');
+      sql_single('INSERT INTO "note_new" (id, modified, content, title, pinned, deleted, cursor) SELECT * FROM "note"');
+      sql_single('DROP TABLE "note"');
+      sql_single('ALTER TABLE "note_new" RENAME TO "note"');
   }
+  store_setting('dbversion', 5);
 }
 
 /* * * * * * * * * * * * * *

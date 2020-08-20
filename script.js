@@ -182,7 +182,7 @@ $().ready(function() {
       let id = parseInt(location.hash.substring(1), 10);
       if (id != app.activenote) activateNote(id);
       if (app.snap) {
-        app.snap == null;
+        app.snap = null;
         loadNote(id);
       }
     }
@@ -580,6 +580,14 @@ function parseFromServer(data, textStatus, xhr) {
     app.password = data.password;
     hideModal();
   }
+  if (data.settings && (app.modal == 'settings')) {
+    if (data.settings == 'stored') hideModal();
+    else {
+      handleWebauthn(data);
+      handleSettings(data.settings);
+    }
+    return;
+  }
   if (data.webauthn) {
     handleWebauthn(data);
     return;
@@ -895,13 +903,16 @@ function loadSettings() {
   div.append('<p><input type="button" id="logout-this" class="modal-button-small" value="Logout this session"></p>');
   div.append('<p><input type="button" id="logout-all" class="modal-button-small" value="Logout all sessions"></p>');
   div.append('<h2>Password</h2>');
-  if (app.password) div.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old"></p>');
-  div.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1"></p>');
-  div.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2"></p>');
-  div.append('<p><input type="button" id="settings-save" class="modal-button-small" value="Save"></p>');
+  if (app.password) div.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old" autocomplete="current-password"></p>');
+  div.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1" autocomplete="new-password"></p>');
+  div.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2" autocomplete="new-password"></p>');
   div.append('<h2>U2F keys</h2>');
   div.append('<p id="list-u2f">Loading...</p>');
   div.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
+  div.append('<h2>Automatic snapshots</h2>');
+  div.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint"> hours</p>');
+  // div.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint"> days, keeping<br><span id="prunesnaps">..</span> snapshots <input id="prunedays" class="input-smallint"> days, <input id="pruneweeks" class="input-smallint"> weeks and <input id="prunemonths" class="input-smallint"> months apart');
+  div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
   div.append('<p id="modal-error"></p>');
   div.find('#logout-this').on('click', function() {
     sendToServer({ req: 'logout', session: 'this' });
@@ -915,10 +926,10 @@ function loadSettings() {
     sendToServer({ req: 'webauthn', mode: 'prepare' });
   });
   div.find('#settings-save').on('click', function() {
+    let data = { req: 'settings', mode: 'save' };
     let old = div.find('input[name=old]');
     let new1 = div.find('input[name=new1]');
     let new2 = div.find('input[name=new2]');
-    let data = { req: 'settings' };
     if (new1.val().length || new2.val().length || (old.length && old.val().length)) {
       if (new1.val() != new2.val()) {
         div.find('#modal-error').html('Please verify your new password entries');
@@ -930,11 +941,27 @@ function loadSettings() {
       if (data.newpw.length) app.password = true;
       else app.password = false;
     }
+    data.autosnap = $('#autosnap').prop('checked');
+    data.autoprune = $('#autoprune').prop('checked');
+    data.snapafter = $('#snapafter').val();
+    data.pruneafter = $('#pruneafter').val();
+    data.prunedays = $('#prunedays').val();
+    data.pruneweeks = $('#pruneweeks').val();
+    data.prunemonths = $('#prunemonths').val();
     sendToServer(data);
     if (data.length > 1) $('#status').html('Saving settings...').css('opacity', 1);
   });
-  sendToServer({ req: 'webauthn', mode: 'list' });
+  sendToServer({ req: 'settings', mode: 'get' });
   showModal('settings', div, true);
+}
+function handleSettings(settings) {
+  $('#autosnap').prop('checked', settings.autosnap);
+  $('#autoprune').prop('checked', settings.autoprune);
+  $('#snapafter').val(settings.snapafter);
+  $('#pruneafter').val(settings.pruneafter);
+  $('#prunedays').val(settings.prunedays);
+  $('#pruneweeks').val(settings.pruneweeks);
+  $('#prunemonths').val(settings.prunemonths);
 }
 
 function loadSnapshots() {
