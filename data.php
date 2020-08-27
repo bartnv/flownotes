@@ -628,106 +628,65 @@ function sql_rows($query, $params = []) {
 }
 function sql_if($query, $params = []) {
   global $dbh;
-  if (!empty($params)) {
-    if (!($stmt = $dbh->prepare($query))) {
-      error_log("if_query() prepare failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
-    if (!($stmt->execute($params))) {
-      error_log("if_query() execute failed: " . $stmt->errorInfo()[2]);
-      return false;
-    }
-    if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return false;
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_if() prepare failed: " . $dbh->errorInfo()[2]);
+    return false;
   }
-  else {
-    if (!($res = $dbh->query($query))) {
-      error_log("if_query() query failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
-    if (!($row = $res->fetch(PDO::FETCH_NUM))) return false;
+  if (!($stmt->execute($params))) {
+    error_log("sql_if() execute failed: " . $stmt->errorInfo()[2]);
+    return false;
   }
+  if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return false;
   if ($row[0]) return true;
   return false;
 }
 function sql_foreach($query, $function, $params = []) {
   global $dbh;
-  if (!empty($params)) {
-    if (!($stmt = $dbh->prepare($query))) {
-      error_log("sql_foreach() prepare failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
-    if (!($stmt->execute($params))) {
-      error_log("sql_foreach() execute failed: " . $stmt->errorInfo()[2]);
-      return false;
-    }
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_foreach() prepare failed: " . $dbh->errorInfo()[2]);
+    return false;
   }
-  else {
-    if (!($stmt = $dbh->query($query))) {
-      error_log("sql_foreach() query failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
+  if (!($stmt->execute($params))) {
+    error_log("sql_foreach() execute failed: " . $stmt->errorInfo()[2]);
+    return false;
   }
   while ($row = $stmt->fetch()) $function($row);
 }
 function sql_single($query, $params = []) {
   global $dbh;
-  if (!empty($params)) {
-    if (!($stmt = $dbh->prepare($query))) {
-      error_log("if_query() prepare failed: " . $dbh->errorInfo()[2]);
-      return "";
-    }
-    if (!($stmt->execute($params))) {
-      error_log("if_query() execute failed: " . $stmt->errorInfo()[2]);
-      return "";
-    }
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_single() prepare failed: " . $dbh->errorInfo()[2]);
+    return "";
   }
-  else {
-    if (!($stmt = $dbh->query($query))) {
-      error_log("if_query() query failed: " . $dbh->errorInfo()[2]);
-      return "";
-    }
+  if (!($stmt->execute($params))) {
+    error_log("sql_single() execute failed: " . $stmt->errorInfo()[2]);
+    return "";
   }
   if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return "";
   return $row[0];
 }
 function sql_insert_id($query, $params = []) {
   global $dbh;
-  if (!empty($params)) {
-    if (!($stmt = $dbh->prepare($query))) {
-      error_log("sql_insert_id() prepare failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
-    if (!($stmt->execute($params))) {
-      error_log("sql_insert_id() execute failed: " . $stmt->errorInfo()[2]);
-      return false;
-    }
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_insert_id() prepare failed: " . $dbh->errorInfo()[2]);
+    return false;
   }
-  else {
-    if (!($stmt = $dbh->query($query))) {
-      error_log("sql_insert_id() query failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
+  if (!($stmt->execute($params))) {
+    error_log("sql_insert_id() execute failed: " . $stmt->errorInfo()[2]);
+    return false;
   }
   if ($stmt->rowCount() != 1) return false;
   return $dbh->lastInsertId();
 }
 function sql_updateone($query, $params = []) {
   global $dbh;
-  if (!empty($params)) {
-    if (!($stmt = $dbh->prepare($query))) {
-      error_log("sql_updateone() prepare failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
-    if (!($stmt->execute($params))) {
-      error_log("sql_updateone() execute failed: " . $stmt->errorInfo()[2]);
-      return false;
-    }
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_updateone() prepare failed: " . $dbh->errorInfo()[2]);
+    return false;
   }
-  else {
-    if (!($stmt = $dbh->query($query))) {
-      error_log("sql_updateone() query failed: " . $dbh->errorInfo()[2]);
-      return false;
-    }
+  if (!($stmt->execute($params))) {
+    error_log("sql_updateone() execute failed: " . $stmt->errorInfo()[2]);
+    return false;
   }
   if ($stmt->rowCount() != 1) return false;
   return true;
