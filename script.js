@@ -910,10 +910,13 @@ function loadSettings() {
   div.append('<p id="list-u2f">Loading...</p>');
   div.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
   div.append('<h2>Automatic snapshots</h2>');
-  div.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint"> hours</p>');
-  // div.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint"> days, keeping<br><span id="prunesnaps">..</span> snapshots <input id="prunedays" class="input-smallint"> days, <input id="pruneweeks" class="input-smallint"> weeks and <input id="prunemonths" class="input-smallint"> months apart');
+  div.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
+  div.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br><span id="prunesnaps">..</span> snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
   div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
   div.append('<p id="modal-error"></p>');
+  div.find('#prunedays,#pruneweeks,#prunemonths').on('input', function() {
+    $('#prunesnaps').text(parseInt($('#prunedays').val() || 0) + parseInt($('#pruneweeks').val() || 0) + parseInt($('#prunemonths').val() || 0));
+  });
   div.find('#logout-this').on('click', function() {
     sendToServer({ req: 'logout', session: 'this' });
     showModal('logout', '', false);
@@ -961,7 +964,7 @@ function handleSettings(settings) {
   $('#pruneafter').val(settings.pruneafter);
   $('#prunedays').val(settings.prunedays);
   $('#pruneweeks').val(settings.pruneweeks);
-  $('#prunemonths').val(settings.prunemonths);
+  $('#prunemonths').val(settings.prunemonths).trigger('input');
 }
 
 function loadSnapshots() {

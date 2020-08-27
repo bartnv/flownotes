@@ -96,6 +96,7 @@ $ret = [];
 
 switch ($data['req']) {
   case 'init':
+    prune_snapshots();
     if (empty($data['activenote'])) $ret['switchnote'] = $activenote;
     $ret['notes'] = select_recent_notes(25);
     $ret['notes'] = select_pinned_notes(25) + $ret['notes'];
@@ -418,6 +419,38 @@ function del_snapshot($id) {
     return;
   }
 }
+function prune_snapshots() {
+  $pruneafter = query_setting('pruneafter', 0);
+  $prunedays = query_setting('prunedays', 0);
+  $pruneweeks = query_setting('pruneweeks', 0);
+  $prunemonths = query_setting('prunemonths', 0);
+  $prune = $prunedays+$pruneweeks+$prunemonths;
+  sql_updatecount("UPDATE snapshot SET label = NULL");
+  sql_foreach("SELECT note, count(*) FROM snapshot WHERE locked = 0 AND modified < strftime('%s', 'now') - 86400*? GROUP BY note HAVING count(*) > 0",
+    function($row) use ($pruneafter, $prunedays, $pruneweeks, $prunemonths) {
+      $count = sql_updatecount("UPDATE snapshot SET todelete = 1 WHERE locked = 0 AND note = ? AND modified < strftime('%s', 'now') - 86400*?", [ $row[0], $pruneafter ]);
+      error_log('Note ' . $row[0] . " has $count automatic snapshots older than " . $pruneafter . ' days');
+      for ($days = 1; $days <= $prunedays; $days++) {
+        // This should use UPDATE-FROM eventually, available in SQLite 3.33+
+        //sql_updateone("UPDATE snapshot SET todelete = 0 FROM (SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*?) - modified) LIMIT 1) AS best WHERE best.id = snapshot.id", [ $row[0], $pruneafter+$days ]);
+        $id = sql_single("SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*?) - modified) LIMIT 1", [ $row[0], $pruneafter+$days ]);
+        sql_updateone("UPDATE snapshot SET todelete = 0, label = 'Day $days' WHERE label IS NULL AND id = ?", [ $id ]);
+      }
+      for ($weeks = 1; $weeks <= $pruneweeks; $weeks++) {
+        $id = sql_single("SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*7*?) - modified) LIMIT 1", [ $row[0], $pruneafter+$days ]);
+        sql_updateone("UPDATE snapshot SET todelete = 0, label = 'Week $weeks' WHERE label IS NULL AND id = ?", [ $id ]);
+      }
+      for ($months = 1; $months <= $prunemonths; $months++) {
+        $id = sql_single("SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*7*30*?) - modified) LIMIT 1", [ $row[0], $pruneafter+$days ]);
+        sql_updateone("UPDATE snapshot SET todelete = 0, label = 'Month $months' WHERE label IS NULL AND id = ?", [ $id ]);
+      }
+    },
+    [ $pruneafter ]
+  );
+  $count = sql_updatecount("DELETE FROM snapshot WHERE todelete = 1");
+  error_log("Deleted $count snapshots");
+}
+
 function search_notes($term) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content LIKE ?"))) {
@@ -464,7 +497,12 @@ function update_note($id, $note) {
     $after = query_setting('snapafter', 0);
     $now = time();
     $ts = sql_single('SELECT snapped FROM note WHERE id = ?', [ $id ]);
-    if ($now > $ts+$after*3600) add_snapshot($id);
+    if ($now > $ts+$after*3600) {
+      $content = sql_single('SELECT content FROM note WHERE id = ?', [ $id ]);
+      if (!sql_if('SELECT id FROM snapshot WHERE note = ? AND content = ?', [ $id, $content ])) { // No snapshots with this content
+        add_snapshot($id);
+      }
+    }
   }
   if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ? WHERE id = ?"))) {
     error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
@@ -573,6 +611,18 @@ function upgrade_database() {
  *   SQL helper functions  *
  *                         *
  * * * * * * * * * * * * * */
+function sql_rows($query, $params = []) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_rows() prepare failed: " . $dbh->errorInfo()[2]);
+    return false;
+  }
+  if (!($stmt->execute($params))) {
+    error_log("sql_rows() execute failed: " . $stmt->errorInfo()[2]);
+    return false;
+  }
+  return $stmt;
+}
 function sql_if($query, $params = []) {
   global $dbh;
   if (!empty($params)) {
@@ -678,6 +728,18 @@ function sql_updateone($query, $params = []) {
   }
   if ($stmt->rowCount() != 1) return false;
   return true;
+}
+function sql_updatecount($query, $params = []) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_updateone() prepare failed: " . $dbh->errorInfo()[2]);
+    return 0;
+  }
+  if (!($stmt->execute($params))) {
+    error_log("sql_updateone() execute failed: " . $stmt->errorInfo()[2]);
+    return 0;
+  }
+  return $stmt->rowCount();
 }
 
 function send_and_exit($data) {

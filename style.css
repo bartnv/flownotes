@@ -57,13 +57,14 @@ DIV#modal-overlay H2 { margin-top: 1rem; }
 DIV#modal-overlay P { margin-bottom: 0.5rem; }
 DIV#modal-overlay HR { background-color: #ccc; }
 P#modal-error { color: rgb(255,0,0); }
-.modal-button { background-color: rgb(204,204,204); border-radius: 8px; border: none; margin-top: 1rem; padding: 0.7em 1em; font-size: 1em; }
+.modal-button { background-color: rgb(204,204,204); border-radius: 8px; border: none; padding: 0.7em 1em; font-size: 1em; }
 .modal-button:hover { background-color: white; cursor: pointer; }
 .modal-button-small { background-color: rgb(204,204,204); border-radius: 5px; border: none; padding: 0.35em 0.6em; font-size: 0.9em; }
 .modal-button-small:hover { background-color: white; cursor: pointer; }
 .settings-label { display: inline-block; min-width: 10em; }
+#settings-save { margin-top: 1rem; }
 .input-password { width: 10em; }
-.input-smallint { width: 1.5em; }
+.input-smallint { width: 2.5em; }
 UL#snapshots { list-style: none; padding-left: 0; margin-bottom: 1.5rem; }
 UL#snapshots LI { position: relative; padding: 0.3rem calc(0.5rem + 18px) 0.3rem 0.5rem; border-radius: 5px; cursor: pointer; }
 UL#snapshots LI:hover { background-color: rgb(70,70,70); }
