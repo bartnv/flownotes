@@ -665,6 +665,20 @@ function sql_single($query, $params = []) {
   if (!($row = $stmt->fetch(PDO::FETCH_NUM))) return "";
   return $row[0];
 }
+function sql_column($query, $params = []) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_column() prepare failed: " . $dbh->errorInfo()[2]);
+    return [];
+  }
+  if (!($stmt->execute($params))) {
+    error_log("sql_column() execute failed: " . $stmt->errorInfo()[2]);
+    return [];
+  }
+  $ret = [];
+  while ($row = $stmt->fetch(PDO::FETCH_NUM)) $ret[] = $row[0];
+  return $ret;
+}
 function sql_insert_id($query, $params = []) {
   global $dbh;
   if (!($stmt = $dbh->prepare($query))) {
