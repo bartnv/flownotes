@@ -12,7 +12,7 @@ if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request
 if (empty($data['req'])) fatalerr('No req specified in POST request');
 
 $dbh = new PDO('sqlite:db/notes.sq3');
-if (query_setting('dbversion') < 5) upgrade_database();
+if (query_setting('dbversion') < 6) upgrade_database();
 
 $password = query_setting('password', '');
 if (!empty($password)) {
@@ -602,8 +602,11 @@ function upgrade_database() {
       sql_single('INSERT INTO "note_new" (id, modified, content, title, pinned, deleted, cursor) SELECT * FROM "note"');
       sql_single('DROP TABLE "note"');
       sql_single('ALTER TABLE "note_new" RENAME TO "note"');
+    case 5:
+      sql_single('ALTER TABLE "snapshot" ADD COLUMN todelete bool default 0');
+      sql_single('ALTER TABLE "snapshot" ADD COLUMN label text');
   }
-  store_setting('dbversion', 5);
+  store_setting('dbversion', 6);
 }
 
 /* * * * * * * * * * * * * *
