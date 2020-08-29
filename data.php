@@ -425,28 +425,43 @@ function prune_snapshots() {
   $pruneweeks = query_setting('pruneweeks', 0);
   $prunemonths = query_setting('prunemonths', 0);
   $prune = $prunedays+$pruneweeks+$prunemonths;
+  // $now = microtime(true);
   sql_updatecount("UPDATE snapshot SET label = NULL");
   sql_foreach("SELECT note, count(*) FROM snapshot WHERE locked = 0 AND modified < strftime('%s', 'now') - 86400*? GROUP BY note HAVING count(*) > 0",
     function($row) use ($pruneafter, $prunedays, $pruneweeks, $prunemonths) {
       $count = sql_updatecount("UPDATE snapshot SET todelete = 1 WHERE locked = 0 AND note = ? AND modified < strftime('%s', 'now') - 86400*?", [ $row[0], $pruneafter ]);
       error_log('Note ' . $row[0] . " has $count automatic snapshots older than " . $pruneafter . ' days');
-      for ($days = 1; $days <= $prunedays; $days++) {
-        // This should use UPDATE-FROM eventually, available in SQLite 3.33+
-        //sql_updateone("UPDATE snapshot SET todelete = 0 FROM (SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*?) - modified) LIMIT 1) AS best WHERE best.id = snapshot.id", [ $row[0], $pruneafter+$days ]);
-        $id = sql_single("SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*?) - modified) LIMIT 1", [ $row[0], $pruneafter+$days ]);
-        sql_updateone("UPDATE snapshot SET todelete = 0, label = 'Day $days' WHERE label IS NULL AND id = ?", [ $id ]);
-      }
-      for ($weeks = 1; $weeks <= $pruneweeks; $weeks++) {
-        $id = sql_single("SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*7*?) - modified) LIMIT 1", [ $row[0], $pruneafter+$days ]);
-        sql_updateone("UPDATE snapshot SET todelete = 0, label = 'Week $weeks' WHERE label IS NULL AND id = ?", [ $id ]);
-      }
-      for ($months = 1; $months <= $prunemonths; $months++) {
-        $id = sql_single("SELECT id FROM snapshot WHERE note = ? ORDER BY abs((strftime('%s', 'now') - 86400*7*30*?) - modified) LIMIT 1", [ $row[0], $pruneafter+$days ]);
-        sql_updateone("UPDATE snapshot SET todelete = 0, label = 'Month $months' WHERE label IS NULL AND id = ?", [ $id ]);
+      $snaps = sql_column("SELECT modified FROM snapshot WHERE note = ? AND modified < strftime('%s', 'now') - 86400*? ORDER BY 1 DESC", [ $row[0], $pruneafter ]);
+      $keep = [ $prunedays, $pruneweeks, $prunemonths ];
+      $ts = time() - 86400*$pruneafter;
+      for ($i = 0; !empty($snaps[$i]);) {
+        if ($keep[0]) { // Days
+          $ts -= 86400;
+          $keep[0]--;
+          $label = 'Day ' . ($prunedays-$keep[0]);
+        }
+        elseif ($keep[1]) { // Weeks
+          $ts -= 86400*7;
+          $keep[1]--;
+          $label = 'Week ' . ($pruneweeks-$keep[1]);
+        }
+        elseif ($keep[2]) { // Months
+          $ts -= 86400*30;
+          $keep[2]--;
+          $label = 'Month ' . ($prunemonths-$keep[2]);
+        }
+        else {
+          sql_updatecount("UPDATE snapshot SET todelete = 1, label = 'Too old' WHERE note = ? AND modified <= ? AND locked = 0", [ $row[0], $snaps[$i] ]);
+          break;
+        }
+        while (!empty($snaps[$i+1]) && ($snaps[$i+1] > $ts)) $i++;
+        sql_updatecount("UPDATE snapshot SET todelete = 0, label = '$label' WHERE note = ? AND modified = ?", [ $row[0], $snaps[$i] ]);
+        if ($snaps[$i] > $ts) $i++;
       }
     },
     [ $pruneafter ]
   );
+  // error_log('Prune took ' . (microtime(true)-$now) . ' ms');
   $count = sql_updatecount("DELETE FROM snapshot WHERE todelete = 1");
   error_log("Deleted $count snapshots");
 }
