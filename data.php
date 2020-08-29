@@ -163,7 +163,7 @@ switch ($data['req']) {
     if (!empty($data['undelete'])) $change = 0;
     else $change = 1;
 
-    if (!sql_updateone("UPDATE note SET deleted = $change, modified = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
+    if (!sql_updateone("UPDATE note SET deleted = $change WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
     $ret['notes'] = [];
     $ret['notes'][$data['id']] = [];
     $ret['notes'][$data['id']]['deleted'] = $change;
