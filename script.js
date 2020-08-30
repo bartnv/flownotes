@@ -647,7 +647,10 @@ function parseFromServer(data, textStatus, xhr) {
     if (data.recent) app.recent = data.recent;
     updatePanels();
   }
-  if (reload && !app.snap) loadNote(app.activenote);
+  if (reload && !app.snap) {
+    loadNote(app.activenote);
+    if ($('#stats').is(':visible')) updateStats();
+  }
 
   if (data.searchresults) listSearchResults(data.searchresults, data.search);
   if (app.notes[app.activenote]) {
