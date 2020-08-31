@@ -312,6 +312,7 @@ function add_note($content) {
     error_log("add_note() query execute failed: " . $err[2]);
     return [];
   }
+  store_setting('lastupdate', time());
   return $dbh->lastInsertId();
 }
 function select_note($id) {
