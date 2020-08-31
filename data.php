@@ -284,7 +284,7 @@ function store_setting($setting, $value) {
   if (!($stmt->execute([ $setting, $value ]))) {
     $err = $stmt->errorInfo();
     error_log("store_setting() execute failed: " . $err[2]);
-    return null;
+    fatalerr('Failed to write to database: ' . $err[2]);
   }
   return $value;
 }
