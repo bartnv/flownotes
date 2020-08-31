@@ -559,7 +559,7 @@ function sendToServer(data, sync) {
 }
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline();
-  if (data.error) return alert('Error: ' + data.error);
+  if (data.error) return offline(data.error);
   if (data.logout) return logout();
   app.lastcomm = Date.now();
   if (app.offline) {
@@ -691,10 +691,10 @@ function parseFromServer(data, textStatus, xhr) {
     location.hash = '#'+data.switchnote;
   }
 }
-function offline() {
+function offline(msg = 'Connection failed, switching to offline mode') {
   if (!app.offline) {
     app.offline = Date.now();
-    $('#status').html('Connection failed, switching to offline mode').css('opacity', 1);
+    $('#status').html(msg).css('opacity', 1);
   }
   else {
     let count = 0;
@@ -704,7 +704,7 @@ function offline() {
     if (count) $('#status').html('Offline mode (' + count + ' unsaved notes)').css('opacity', 1);
     else $('#status').html('Offline mode').css('opacity', 1);
   }
-  if (app.notes[app.activenote].content === undefined) {
+  if (app.notes[app.activenote] && (app.notes[app.activenote].content === undefined)) {
     $('#input').val('');
     $('#render').empty();
   }
