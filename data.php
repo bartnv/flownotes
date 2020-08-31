@@ -289,14 +289,25 @@ function store_setting($setting, $value) {
   return $value;
 }
 
+function find_title($content) {
+  $res = preg_match_all("/([a-zA-Z0-9\u{00C0}-\u{024F}][a-zA-Z\u{00C0}-\u{024F}0-9 .\/\\&\'-]+[a-zA-Z\u{00C0}-\u{024F}0-9])/m", substr($content, 0, 100), $matches);
+  if ($res) {
+    if (($matches[0][0] == 'http') || ($matches[0][0] == 'https') && !empty($matches[0][1])) return $matches[0][1];
+    else return $matches[0][0];
+  }
+  return '{no title}';
+}
+
 function add_note($content) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("INSERT INTO note (content) VALUES (?)"))) {
+  if (!empty($content)) $title = find_title($content);
+  else $title = null;
+  if (!($stmt = $dbh->prepare("INSERT INTO note (title, content) VALUES (?, ?)"))) {
     $err = $dbh->errorInfo();
     error_log("add_note() query prepare failed: " . $err[2]);
     return null;
   }
-  if (!($stmt->execute([ $content ]))) {
+  if (!($stmt->execute([ $title, $content ]))) {
     $err = $stmt->errorInfo();
     error_log("add_note() query execute failed: " . $err[2]);
     return [];
