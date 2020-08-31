@@ -533,16 +533,17 @@ function update_note($id, $note) {
   }
   if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ? WHERE id = ?"))) {
     error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
-    return;
+    return [];
   }
 
   if (empty($note['cursor'])) $cursor = null;
-  else $cursor = implode(',', $note['cursor']);
+  elseif (is_array($note['cursor'])) $cursor = implode(',', $note['cursor']);
+  else $cursor = $note['cursor'];
 
   if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $id ]))) {
     $processUser = posix_getpwuid(posix_geteuid());
     error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
-    return;
+    return [];
   }
   update_links($id, $note['content']);
 
