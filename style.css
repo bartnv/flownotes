@@ -9,10 +9,12 @@ A.link-note:hover::before,A.link-ext:hover::before { opacity: 1; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
-H2 { display: table; margin-top: 0.5rem; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
-/* H2:not(:first-child) { margin-top: 0; } */
-H3 { display: table; margin-top: 0.5rem; margin-bottom: 0; padding-bottom: 3px; border-bottom: dotted #ccc 1px; font-size: 18px; }
-/* H3:not(:first-child) { margin-top: 0; } */
+H2 { display: table; margin-top: 1rem; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
+H3 { display: table; margin-top: 0.5rem; margin-bottom: 0; padding-bottom: 3px; border-bottom: dotted #ccc 1px; font-size: 20px; }
+H4 { margin-top: 0.5rem; margin-bottom: 0; font-size: 18px; }
+H4::first-letter { padding-bottom: 3px; border-bottom: solid #ccc 1px; }
+H5 { margin-top: 0.5rem; margin-bottom: 0; font-size: 16px; }
+H5::first-letter { padding-bottom: 3px; border-bottom: dotted #ccc 1px; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 DIV#panels { position: fixed; height: 100vh; width: 100vw; display: flex; }
