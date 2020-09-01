@@ -526,7 +526,7 @@ function update_note($id, $note) {
     $ts = sql_single('SELECT snapped FROM note WHERE id = ?', [ $id ]);
     if ($now > $ts+$after*3600) {
       $content = sql_single('SELECT content FROM note WHERE id = ?', [ $id ]);
-      if (!sql_if('SELECT id FROM snapshot WHERE note = ? AND content = ?', [ $id, $content ])) { // No snapshots with this content
+      if (!empty($content) && !sql_if('SELECT id FROM snapshot WHERE note = ? AND content = ?', [ $id, $content ])) { // No snapshots with this content
         add_snapshot($id);
       }
     }
