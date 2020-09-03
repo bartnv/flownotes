@@ -6,13 +6,20 @@ require('3rdparty/CBOR/Types/CBORByteString.php');
 
 header('Content-type: application/json');
 
-$input = file_get_contents("php://input");
+$dbfile = 'db/notes.sq3';
+if (getcwd() != __DIR__) chdir(__DIR__);
+if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
+if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for PHP user " . posix_getpwuid(posix_geteuid()));
+if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '/' . dirname($dbfile) . " is not writable for PHP user " . posix_getpwuid(posix_geteuid()));
+$dbh = new PDO('sqlite:' . $dbfile);
+if (query_setting('dbversion') < 6) upgrade_database();
+
+if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
+
+$input = file_get_contents('php://input');
 if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
 if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
 if (empty($data['req'])) fatalerr('No req specified in POST request');
-
-$dbh = new PDO('sqlite:db/notes.sq3');
-if (query_setting('dbversion') < 6) upgrade_database();
 
 $password = query_setting('password', '');
 if (!empty($password)) {
@@ -635,6 +642,51 @@ function upgrade_database() {
       sql_single('ALTER TABLE "snapshot" ADD COLUMN label text');
   }
   store_setting('dbversion', 6);
+}
+
+function handle_cli() {
+  global $argv;
+  $input = file_get_contents('php://stdin');
+  if (empty($input)) {
+    print "No input received\n";
+    exit();
+  }
+  if (substr($input, 0, 5) == 'From ') {
+    require('vendor/autoload.php');
+    $msg = \ZBateson\MailMimeParser\Message::from($input);
+    $input = '';
+    if (!empty($msg->getHeaderValue('subject'))) $input .= $msg->getHeaderValue('subject') . "\n";
+    if (!empty($msg->getTextContent())) $input .= $msg->getTextContent();
+    else $input .= preg_replace([ '/<br ?\/?>/i', '/<\/?[^>]+>/' ], [ "\n", '' ], $msg->getHtmlContent());
+  }
+  switch ($argv[1] ?? null) {
+    case 'create':
+      add_note($input);
+      break;
+    case 'append':
+      $id = intval($argv[2] ?? null);
+      if (!$id) {
+        print "Invalid id passed for action 'append'\n";
+        exit();
+      }
+      $note = select_note($id);
+      if (empty($note)) {
+        print "Note with id $id not found\n";
+        exit();
+      }
+      if (substr($note['content'], -1) != "\n") $note['content'] .= "\n\n";
+      else $note['content'] .= "\n";
+      $note['content'] .= $input;
+      update_note($id, $note);
+      break;
+    default:
+      print "Usage: data.php <action> [options]\n";
+      print " Available actions:\n";
+      print " - create: create a new note with the input as its content\n";
+      print " - append <id>: append the input to the note with the specified id\n";
+      print " - prepend <id>: prepend the input to the note with the specified id, but after the first line\n";
+  }
+  exit();
 }
 
 /* * * * * * * * * * * * * *
