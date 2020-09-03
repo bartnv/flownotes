@@ -149,10 +149,10 @@ $().ready(function() {
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
     updateStats();
   }).on('focus', function() {
-    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) $('#button-panel-hide').click();
+    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) togglePanelLeft('close');
   });
   $('#render').on('click', function() {
-    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) $('#button-panel-hide').click();
+    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) togglePanelLeft('close');
   });
   $('#render').on('click', 'code', function () {
     if (window.getSelection().type == 'Range') return;
@@ -229,18 +229,7 @@ $().ready(function() {
     $('#search-input').select();
     $('#search-results').empty().append(app.loader);
   });
-  $('#button-panel-hide').on('click', function() {
-    if (app.hidepanelleft) {
-      app.hidepanelleft = false;
-      $(this).addClass('button-active').attr('title', 'Hide left panel');
-      $('#panel-left').css('margin-left', '0');
-    }
-    else {
-      app.hidepanelleft = true;
-      $(this).removeClass('button-active').attr('title', 'Show left panel');
-      $('#panel-left').css('margin-left', '-20em');
-    }
-  });
+  $('#button-panel-hide').on('click', togglePanelLeft);
   $('#panel-left').on('mousedown', '.note-li', function (evt) {
     app.linkid = $(evt.currentTarget).addClass('note-selected').data('id');
     $('body').css('cursor', 'alias');
@@ -306,10 +295,10 @@ $().ready(function() {
       let end = e.changedTouches[0];
       if (Math.abs(app.touchstart.pageX-end.pageX) > Math.abs(app.touchstart.pageY-end.pageY)) {
         if (end.pageX > app.touchstart.pageX+10) {
-          if (app.hidepanelleft) $('#button-panel-hide').click();
+          if (app.hidepanelleft) togglePanelLeft();
         }
         else if (end.pageX < app.touchstart.pageX-10) {
-          if (!app.hidepanelleft) $('#button-panel-hide').click();
+          if (!app.hidepanelleft) togglePanelLeft();
         }
       }
       app.touchstart = null;
@@ -375,6 +364,19 @@ $().ready(function() {
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 5000);
 });
+
+function togglePanelLeft(force) {
+  if ((force == 'close') || !app.hidepanelleft) {
+    app.hidepanelleft = true;
+    $('#button-panel-hide').removeClass('button-active').attr('title', 'Show left panel');
+    $('#panel-left').css('margin-left', '-20em');
+  }
+  else {
+    app.hidepanelleft = false;
+    $('#button-panel-hide').addClass('button-active').attr('title', 'Hide left panel');
+    $('#panel-left').css('margin-left', '0');
+  }
+}
 
 function iframePrint(content) {
   let iframe = $('<iframe height="0" width="0" border="0" wmode="Opaque"/>')
@@ -877,7 +879,7 @@ function activateNote(id, nopost) {
     sendToServer(data);
   }
   if (!app.hidepanelleft && ($('#panel-main')[0].getBoundingClientRect().right > window.innerWidth)) {
-    $('#button-panel-hide').click();
+    togglePanelLeft('close');
   }
 }
 function activateTab(name) {
