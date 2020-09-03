@@ -8,9 +8,10 @@ header('Content-type: application/json');
 
 $dbfile = 'db/notes.sq3';
 if (getcwd() != __DIR__) chdir(__DIR__);
+if (!file_exists(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '/' . dirname($dbfile) . " doesn't exist");
+if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '/' . dirname($dbfile) . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
-if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for PHP user " . posix_getpwuid(posix_geteuid()));
-if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '/' . dirname($dbfile) . " is not writable for PHP user " . posix_getpwuid(posix_geteuid()));
+if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
 if (query_setting('dbversion') < 6) upgrade_database();
 
