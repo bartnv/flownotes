@@ -417,10 +417,8 @@ function loadNote(id) {
     $('#button-note-del').removeClass('button-active').attr('title', 'Delete note');
   }
   $('#input').val(app.notes[id].content).attr('readonly', false);
-  if (app.mode == 'edit') {
-    $('#input').focus();
-    if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end).blur().focus();
-  }
+  if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end);
+  if (app.mode == 'edit') $('#input').blur().focus();
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
 }
