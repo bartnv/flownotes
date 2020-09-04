@@ -240,7 +240,7 @@ switch ($data['req']) {
         break;
       case 'add':
         if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
-        add_snapshot($data['note'], 1);
+        add_snapshot($data['note'], $data['locked'] ?? 1);
         $ret['note'] = $data['note'];
         $ret['snapshots'] = select_note_snapshots($data['note']);
         break;

@@ -344,7 +344,7 @@ $().ready(function() {
   $('#button-settings').on('click', loadSettings);
   $('#button-restore').on('click', function() {
     if (app.notes[app.activenote].modified > app.snapshots[app.snapshots.length-1].modified) {
-      sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote });
+      sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote, locked: 0 });
     }
     let snapshot = null;
     for (let snap of app.snapshots) {
