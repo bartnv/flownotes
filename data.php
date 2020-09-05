@@ -13,7 +13,7 @@ if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
-if (query_setting('dbversion') < 6) upgrade_database();
+if (query_setting('dbversion') < 7) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 
@@ -539,7 +539,7 @@ function update_note($id, $note) {
       }
     }
   }
-  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ? WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ?, mode = ? WHERE id = ?"))) {
     error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -548,7 +548,7 @@ function update_note($id, $note) {
   elseif (is_array($note['cursor'])) $cursor = implode(',', $note['cursor']);
   else $cursor = $note['cursor'];
 
-  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $id ]))) {
+  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $note['mode'] ?? 'edit', $id ]))) {
     $processUser = posix_getpwuid(posix_geteuid());
     error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
     return [];
@@ -614,11 +614,11 @@ function update_note_meta($id, $note) {
   if (isset($note['cursor'])) $cursor = implode(',', $note['cursor']);
   else $cursor = NULL;
 
-  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ? WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ?, mode = ? WHERE id = ?"))) {
     error_log("FlowNotes: update_note_meta() update prepare failed: " . $dbh->errorInfo()[2]);
     return 0;
   }
-  if (!($stmt->execute([ $pinned, $cursor, $id ]))) {
+  if (!($stmt->execute([ $pinned, $cursor, $note['mode'] ?? 'edit', $id ]))) {
     $err = $stmt->errorInfo();
     $processUser = posix_getpwuid(posix_geteuid());
     error_log("FlowNotes: update_note_meta() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
@@ -641,8 +641,10 @@ function upgrade_database() {
     case 5:
       sql_single('ALTER TABLE "snapshot" ADD COLUMN todelete bool default 0');
       sql_single('ALTER TABLE "snapshot" ADD COLUMN label text');
+    case 6:
+      sql_single('ALTER TABLE "note" ADD COLUMN mode text default \'edit\'');
   }
-  store_setting('dbversion', 6);
+  store_setting('dbversion', 7);
 }
 
 function handle_cli() {

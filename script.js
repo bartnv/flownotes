@@ -93,10 +93,6 @@ $().ready(function() {
   }
   sendToServer(data);
 
-  if (localStorage.getItem('flownotes_mode') && (localStorage.getItem('flownotes_mode') != 'edit')) {
-    switchMode(localStorage.getItem('flownotes_mode'));
-  }
-
   $('#input').on('keydown', function(e) {
     if (!e.key.startsWith('F')) {
       e.stopPropagation();
@@ -405,7 +401,7 @@ function unpinNote(id) {
   if (id == app.activenote) $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
 }
 function loadNote(id) {
-  $('#snap').hide();
+  if (app.notes[id].mode && (app.mode != app.notes[id].mode)) switchMode(app.notes[id].mode);
   if (app.mode == 'view') render(app.notes[id].content);
   else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
@@ -423,6 +419,7 @@ function loadNote(id) {
   if (app.mode == 'edit') $('#input').blur().focus();
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
+  $('#snap').hide();
 }
 function loadSnap(snap) {
   if (app.mode == 'view') render(snap.content);
@@ -540,6 +537,7 @@ function pushUpdate(sync, retransmit) {
       data.notes[i] = {};
       data.notes[i].cursor = app.notes[i].cursor;
       data.notes[i].pinned = app.notes[i].pinned;
+      data.notes[i].mode = app.notes[i].mode;
       delete app.notes[i].metatouched;
       app.notes[i].intransit = true;
     }
@@ -643,6 +641,7 @@ function parseFromServer(data, textStatus, xhr) {
         let pos = data.notes[i].cursor.split(',');
         app.notes[i].cursor = { start: pos[0], end: pos[1] };
       }
+      if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
     }
     if (data.recent) app.recent = data.recent;
     updatePanels();
@@ -687,7 +686,6 @@ function parseFromServer(data, textStatus, xhr) {
       app.addlink = false;
       pushUpdate();
     }
-    if (app.mode != 'edit') switchMode('edit');
     location.hash = '#'+data.switchnote;
   }
 }
@@ -739,6 +737,11 @@ function handleWebauthn(data) {
 function switchMode(newmode) {
   app.prev = app.mode;
   app.mode = newmode;
+  if (app.notes[app.activenote]) {
+    if (!app.changed) app.changed = Date.now();
+    app.notes[app.activenote].mode = newmode;
+    app.notes[app.activenote].metatouched = true;
+  }
   if (app.mode == 'edit') {
     $('#input').show().focus();
     $('#render').hide().empty();
@@ -755,7 +758,6 @@ function switchMode(newmode) {
     loadGraph();
   }
   $('#button-mode-' + app.mode).addClass('button-active').siblings('.button-mode').removeClass('button-active');
-  localStorage.setItem('flownotes_mode', app.mode);
 }
 function loadGraph() {
   app.graph.graph.clear();
