@@ -867,7 +867,6 @@ function activateNote(id, nopost) {
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
     if (app.notes[id] && (app.notes[id].content !== undefined)) {
-//      if (app.mode == 'graph') switchMode(app.prev);
       loadNote(app.activenote);
       updatePanels();
       data.lazy = true;
@@ -1078,20 +1077,6 @@ function logout() {
 $.fn.getCursorPosition = function() {
   let el = this.get(0);
   return { start: el.selectionStart, end: el.selectionEnd };
-  // let el = $(this).get(0);
-  // let start = 0;
-  // let end = 0;
-  // if ('selectionStart' in el) {
-  //   start = el.selectionStart;
-  //   end = el.selectionEnd;
-  // } else if('selection' in document) {
-  //   el.focus();
-  //   let Sel = document.selection.createRange();
-  //   let SelLength = document.selection.createRange().text.length;
-  //   Sel.moveStart('character', -el.value.length);
-  //   pos = Sel.text.length - SelLength;
-  // }
-  // return pos;
 }
 $.fn.setCursorPosition = function(start, end) {
   if (end === undefined) end = start;
