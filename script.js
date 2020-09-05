@@ -901,47 +901,48 @@ function listSearchResults(items, first) {
 }
 
 function loadSettings() {
-  let div = $('<div><h1>Settings</h1></div>');
-  div.append('<h2>Logout</h2>');
-  div.append('<p><input type="button" id="logout-this" class="modal-button-small" value="Logout this session"></p>');
-  div.append('<p><input type="button" id="logout-all" class="modal-button-small" value="Logout all sessions"></p>');
-  div.append('<h2>Password</h2>');
-  if (app.password) div.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old" autocomplete="current-password"></p>');
-  div.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1" autocomplete="new-password"></p>');
-  div.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2" autocomplete="new-password"></p>');
-  div.append('<h2>U2F keys</h2>');
-  div.append('<p id="list-u2f">Loading...</p>');
-  div.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
-  div.append('<h2>Automatic snapshots</h2>');
-  div.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
-  div.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br><span id="prunesnaps">..</span> snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
-  div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
+  let div = $('<div><h1>Settings</h1><div id="modal-body"></div></div>');
+  let body = div.find('#modal-body');
+  body.append('<h2>Logout</h2>');
+  body.append('<p><input type="button" id="logout-this" class="modal-button-small" value="Logout this session"></p>');
+  body.append('<p><input type="button" id="logout-all" class="modal-button-small" value="Logout all sessions"></p>');
+  body.append('<h2>Password</h2>');
+  if (app.password) body.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old" autocomplete="current-password"></p>');
+  body.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1" autocomplete="new-password"></p>');
+  body.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2" autocomplete="new-password"></p>');
+  body.append('<h2>U2F keys</h2>');
+  body.append('<p id="list-u2f">Loading...</p>');
+  body.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
+  body.append('<h2>Automatic snapshots</h2>');
+  body.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
+  body.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br><span id="prunesnaps">..</span> snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
   div.append('<p id="modal-error"></p>');
-  div.find('#prunedays,#pruneweeks,#prunemonths').on('input', function() {
+  div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
+  body.find('#prunedays,#pruneweeks,#prunemonths').on('input', function() {
     $('#prunesnaps').text(parseInt($('#prunedays').val() || 0) + parseInt($('#pruneweeks').val() || 0) + parseInt($('#prunemonths').val() || 0));
   });
-  div.find('#logout-this').on('click', function() {
+  body.find('#logout-this').on('click', function() {
     sendToServer({ req: 'logout', session: 'this' });
     showModal('logout', '', false);
   });
-  div.find('#logout-all').on('click', function() {
+  body.find('#logout-all').on('click', function() {
     sendToServer({ req: 'logout', session: 'all' });
     showModal('logout', '', false);
   });
-  div.find('#register-u2f').on('click', function() {
+  body.find('#register-u2f').on('click', function() {
     sendToServer({ req: 'webauthn', mode: 'prepare' });
   });
-  div.find('#settings-save').on('click', function() {
+  body.find('#settings-save').on('click', function() {
     let data = { req: 'settings', mode: 'save' };
-    let old = div.find('input[name=old]');
-    let new1 = div.find('input[name=new1]');
-    let new2 = div.find('input[name=new2]');
+    let old = body.find('input[name=old]');
+    let new1 = body.find('input[name=new1]');
+    let new2 = body.find('input[name=new2]');
     if (new1.val().length || new2.val().length || (old.length && old.val().length)) {
       if (new1.val() != new2.val()) {
-        div.find('#modal-error').html('Please verify your new password entries');
+        body.find('#modal-error').html('Please verify your new password entries');
         return;
       }
-      div.find('#modal-error').empty();
+      body.find('#modal-error').empty();
       if (old.length) data.oldpw = old.val();
       data.newpw = new1.val();
       if (data.newpw.length) app.password = true;
@@ -971,7 +972,7 @@ function handleSettings(settings) {
 }
 
 function loadSnapshots() {
-  let div = $('<div><h1>Snapshots</h1><ul id="snapshots">Loading...</ul><p><input type="button" id="create-snapshot" class="modal-button-small" value="Create new snapshot"></div>');
+  let div = $('<div><h1>Snapshots</h1><div id="modal-body"><ul id="snapshots">Loading...</ul></div><p><input type="button" id="create-snapshot" class="modal-button-small" value="Create new snapshot"></div>');
   div.find('#create-snapshot').on('click', function() {
     let note = app.notes[app.activenote];
     if (note.touched) return alert('Last changes not saved yet; please wait 10 seconds and try again');
