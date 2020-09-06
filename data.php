@@ -206,11 +206,11 @@ switch ($data['req']) {
         $settings = [];
         $settings['autosnap'] = query_setting('autosnap', 0);
         $settings['autoprune'] = query_setting('autoprune', 0);
-        $settings['snapafter'] = query_setting('snapafter', '');
-        $settings['pruneafter'] = query_setting('pruneafter', '');
-        $settings['prunedays'] = query_setting('prunedays', '');
-        $settings['pruneweeks'] = query_setting('pruneweeks', '');
-        $settings['prunemonths'] = query_setting('prunemonths', '');
+        $settings['snapafter'] = query_setting('snapafter', 4);
+        $settings['pruneafter'] = query_setting('pruneafter', 4);
+        $settings['prunedays'] = query_setting('prunedays', 3);
+        $settings['pruneweeks'] = query_setting('pruneweeks', 3);
+        $settings['prunemonths'] = query_setting('prunemonths', 5);
         send_and_exit([ 'webauthn' => 'list', 'keys' => $ret, 'settings' => $settings ]);
     }
   case 'webauthn':
