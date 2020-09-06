@@ -14,3 +14,13 @@ writing your thoughts down.
 * Pinned notes to keep those important ones always within reach
 
 More info is available at [FlowNotes.org](https://flownotes.org)
+
+## Release policy
+
+I do my best to keep the master branch always deployable. As such there is no
+point in tagging patch-level releases. If you want to stay at the bleeding edge,
+just update from git. Periodically I will cut a feature release as a minor
+version. Releases that drop support for older browsers will be published with a
+new major version. Other than that, I maintain full backward compatibility. Any
+feature release may upgrade your database schema, however, so keep this in mind
+if you move databases between installs.
