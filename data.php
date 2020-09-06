@@ -104,7 +104,6 @@ $ret = [];
 
 switch ($data['req']) {
   case 'init':
-    prune_snapshots();
     if (empty($data['activenote'])) $ret['switchnote'] = $activenote;
     $ret['notes'] = select_recent_notes(25);
     $ret['notes'] = select_pinned_notes(25) + $ret['notes'];
@@ -128,7 +127,7 @@ switch ($data['req']) {
     else $ret['recent'] = 25 + $data['offset'];
     break;
   case 'idle':
-    $ret['activenote'] = $activenote;
+    if (query_setting('autoprune', 0) && (date('i') == '13')) prune_snapshots();
     break;
   case 'update':
     $ret['notes'] = [];
