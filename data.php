@@ -643,6 +643,7 @@ function upgrade_database() {
       sql_single('ALTER TABLE "snapshot" ADD COLUMN label text');
     case 6:
       sql_single('ALTER TABLE "note" ADD COLUMN mode text default \'edit\'');
+      sql_single('PRAGMA journal_mode=WAL');
   }
   store_setting('dbversion', 7);
 }
