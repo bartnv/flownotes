@@ -915,12 +915,9 @@ function loadSettings() {
   body.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
   body.append('<h2>Automatic snapshots</h2>');
   body.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
-  body.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br><span id="prunesnaps">..</span> snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
+  body.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br>snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
   div.append('<p id="modal-error"></p>');
   div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
-  body.find('#prunedays,#pruneweeks,#prunemonths').on('input', function() {
-    $('#prunesnaps').text(parseInt($('#prunedays').val() || 0) + parseInt($('#pruneweeks').val() || 0) + parseInt($('#prunemonths').val() || 0));
-  });
   body.find('#logout-this').on('click', function() {
     sendToServer({ req: 'logout', session: 'this' });
     showModal('logout', '', false);
