@@ -932,17 +932,17 @@ function loadSettings() {
   body.find('#register-u2f').on('click', function() {
     sendToServer({ req: 'webauthn', mode: 'prepare' });
   });
-  body.find('#settings-save').on('click', function() {
+  div.find('#settings-save').on('click', function() {
     let data = { req: 'settings', mode: 'save' };
     let old = body.find('input[name=old]');
     let new1 = body.find('input[name=new1]');
     let new2 = body.find('input[name=new2]');
     if (new1.val().length || new2.val().length || (old.length && old.val().length)) {
       if (new1.val() != new2.val()) {
-        body.find('#modal-error').html('Please verify your new password entries');
+        div.find('#modal-error').html('Please verify your new password entries');
         return;
       }
-      body.find('#modal-error').empty();
+      div.find('#modal-error').empty();
       if (old.length) data.oldpw = old.val();
       data.newpw = new1.val();
       if (data.newpw.length) app.password = true;
