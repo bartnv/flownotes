@@ -204,7 +204,7 @@ $().ready(function() {
         }
       }
     }
-  }).on('unload', function() { // Use navigator.sendBeacon for this in the future
+  }).on('unload', function() {
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
@@ -523,7 +523,7 @@ function tick() {
   else if (app.inactive%12 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
 }
 
-function pushUpdate(sync, retransmit) {
+function pushUpdate(beacon, retransmit) {
   let data = { req: 'update', activenote: app.activenote, notes: {}, lastupdate: app.lastupdate };
   if ($('#label-search').hasClass('tab-active') && $('#search-input').val().length) data.term = $('#search-input').val();
   for (let i in app.notes) {
@@ -547,13 +547,12 @@ function pushUpdate(sync, retransmit) {
       if (app.notes[i].intransit) data.notes[i] = app.notes[i];
     }
   }
-  sendToServer(data, sync);
+  sendToServer(data, beacon);
 }
 
-function sendToServer(data, sync) {
-  let async = true;
-  if (sync) async = false;
-  return $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json', async: async }).done(parseFromServer).fail(offline);
+function sendToServer(data, beacon) {
+  if (beacon) return navigator.sendBeacon('data.php', JSON.stringify(data));
+  return $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
 }
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline();
