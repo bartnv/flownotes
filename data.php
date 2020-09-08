@@ -449,7 +449,7 @@ function prune_snapshots() {
   sql_foreach("SELECT note, count(*) FROM snapshot WHERE locked = 0 AND modified < strftime('%s', 'now') - 86400*? GROUP BY note HAVING count(*) > 0",
     function($row) use ($pruneafter, $prunedays, $pruneweeks, $prunemonths) {
       $count = sql_updatecount("UPDATE snapshot SET todelete = 1 WHERE locked = 0 AND note = ? AND modified < strftime('%s', 'now') - 86400*?", [ $row[0], $pruneafter ]);
-      error_log('Note ' . $row[0] . " has $count automatic snapshots older than " . $pruneafter . ' days');
+      // error_log('Note ' . $row[0] . " has $count automatic snapshots older than " . $pruneafter . ' days');
       $snaps = sql_column("SELECT modified FROM snapshot WHERE note = ? AND modified < strftime('%s', 'now') - 86400*? ORDER BY 1 DESC", [ $row[0], $pruneafter ]);
       $keep = [ $prunedays, $pruneweeks, $prunemonths ];
       $ts = time() - 86400*$pruneafter;
@@ -482,7 +482,7 @@ function prune_snapshots() {
   );
   // error_log('Prune took ' . (microtime(true)-$now) . ' ms');
   $count = sql_updatecount("DELETE FROM snapshot WHERE todelete = 1");
-  error_log("Deleted $count snapshots");
+  // error_log("Deleted $count snapshots");
 }
 
 function search_notes($term) {
