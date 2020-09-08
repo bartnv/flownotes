@@ -634,7 +634,7 @@ function upgrade_database() {
       sql_single('CREATE TABLE IF NOT EXISTS "snapshot" (id integer primary key, note integer not null, modified integer not null, content text not null, title text, locked bool default false, FOREIGN KEY(note) REFERENCES note(id))');
     case 4:
       sql_single('CREATE TABLE "note_new" (id integer primary key, snapped integer default (strftime(\'%s\', \'now\')), modified integer default (strftime(\'%s\', \'now\')), content text, title text, pinned integer default 0, deleted boolean default 0, cursor text);');
-      sql_single('INSERT INTO "note_new" (id, modified, content, title, pinned, deleted, cursor) SELECT * FROM "note"');
+      sql_single('INSERT INTO "note_new" (id, modified, content, title, pinned, deleted, cursor) SELECT id, modified, content, title, pinned, deleted, cursor FROM "note"');
       sql_single('DROP TABLE "note"');
       sql_single('ALTER TABLE "note_new" RENAME TO "note"');
     case 5:
