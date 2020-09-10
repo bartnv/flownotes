@@ -269,7 +269,7 @@ $().ready(function() {
     else $('#scrolled').show();
   });
   $('#tab-recent').on('scroll', function(evt) {
-    if (this.offsetHeight + this.scrollTop >= this.scrollHeight) {
+    if (this.offsetHeight + this.scrollTop >= this.scrollHeight-20) {
       let loader = $(this).find('.loader');
       if (app.recent == 'all') {
         loader.detach();
