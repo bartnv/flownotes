@@ -99,6 +99,8 @@ $().ready(function() {
       if (!app.changed) app.changed = Date.now();
     }
 
+    if ((e.key != 'Enter') && (e.key != 'Backspace')) app.prepended = null;
+
     if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
@@ -107,6 +109,20 @@ $().ready(function() {
     else if (e.altKey && (e.key == 'Enter')) {
       let input = $('#input')[0];
       cursorActivate(input.value, input.selectionStart);
+    }
+    else if (e.shiftKey && (e.key == 'Enter')) {
+      // Reserved for future use
+      return false;
+    }
+    else if (e.key == 'Enter') {
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition();
+      let start = content.lastIndexOf("\n", cursor.start-1);
+      if (start == -1) start = 0;
+      else start += 1;
+      let line = content.substring(start, cursor.start);
+      let pre = /[ \[\]*-]+/.exec(line);
+      if (pre && (pre[0].length < cursor.start-start)) app.prepend = pre[0];
     }
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       let content = $('#input').val();
@@ -139,6 +155,35 @@ $().ready(function() {
       return false;
     }
   }).on('input', function(e) {
+    if (app.prepended) { // Previous keystroke prepended text
+      if ((e.originalEvent.inputType == 'insertLineBreak') || (e.originalEvent.inputType == 'deleteContentBackward')) {
+        let content = $('#input').val();
+        let cursor = $('#input').getCursorPosition().start;
+        let len = app.prepended.length;
+        if (e.originalEvent.inputType == 'insertLineBreak') { // Enter pressed
+          $('#input')
+            .val(content.substring(0, cursor-len-1) + content.substring(cursor-1))
+            .setCursorPosition(cursor-len);
+        }
+        else { // Backspace pressed
+          $('#input')
+            .val(content.substring(0, cursor-len+1) + content.substring(cursor))
+            .setCursorPosition(cursor-len+1);
+        }
+        app.prepend = null;
+      }
+      app.prepended = null;
+    }
+    if (app.prepend) {
+      console.log(app.prepend);
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition().start;
+      $('#input')
+        .val(content.substring(0, cursor) + app.prepend + content.substring(cursor))
+        .setCursorPosition(cursor + app.prepend.length);
+      app.prepended = app.prepend;
+      app.prepend = null;
+    }
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].touched = true;
     app.inactive = 0;
