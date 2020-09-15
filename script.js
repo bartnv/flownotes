@@ -382,6 +382,7 @@ $().ready(function() {
     goFullscreen();
   });
   $('#button-snapshots').on('click', loadSnapshots);
+  $('#button-export').on('click', loadExports);
   $('#button-settings').on('click', loadSettings);
   $('#button-restore').on('click', function() {
     if (app.notes[app.activenote].modified > app.snapshots[app.snapshots.length-1].modified) {
@@ -943,6 +944,16 @@ function listSearchResults(items, first) {
     location.hash = '#' + app.notes[items[0]].id;
     setTimeout("$('#search-input').focus();", 100);
   }
+}
+
+function loadExports() {
+  let div = $('<div><h1>Export functions</h1><div id="modal-body"></div></div>');
+  let body = div.find('#modal-body');
+  body.append('<p><input type="button" id="export-get-txt-all" class="modal-button-small" value="Download all notes as plain text"></p>');
+  body.find('#export-get-txt-all').on('click', function() {
+    window.location = 'data.php?export=txtall';
+  });
+  showModal('exports', div, true);
 }
 
 function loadSettings() {

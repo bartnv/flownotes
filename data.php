@@ -4,8 +4,6 @@ require('3rdparty/WebAuthn/WebAuthn.php');
 require('3rdparty/CBOR/CBOREncoder.php');
 require('3rdparty/CBOR/Types/CBORByteString.php');
 
-header('Content-type: application/json');
-
 $dbfile = 'db/notes.sq3';
 if (getcwd() != __DIR__) chdir(__DIR__);
 if (!file_exists(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '/' . dirname($dbfile) . " doesn't exist");
@@ -16,11 +14,17 @@ $dbh = new PDO('sqlite:' . $dbfile);
 if (query_setting('dbversion') < 7) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
-
-$input = file_get_contents('php://input');
-if ($_SERVER['REQUEST_METHOD'] != 'POST') fatalerr('Invalid request method');
-if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
-if (empty($data['req'])) fatalerr('No req specified in POST request');
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  $input = file_get_contents('php://input');
+  if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
+  if (empty($data['req'])) fatalerr('No req specified in POST request');
+}
+else {
+  if (empty($_GET['export'])) fatalerr('Invalid request');
+  $data = [];
+  $data['req'] = 'export';
+  $data['mode'] = $_GET['export'];
+}
 
 $password = query_setting('password', '');
 if (!empty($password)) {
@@ -259,6 +263,12 @@ switch ($data['req']) {
         fatalerr('Invalid request');
     }
     break;
+  case 'export':
+    switch ($data['mode']) {
+      case 'txtall':
+        streamToZip();
+        exit(0);
+    }
   case 'logout':
     send_and_exit([ 'modalerror' => 'Logout has no function without a configured password' ]);
   default:
@@ -802,11 +812,91 @@ function sql_updatecount($query, $params = []) {
 }
 
 function send_and_exit($data) {
+  header('Content-type: application/json');
   print json_encode($data);
-//  error_log('OUT: ' . json_encode($data));
   exit();
 }
 function fatalerr($msg) {
+  header('Content-type: application/json');
   print json_encode([ 'error' => $msg ]);
   exit(1);
+}
+
+function streamToZip() { // Adapted from the ZipExtension class from PhpMyAdmin - GPL 2+ license
+  header('Content-type: application/zip');
+  header('Content-disposition: attachment; filename="FlowNotes ' . date('Y-m-d') . '.zip"');
+  $datasec = []; // Array to store compressed data
+  $ctrl_dir = []; // Central directory
+  $old_offset = 0; // Last offset position
+  $eof_ctrl_dir = "\x50\x4b\x05\x06\x00\x00\x00\x00"; // End of central directory record
+
+  $stmt = sql_rows('SELECT id, title, content, modified FROM note ORDER BY id');
+
+  while ($note = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.txt';
+    $content = $note['content'];
+    $timearray = getdate($note['modified']);
+    $time = (($timearray['year'] - 1980) << 25)
+      | ($timearray['mon'] << 21)
+      | ($timearray['mday'] << 16)
+      | ($timearray['hours'] << 11)
+      | ($timearray['minutes'] << 5)
+      | ($timearray['seconds'] >> 1);
+
+    $hexdtime = pack('V', $time);
+    $unc_len = strlen($content);
+    $crc = crc32($content);
+    $zdata = gzcompress($content);
+    $zdata = substr(substr($zdata, 0, strlen($zdata) - 4), 2); // fix crc bug
+    $c_len = strlen($zdata);
+    $fr = "\x50\x4b\x03\x04"
+      . "\x14\x00"        // ver needed to extract
+      . "\x00\x00"        // gen purpose bit flag
+      . "\x08\x00"        // compression method
+      . $hexdtime         // last mod time and date
+      // "local file header" segment
+      . pack('V', $crc)              // crc32
+      . pack('V', $c_len)            // compressed filesize
+      . pack('V', $unc_len)          // uncompressed filesize
+      . pack('v', strlen($filename)) // length of filename
+      . pack('v', 0)                 // extra field length
+      . $filename
+      // "file data" segment
+      . $zdata;
+    print $fr;
+
+    // now add to central directory record
+    $cdrec = "\x50\x4b\x01\x02"
+      . "\x00\x00"                    // version made by
+      . "\x14\x00"                    // version needed to extract
+      . "\x00\x00"                    // gen purpose bit flag
+      . "\x08\x00"                    // compression method
+      . $hexdtime                     // last mod time & date
+      . pack('V', $crc)               // crc32
+      . pack('V', $c_len)             // compressed filesize
+      . pack('V', $unc_len)           // uncompressed filesize
+      . pack('v', strlen($filename))  // length of filename
+      . pack('v', 0)                  // extra field length
+      . pack('v', 0)                  // file comment length
+      . pack('v', 0)                  // disk number start
+      . pack('v', 0)                  // internal file attributes
+      . pack('V', 32)                 // external file attributes
+                                      // - 'archive' bit set
+      . pack('V', $old_offset)        // relative offset of local header
+      . $filename;                    // filename
+    $old_offset += strlen($fr);
+    // optional extra field, file comment goes here
+    // save to central directory
+    $ctrl_dir[] = $cdrec;
+  }
+
+  /* Build string to return */
+  $temp_ctrldir = implode('', $ctrl_dir);
+  print $temp_ctrldir .
+    $eof_ctrl_dir .
+    pack('v', count($ctrl_dir)) . //total #of entries "on this disk"
+    pack('v', count($ctrl_dir)) . //total #of entries overall
+    pack('V', strlen($temp_ctrldir)) . //size of central dir
+    pack('V', $old_offset) . //offset to start of central dir
+    "\x00\x00";                         //.zip file comment length
 }

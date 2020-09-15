@@ -22,9 +22,9 @@ DIV#panel-left { position: relative; display: flex; flex-direction: column; widt
 DIV#panel-left A { text-decoration: none; color: inherit; }
 DIV#panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 DIV#panel-buttons > DIV { cursor: pointer; padding: 5px; }
-.button-svg { display: block; margin-left: auto; margin-right: auto; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
+.button-svg { display: block; margin-left: auto; margin-right: auto; user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
-DIV#button-settings { margin-top: auto; }
+DIV#button-export { margin-top: auto; }
 DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; height: 100vh; margin: auto; justify-content: center; min-width: 300px /* needs a min-width to override `auto` value implied by flex */; background-color: grey; }
 DIV#status { position: absolute; top: 0; right: 0; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 DIV#stats { position: absolute; right: 0; bottom: 0; background-color: #E0D17B; padding: 0.1em 0.2em; font-size: 0.9rem; }
