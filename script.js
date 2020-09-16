@@ -949,10 +949,12 @@ function listSearchResults(items, first) {
 function loadExports() {
   let div = $('<div><h1>Export functions</h1><div id="modal-body"></div></div>');
   let body = div.find('#modal-body');
-  body.append('<p><input type="button" id="export-get-html-one" class="modal-button-small" value="Download this note as HTML"></p>');
+  body.append('<p><input type="button" id="export-get-html-one" class="modal-button-small" value="Download current note as HTML"></p>');
   body.append('<p><input type="button" id="export-get-txt-all" class="modal-button-small" value="Download all notes as plain text"></p>');
+  body.append('<p><input type="button" id="export-get-html-all" class="modal-button-small" value="Download all notes as HTML"></p>');
   body.find('#export-get-html-one').on('click', function() { window.location = 'data.php?export=htmlone'; });
   body.find('#export-get-txt-all').on('click', function() { window.location = 'data.php?export=txtall'; });
+  body.find('#export-get-html-all').on('click', function() { window.location = 'data.php?export=htmlall'; });
   showModal('export', div, true);
 }
 

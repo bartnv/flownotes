@@ -264,20 +264,24 @@ switch ($data['req']) {
     }
     break;
   case 'export':
+    require('3rdparty/Parsedown.php');
     switch ($data['mode']) {
       case 'htmlone':
-        require('3rdparty/Parsedown.php');
         $note = select_note($activenote);
         header('Content-type: text/html');
         header('Content-disposition: attachment; filename="' . $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html"');
         $head = file_get_contents('html-header.html');
         print str_replace('#title#', $note['title'], $head);
         $pd = new Parsedown();
+        $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
         print $pd->text($note['content']);
         readfile('html-footer.html');
         exit(0);
       case 'txtall':
         streamToZip();
+        exit(0);
+      case 'htmlall':
+        streamToZip(true);
         exit(0);
     }
   case 'logout':
@@ -833,7 +837,7 @@ function fatalerr($msg) {
   exit(1);
 }
 
-function streamToZip() { // Adapted from the ZipExtension class from PhpMyAdmin - GPL 2+ license
+function streamToZip($html = false) { // Adapted from the ZipExtension class from PhpMyAdmin - GPL 2+ license
   header('Content-type: application/zip');
   header('Content-disposition: attachment; filename="FlowNotes ' . date('Y-m-d') . '.zip"');
   $datasec = []; // Array to store compressed data
@@ -841,11 +845,26 @@ function streamToZip() { // Adapted from the ZipExtension class from PhpMyAdmin 
   $old_offset = 0; // Last offset position
   $eof_ctrl_dir = "\x50\x4b\x05\x06\x00\x00\x00\x00"; // End of central directory record
 
+  if ($html) {
+    $pd = new Parsedown();
+    $pb->setBreaksEnabled(true)->setMarkupEscaped(true);
+    $head = file_get_contents('html-header.html');
+    $foot = file_get_contents('html-footer.html');
+  }
+
   $stmt = sql_rows('SELECT id, title, content, modified FROM note WHERE deleted = 0 ORDER BY id');
 
   while ($note = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.txt';
-    $content = $note['content'];
+    if ($html) {
+      $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html';
+      $content = str_replace('#title#', $note['title'], $head);
+      $content .= $pd->text($note['content']);
+      $content .= $foot;
+    }
+    else {
+      $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.txt';
+      $content = $note['content'];
+    }
     $timearray = getdate($note['modified']);
     $time = (($timearray['year'] - 1980) << 25)
       | ($timearray['mon'] << 21)
