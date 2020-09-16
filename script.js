@@ -404,7 +404,7 @@ $().ready(function() {
     location.hash = '#' + note.id;
   });
   console.log('Event handlers initialized; starting interval timer');
-  setInterval(tick, 5000);
+  setInterval(tick, 4000);
 });
 
 function togglePanelLeft(force) {
