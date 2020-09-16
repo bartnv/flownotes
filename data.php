@@ -862,7 +862,7 @@ function streamToZip() { // Adapted from the ZipExtension class from PhpMyAdmin 
     $c_len = strlen($zdata);
     $fr = "\x50\x4b\x03\x04"
       . "\x14\x00"        // ver needed to extract
-      . "\x00\x00"        // gen purpose bit flag
+      . "\x00\x08"        // gen purpose bit flag
       . "\x08\x00"        // compression method
       . $hexdtime         // last mod time and date
       // "local file header" segment
@@ -880,7 +880,7 @@ function streamToZip() { // Adapted from the ZipExtension class from PhpMyAdmin 
     $cdrec = "\x50\x4b\x01\x02"
       . "\x00\x00"                    // version made by
       . "\x14\x00"                    // version needed to extract
-      . "\x00\x00"                    // gen purpose bit flag
+      . "\x00\x08"                    // gen purpose bit flag
       . "\x08\x00"                    // compression method
       . $hexdtime                     // last mod time & date
       . pack('V', $crc)               // crc32
