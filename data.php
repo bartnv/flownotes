@@ -841,7 +841,7 @@ function streamToZip() { // Adapted from the ZipExtension class from PhpMyAdmin 
   $old_offset = 0; // Last offset position
   $eof_ctrl_dir = "\x50\x4b\x05\x06\x00\x00\x00\x00"; // End of central directory record
 
-  $stmt = sql_rows('SELECT id, title, content, modified FROM note ORDER BY id');
+  $stmt = sql_rows('SELECT id, title, content, modified FROM note WHERE deleted = 0 ORDER BY id');
 
   while ($note = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.txt';
