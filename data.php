@@ -265,6 +265,17 @@ switch ($data['req']) {
     break;
   case 'export':
     switch ($data['mode']) {
+      case 'htmlone':
+        require('3rdparty/Parsedown.php');
+        $note = select_note($activenote);
+        header('Content-type: text/html');
+        header('Content-disposition: attachment; filename="' . $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html"');
+        $head = file_get_contents('html-header.html');
+        print str_replace('#title#', $note['title'], $head);
+        $pd = new Parsedown();
+        print $pd->text($note['content']);
+        readfile('html-footer.html');
+        exit(0);
       case 'txtall':
         streamToZip();
         exit(0);

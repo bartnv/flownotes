@@ -949,11 +949,11 @@ function listSearchResults(items, first) {
 function loadExports() {
   let div = $('<div><h1>Export functions</h1><div id="modal-body"></div></div>');
   let body = div.find('#modal-body');
+  body.append('<p><input type="button" id="export-get-html-one" class="modal-button-small" value="Download this note as HTML"></p>');
   body.append('<p><input type="button" id="export-get-txt-all" class="modal-button-small" value="Download all notes as plain text"></p>');
-  body.find('#export-get-txt-all').on('click', function() {
-    window.location = 'data.php?export=txtall';
-  });
-  showModal('exports', div, true);
+  body.find('#export-get-html-one').on('click', function() { window.location = 'data.php?export=htmlone'; });
+  body.find('#export-get-txt-all').on('click', function() { window.location = 'data.php?export=txtall'; });
+  showModal('export', div, true);
 }
 
 function loadSettings() {
@@ -1059,10 +1059,10 @@ function loadSnapshots() {
   });
   sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
   showModal('snapshots', div, true);
-  $('#button-snapshots').addClass('button-active');
 }
 
 function showModal(type, content, escapable) {
+  $('#button-' + type).addClass('button-active');
   app.modal = type;
   let modal = $('#modal-overlay');
   modal.empty().append(content).css({ backgroundColor: 'rgba(0,0,0,0.5)', pointerEvents: 'auto' });
@@ -1072,7 +1072,7 @@ function showModal(type, content, escapable) {
   else modal.off('click');
 }
 function hideModal() {
-  if (app.modal == 'snapshots') $('#button-snapshots').removeClass('button-active');
+  $('#button-' + app.modal).removeClass('button-active');
   app.modal = null;
   let modal = $('#modal-overlay');
   modal.empty().css({ backgroundColor: 'rgba(0,0,0,0)', pointerEvents: 'none' });
