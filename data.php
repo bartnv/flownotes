@@ -265,6 +265,40 @@ switch ($data['req']) {
     break;
   case 'export':
     require('3rdparty/Parsedown.php');
+    class Flowdown extends Parsedown {
+      function __construct() {
+        $this->InlineTypes['['][] = 'CheckBox';
+      }
+      protected function inlineCheckBox($excerpt) {
+        if (preg_match('/^\[(x| )\]/', $excerpt['text'], $matches)) {
+          $ret = [
+            'extent' => 3,
+            'element' => [
+              'name' => 'input',
+              'attributes' => [
+                'type' => 'checkbox'
+              ]
+            ]
+          ];
+          if ($matches[1] == 'x') $ret['element']['attributes']['checked'] = 'checked';
+          return $ret;
+        }
+      }
+      protected function inlineLink($excerpt) {
+        $link = parent::inlineLink($excerpt);
+        $href = $link['element']['attributes']['href']??null;
+        if (!empty($href) && (preg_match('/^#\d+$/', $href))) {
+          $id = substr($href, 1);
+          $title = sql_single('SELECT title FROM note WHERE id = ?', [ $id ]);
+          $link['element']['attributes']['href'] = $id . ' - ' . str_replace('/', '-', $title) . '.html';
+          if (substr($link['element']['handler']['argument'], 0, 1) == '=') {
+            $link['element']['handler']['argument'] = substr($link['element']['handler']['argument'], 1);
+          }
+          $link['element']['attributes']['class'] = 'link-note';
+        }
+        return $link;
+      }
+    }
     switch ($data['mode']) {
       case 'htmlone':
         $note = select_note($activenote);
@@ -272,7 +306,7 @@ switch ($data['req']) {
         header('Content-disposition: attachment; filename="' . $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html"');
         $head = file_get_contents('html-header.html');
         print str_replace('#title#', $note['title'], $head);
-        $pd = new Parsedown();
+        $pd = new Flowdown();
         $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
         print $pd->text($note['content']);
         readfile('html-footer.html');
@@ -846,8 +880,8 @@ function streamToZip($html = false) { // Adapted from the ZipExtension class fro
   $eof_ctrl_dir = "\x50\x4b\x05\x06\x00\x00\x00\x00"; // End of central directory record
 
   if ($html) {
-    $pd = new Parsedown();
-    $pb->setBreaksEnabled(true)->setMarkupEscaped(true);
+    $pd = new Flowdown();
+    $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
     $head = file_get_contents('html-header.html');
     $foot = file_get_contents('html-footer.html');
   }
