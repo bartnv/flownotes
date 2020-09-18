@@ -5,7 +5,6 @@ PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width:
 PRE:hover .code-copy { display: block; }
 CODE { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
 A.link-note { text-decoration-style: dashed; }
-A.link-note:hover::before,A.link-ext:hover::before { opacity: 1; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
