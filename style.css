@@ -88,11 +88,10 @@ UL#snapshots:empty::after { content: 'No snapshots for this note'; margin-right:
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
        -moz-user-select: none; /* Firefox */
         -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+            user-select: none;
+  outline: none;
 }
 
 /* Loader CSS from loading.io - License: CC0 */
