@@ -131,7 +131,7 @@ switch ($data['req']) {
     else $ret['recent'] = 25 + $data['offset'];
     break;
   case 'idle':
-    if (query_setting('autoprune', 0) && (date('i') == '13')) prune_snapshots();
+    if (query_setting('autoprune', 0) && (date('i') == '13')) $ret['log'] = prune_snapshots();
     break;
   case 'update':
     $ret['notes'] = [];
@@ -497,7 +497,7 @@ function prune_snapshots() {
   $pruneweeks = query_setting('pruneweeks', 0);
   $prunemonths = query_setting('prunemonths', 0);
   $prune = $prunedays+$pruneweeks+$prunemonths;
-  // $now = microtime(true);
+  $now = microtime(true);
   sql_updatecount("UPDATE snapshot SET label = NULL");
   sql_foreach("SELECT note, count(*) FROM snapshot WHERE locked = 0 AND created < strftime('%s', 'now') - 86400*? GROUP BY note HAVING count(*) > 0",
     function($row) use ($pruneafter, $prunedays, $pruneweeks, $prunemonths) {
@@ -533,9 +533,8 @@ function prune_snapshots() {
     },
     [ $pruneafter ]
   );
-  // error_log('Prune took ' . (microtime(true)-$now) . ' ms');
   $count = sql_updatecount("DELETE FROM snapshot WHERE todelete = 1");
-  // error_log("Deleted $count snapshots");
+  return 'Snapshot prune took ' . round(microtime(true)-$now, 2) . 's and deleted ' . $count . ' snapshots';
 }
 
 function search_notes($term) {

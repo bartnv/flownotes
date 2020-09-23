@@ -603,6 +603,7 @@ function sendToServer(data, beacon) {
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline();
   if (data.error) return offline(data.error);
+  if (data.log) console.log(data.log);
   if (data.logout) return logout();
   app.lastcomm = Date.now();
   if (app.offline) {
