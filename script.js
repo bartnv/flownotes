@@ -744,6 +744,10 @@ function parseFromServer(data, textStatus, xhr) {
   }
 }
 function offline(msg = 'Connection failed, switching to offline mode') {
+  if (typeof msg != 'string') {
+    if (msg.status) msg = 'Error from server: ' + msg.status + ' (' + msg.statusText + ')';
+    else msg = 'No network connection';
+  }
   if (!app.offline) {
     app.offline = Date.now();
     $('#status').html(msg).css('opacity', 1);
