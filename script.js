@@ -577,7 +577,7 @@ function pushUpdate(beacon, retransmit) {
       data.notes[i] = app.notes[i];
       delete app.notes[i].touched;
       delete app.notes[i].metatouched;
-      app.notes[i].intransit = true;
+      app.notes[i].intransit = 'full';
     }
     else if (app.notes[i].metatouched) {
       data.notes[i] = {};
@@ -585,12 +585,20 @@ function pushUpdate(beacon, retransmit) {
       data.notes[i].pinned = app.notes[i].pinned;
       data.notes[i].mode = app.notes[i].mode;
       delete app.notes[i].metatouched;
-      app.notes[i].intransit = true;
+      if (!app.notes[i].intransit) app.notes[i].intransit = 'meta';
     }
   }
   if (retransmit) {
     for (let i in app.notes) {
-      if (app.notes[i].intransit) data.notes[i] = app.notes[i];
+      if (app.notes[i].intransit) {
+        if (app.notes[i].intransit == 'full') data.notes[i] = app.notes[i];
+        else if (!data.notes[i]) { // Don't overwrite touched note with intransit 'meta'
+          data.notes[i] = {};
+          data.notes[i].cursor = app.notes[i].cursor;
+          data.notes[i].pinned = app.notes[i].pinned;
+          data.notes[i].mode = app.notes[i].mode;
+        }
+      }
     }
   }
   sendToServer(data, beacon);
@@ -743,9 +751,9 @@ function offline(msg = 'Connection failed, switching to offline mode') {
   else {
     let count = 0;
     for (let i in app.notes) {
-      if (app.notes[i].touched || app.notes[i].intransit) count++;
+      if (app.notes[i].touched || (app.notes[i].intransit == 'full')) count++;
     }
-    if (count) $('#status').html('Offline mode (' + count + ' unsaved notes)').css('opacity', 1);
+    if (count) $('#status').html('Offline mode (' + count + ' unsaved note' + (count==1?'':'s') + ')').css('opacity', 1);
     else $('#status').html('Offline mode').css('opacity', 1);
   }
   if (app.notes[app.activenote] && (app.notes[app.activenote].content === undefined)) {
