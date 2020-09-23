@@ -11,7 +11,7 @@ if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
-if (query_setting('dbversion') < 7) upgrade_database();
+if (query_setting('dbversion') < 8) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -499,11 +499,11 @@ function prune_snapshots() {
   $prune = $prunedays+$pruneweeks+$prunemonths;
   // $now = microtime(true);
   sql_updatecount("UPDATE snapshot SET label = NULL");
-  sql_foreach("SELECT note, count(*) FROM snapshot WHERE locked = 0 AND modified < strftime('%s', 'now') - 86400*? GROUP BY note HAVING count(*) > 0",
+  sql_foreach("SELECT note, count(*) FROM snapshot WHERE locked = 0 AND created < strftime('%s', 'now') - 86400*? GROUP BY note HAVING count(*) > 0",
     function($row) use ($pruneafter, $prunedays, $pruneweeks, $prunemonths) {
       $count = sql_updatecount("UPDATE snapshot SET todelete = 1 WHERE locked = 0 AND note = ? AND modified < strftime('%s', 'now') - 86400*?", [ $row[0], $pruneafter ]);
       // error_log('Note ' . $row[0] . " has $count automatic snapshots older than " . $pruneafter . ' days');
-      $snaps = sql_column("SELECT modified FROM snapshot WHERE note = ? AND modified < strftime('%s', 'now') - 86400*? ORDER BY 1 DESC", [ $row[0], $pruneafter ]);
+      $snaps = sql_column("SELECT modified FROM snapshot WHERE note = ? AND created < strftime('%s', 'now') - 86400*? ORDER BY 1 DESC", [ $row[0], $pruneafter ]);
       $keep = [ $prunedays, $pruneweeks, $prunemonths ];
       $ts = time() - 86400*$pruneafter;
       for ($i = 0; !empty($snaps[$i]);) {
@@ -695,9 +695,14 @@ function upgrade_database() {
       sql_single('ALTER TABLE "snapshot" ADD COLUMN label text');
     case 6:
       sql_single('ALTER TABLE "note" ADD COLUMN mode text default \'edit\'');
+    case 7:
       sql_single('PRAGMA journal_mode=WAL');
+      sql_single('CREATE TABLE "snapshot_new" (id integer primary key, note integer not null, created integer default (strftime(\'%s\', \'now\')), modified integer not null, title text, content text not null, locked bool default false, todelete bool default false, label text, FOREIGN KEY(note) REFERENCES note(id))');
+      sql_single('INSERT INTO "snapshot_new" (id, note, created, modified, title, content, locked) SELECT id, note, modified, modified, title, content, locked FROM "snapshot"');
+      sql_single('DROP TABLE "snapshot"');
+      sql_single('ALTER TABLE "snapshot_new" RENAME to "snapshot"');
   }
-  store_setting('dbversion', 7);
+  store_setting('dbversion', 8);
 }
 
 function handle_cli() {
