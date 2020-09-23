@@ -8,6 +8,11 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/marked/1.1.1/marked.min.js" crossorigin="anonymous"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js" crossorigin="anonymous"></script>
 <script type="text/javascript" src="script.js?v3.1"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
 <link rel="stylesheet" type="text/css" href="style.css?v3.1">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="manifest" href="manifest.json">

@@ -1,0 +1,16 @@
+{
+  "name": "FlowNotes",
+  "short_name": "FlowNotes",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#6BA2A5",
+  "description": "For fluid personal notetaking",
+  "icons": [
+    { "src": "images/icon48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "images/icon72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "images/icon96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "images/icon144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "images/icon168.png", "sizes": "168x168", "type": "image/png" },
+    { "src": "images/icon192.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}

@@ -1,6 +1,7 @@
 'use strict';
 
 let app = {
+  init: false,
   mode: 'edit',
   activenote: null,
   snapshots: null,
@@ -70,28 +71,7 @@ $().ready(function() {
     location.hash = '#' + evt.data.node.id;
   });
 
-  let data = { req: 'init' };
-  if (location.hash.match(/^#[^:]+:[0-9]+$/)) {
-    let split = location.hash.indexOf(':');
-    activateTab('search');
-    data.term = location.hash.substring(1, split);
-    $('#search-input').val(data.term);
-    data.activenote = location.hash.substring(split+1);
-    $('#search-results').append(app.loader);
-  }
-  else {
-    activateTab('recent');
-    if (location.hash.match(/^#[0-9]/)) {
-      app.activenote = parseInt(location.hash.substring(1), 10);
-      data.activenote = app.activenote;
-    }
-    if (location.hash.indexOf('@') > -1) {
-      app.snap = location.hash.substring(location.hash.indexOf('@')+1);
-      data.snapshots = true;
-    }
-    $('#tab-recent').append(app.loader);
-  }
-  sendToServer(data);
+  init();
 
   $('#input').on('keydown', function(e) {
     if (!e.key.startsWith('F')) {
@@ -407,6 +387,31 @@ $().ready(function() {
   setInterval(tick, 4000);
 });
 
+function init() {
+  let data = { req: 'init' };
+  if (location.hash.match(/^#[^:]+:[0-9]+$/)) {
+    let split = location.hash.indexOf(':');
+    activateTab('search');
+    data.term = location.hash.substring(1, split);
+    $('#search-input').val(data.term);
+    data.activenote = location.hash.substring(split+1);
+    $('#search-results').append(app.loader);
+  }
+  else {
+    activateTab('recent');
+    if (location.hash.match(/^#[0-9]/)) {
+      app.activenote = parseInt(location.hash.substring(1), 10);
+      data.activenote = app.activenote;
+    }
+    if (location.hash.indexOf('@') > -1) {
+      app.snap = location.hash.substring(location.hash.indexOf('@')+1);
+      data.snapshots = true;
+    }
+    $('#tab-recent').append(app.loader);
+  }
+  sendToServer(data);
+}
+
 function togglePanelLeft(force) {
   if ((force == 'close') || !app.hidepanelleft) {
     app.hidepanelleft = true;
@@ -549,7 +554,10 @@ function cursorActivate(text, cursor) {
 
 function tick() {
   app.inactive++;
-  if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
+  if (!app.init) {
+    if (app.inactive%15 == 0) init();
+  }
+  else if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
     app.changed = 0;
     let note = app.notes[app.activenote];
     if (note.touched) {
@@ -566,7 +574,7 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.inactive%12 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
+  else if (app.inactive%15 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
 }
 
 function pushUpdate(beacon, retransmit) {
@@ -609,10 +617,11 @@ function sendToServer(data, beacon) {
   return $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
 }
 function parseFromServer(data, textStatus, xhr) {
-  if (xhr.status != 200) return offline();
+  if (xhr.status != 200) return offline(xhr);
   if (data.error) return offline(data.error);
   if (data.log) console.log(data.log);
   if (data.logout) return logout();
+  if (!app.init) app.init = true;
   app.lastcomm = Date.now();
   if (app.offline) {
     app.offline = 0;
