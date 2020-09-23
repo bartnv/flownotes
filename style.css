@@ -1,5 +1,13 @@
+@font-face {
+    font-family: 'LatoWeb'; font-style: normal; font-weight: normal;
+    src: url('fonts/Lato-Regular.woff2') format('woff2'), url('fonts/Lato-Regular.woff') format('woff');
+}
+@font-face {
+    font-family: 'LatoWeb'; font-style: normal; font-weight: bold;
+    src: url('fonts/Lato-Bold.woff2') format('woff2'), url('fonts/Lato-Bold.woff') format('woff');
+}
 HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: pan-y; }
-BODY { margin: 0; font-family: 'Lato', sans-serif; }
+BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
 PRE:hover .code-copy { display: block; }
