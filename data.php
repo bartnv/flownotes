@@ -333,9 +333,7 @@ send_and_exit($ret);
 function query_setting($setting, $def = '') {
   global $dbh;
   if (!($res = $dbh->query("SELECT value FROM setting WHERE name = '$setting'"))) {
-    $err = $dbh->errorInfo();
-    error_log("query_setting() failed: " . $err[2]);
-    return $def;
+    fatalerr('Failed to read from database: ' . $dbh->errorInfo()[2]);
   }
   if (!($row = $res->fetch())) return $def;
   return $row[0];
@@ -343,14 +341,10 @@ function query_setting($setting, $def = '') {
 function store_setting($setting, $value) {
   global $dbh;
   if (!($stmt = $dbh->prepare("INSERT OR REPLACE INTO setting (name, value) VALUES (?, ?)"))) {
-    $err = $dbh->errorInfo();
-    error_log("store_setting() prepare failed: " . $err[2]);
-    return null;
+    fatalerr('Failed to write to database: ' . $dbh->errorInfo()[2]);
   }
   if (!($stmt->execute([ $setting, $value ]))) {
-    $err = $stmt->errorInfo();
-    error_log("store_setting() execute failed: " . $err[2]);
-    fatalerr('Failed to write to database: ' . $err[2]);
+    fatalerr('Failed to write to database: ' . $stmt->errorInfo()[2]);
   }
   return $value;
 }
