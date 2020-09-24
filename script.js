@@ -235,6 +235,7 @@ $().ready(function() {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
     }
+    localStorage.setItem('flownotes-activenote', app.activenote);
     localStorage.setItem('flownotes-hidepanelleft', app.hidepanelleft);
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
@@ -403,6 +404,10 @@ function init() {
     activateTab('recent');
     if (location.hash.match(/^#[0-9]/)) {
       app.activenote = parseInt(location.hash.substring(1), 10);
+      data.activenote = app.activenote;
+    }
+    else if (localStorage.getItem('flownotes-activenote')) {
+      app.activenote = parseInt(localStorage.getItem('flownotes-activenote'), 10);
       data.activenote = app.activenote;
     }
     if (location.hash.indexOf('@') > -1) {
