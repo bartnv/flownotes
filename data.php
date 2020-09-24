@@ -20,10 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   if (empty($data['req'])) fatalerr('No req specified in POST request');
 }
 else {
-  if (empty($_GET['export'])) fatalerr('Invalid request');
+  if (empty($_GET['export']) || empty($_GET['note']) || !is_numeric($_GET['note'])) fatalerr('Invalid request');
   $data = [];
   $data['req'] = 'export';
-  $data['mode'] = $_GET['export'];
+  $data['mode'] = 'get' . $_GET['export'];
+  $data['note'] = $_GET['note'];
 }
 
 $password = query_setting('password', '');
@@ -101,14 +102,16 @@ if (!empty($password)) {
   session_write_close();
 }
 
-if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = store_setting('activenote', $data['activenote']);
-else $activenote = query_setting('activenote', '1');
+if (!empty($data['activenote']) && is_numeric($data['activenote'])) $activenote = $data['activenote'];
 
 $ret = [];
 
 switch ($data['req']) {
   case 'init':
-    if (empty($data['activenote'])) $ret['switchnote'] = $activenote;
+    if (!isset($activenote)) {
+      $activenote = sql_single('SELECT MAX(id) FROM note');
+      $ret['switchnote'] = $activenote;
+    }
     $ret['notes'] = select_recent_notes(25);
     $ret['notes'] = select_pinned_notes(25) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
@@ -153,6 +156,7 @@ switch ($data['req']) {
     }
     break;
   case 'activate':
+    if (!isset($activenote)) fatalerr('Invalid activate request');
     $ret['notes'] = [];
     $ret['notes'][$activenote] = select_note($activenote);
     if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
@@ -300,8 +304,8 @@ switch ($data['req']) {
       }
     }
     switch ($data['mode']) {
-      case 'htmlone':
-        $note = select_note($activenote);
+      case 'gethtmlone':
+        $note = select_note($data['note']);
         header('Content-type: text/html');
         header('Content-disposition: attachment; filename="' . $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html"');
         $head = file_get_contents('html-header.html');
@@ -311,10 +315,10 @@ switch ($data['req']) {
         print $pd->text($note['content']);
         readfile('html-footer.html');
         exit(0);
-      case 'txtall':
+      case 'gettxtall':
         streamToZip();
         exit(0);
-      case 'htmlall':
+      case 'gethtmlall':
         streamToZip(true);
         exit(0);
     }
@@ -434,7 +438,7 @@ function select_pinned_notes($count) {
 }
 function select_notes_since($lastupdate) {
   global $dbh;
-  global $activenote;
+  // global $activenote;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
     $err = $dbh->errorInfo();
     error_log("select_notes_since() prepare failed: " . $err[2]);
@@ -449,7 +453,7 @@ function select_notes_since($lastupdate) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $notes[$row['id']] = array_slice($row, 1);
   }
-  if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
+  // if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
   return $notes;
 }
 function select_note_snapshots($id) {
