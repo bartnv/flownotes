@@ -778,7 +778,7 @@ function offline(msg = 'Connection failed, switching to offline mode') {
 function updateStats() {
   let val = $('#input').val();
   let matches = val.match(/\W\w/g);
-  $('#stats').show().text('Chars: ' + val.length + ' / Words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(val)?0:1)));
+  $('#stats').show().html('Chars: ' + val.length + '<br>Words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(val)?0:1)));
 }
 
 function handleWebauthn(data) {
