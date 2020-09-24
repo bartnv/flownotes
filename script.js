@@ -14,6 +14,7 @@ let app = {
   lastcomm: Date.now(),
   modal: null,
   password: false,
+  hidepanelleft: false,
   keys: [],
   scroll: { recent: 0, search: 0, pinned: 0 },
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
@@ -234,6 +235,7 @@ $().ready(function() {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
     }
+    localStorage.setItem('flownotes-hidepanelleft', app.hidepanelleft);
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
@@ -621,7 +623,10 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.error) return offline(data.error);
   if (data.log) console.log(data.log);
   if (data.logout) return logout();
-  if (!app.init) app.init = true;
+  if (!app.init) {
+    app.init = true;
+    if (localStorage.getItem('flownotes-hidepanelleft') == 'true') togglePanelLeft('close');
+  }
   app.lastcomm = Date.now();
   if (app.offline) {
     app.offline = 0;
