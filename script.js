@@ -477,6 +477,7 @@ function loadNote(id) {
   if (app.mode == 'edit') $('#input').blur().focus();
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
+  updateLink(app.notes[id]);
   $('#snap').hide();
 }
 function loadSnap(snap) {
@@ -714,6 +715,10 @@ function parseFromServer(data, textStatus, xhr) {
         let pos = data.notes[i].cursor.split(',');
         app.notes[i].cursor = { start: pos[0], end: pos[1] };
       }
+      if (data.notes[i].published !== undefined) {
+        app.notes[i].published = data.notes[i].published;
+        if (i == app.activenote) updateLink(app.notes[i]);
+      }
       if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
     }
     if (data.recent) app.recent = data.recent;
@@ -783,6 +788,26 @@ function offline(msg = 'Connection failed, switching to offline mode') {
     $('#input').val('');
     $('#render').empty();
   }
+}
+
+function updateLink(note) {
+  if (note.published && note.published[0] && note.published[0].file) {
+    let location = new URL(window.location);
+    let link = location.origin + location.pathname + note.published[0].file;
+    let html = 'Published as ';
+    switch (note.published[0].type) {
+      case 'html': html += 'HTML'; break;
+      case 'frag': html += 'HTML fragment'; break;
+      default: html+= '?';
+    }
+    $('#link')
+      .html(html + ' at <a href="' + link + '" target="_blank">' + note.published[0].file + '</a><div id="button-unpublish"></div>')
+      .show()
+      .find('#button-unpublish').on('click', function() {
+        sendToServer({ req: 'export', mode: 'delone', note: note.id, type: note.published[0].type });
+      });
+  }
+  else $('#link').hide();
 }
 
 function updateStats() {
@@ -984,9 +1009,19 @@ function loadExports() {
   body.append('<p><input type="button" id="export-get-html-one" class="modal-button-small" value="Download current note as HTML"></p>');
   body.append('<p><input type="button" id="export-get-txt-all" class="modal-button-small" value="Download all notes as plain text"></p>');
   body.append('<p><input type="button" id="export-get-html-all" class="modal-button-small" value="Download all notes as HTML"></p>');
+  body.append('<p><input type="button" id="export-pub-html-one" class="modal-button-small" value="Publish current note as HTML"></p>');
+  body.append('<p><input type="button" id="export-pub-frag-one" class="modal-button-small" value="Publish current note as HTML fragment"></p>');
   body.find('#export-get-html-one').on('click', function() { window.location = 'data.php?export=htmlone&note=' + app.activenote; });
   body.find('#export-get-txt-all').on('click', function() { window.location = 'data.php?export=txtall'; });
   body.find('#export-get-html-all').on('click', function() { window.location = 'data.php?export=htmlall'; });
+  body.find('#export-pub-html-one').on('click', function() {
+    sendToServer({ req: 'export', mode: 'pubhtmlone', note: app.activenote });
+    hideModal();
+  });
+  body.find('#export-pub-frag-one').on('click', function() {
+    sendToServer({ req: 'export', mode: 'pubfragone', note: app.activenote });
+    hideModal();
+  });
   showModal('export', div, true);
 }
 

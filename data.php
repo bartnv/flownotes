@@ -11,7 +11,7 @@ if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
-if (query_setting('dbversion') < 8) upgrade_database();
+if (query_setting('dbversion') < 9) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -287,7 +287,41 @@ switch ($data['req']) {
       case 'gethtmlall':
         streamToZip(true);
         exit(0);
+      case 'pubhtmlone':
+        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid pubhtmlone request');
+        if (sql_if('SELECT 1 FROM publish WHERE note = ?', [ $data['note'] ])) fatalerr('Note #' . $data['note'] . ' is already published');
+        $note = select_note($data['note']);
+        $filename = query_setting('publicdir', 'public') . '/' . $note['id'] . '.html';
+        $res = publish($note, $filename, 'html');
+        if ($res != 'OK') fatalerr($res);
+        if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'html', $filename ])) fatalerr('Failed to create publish entry');
+        $note['published'] = [ [ 'type' => 'html', 'file' => $filename ] ];
+        $ret['notes'][$note['id']] = $note;
+        break;
+      case 'pubfragone':
+        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid pubhtmlone request');
+        if (sql_if('SELECT 1 FROM publish WHERE note = ?', [ $data['note'] ])) fatalerr('Note #' . $data['note'] . ' is already published');
+        $note = select_note($data['note']);
+        $filename = query_setting('publicdir', 'public') . '/' . $note['id'] . '.html';
+        $res = publish($note, $filename, 'frag');
+        if ($res != 'OK') fatalerr($res);
+        if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'frag', $filename ])) fatalerr('Failed to create publish entry');
+        $note['published'] = [ [ 'type' => 'frag', 'file' => $filename ] ];
+        $ret['notes'][$note['id']] = $note;
+        break;
+      case 'delone':
+        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid delone request');
+        if (empty($data['type'])) fatalerr('Invalid delone request');
+        $note = select_note($data['note']);
+        if (empty($note['published'])) fatalerr('Note #' . $data['note'] . ' is not published');
+        if (!file_exists($note['published'][0]['file'])) $ret['log'] = "File '" . $note['published'][0]['file'] . "' doesn't exist; removing published status";
+        elseif (!unlink($note['published'][0]['file'])) fatalerr('Failed to delete file ' . $note['published'][0]['file']);
+        if (!sql_updateone("DELETE FROM publish WHERE note = ? AND type = ?", [ $data['note'], $data['type'] ])) fatalerr('Failed to delete publish entry');
+        $note['published'] = null;
+        $ret['notes'][$note['id']] = $note;
+        break;
     }
+    break;
   case 'logout':
     send_and_exit([ 'modalerror' => 'Logout has no function without a configured password' ]);
   default:
@@ -364,6 +398,7 @@ function select_note($id) {
   }
   if ($row['flinks']) $row['flinks'] = array_map('intval', array_unique(explode(',', $row['flinks'])));
   if ($row['blinks']) $row['blinks'] = array_map('intval', array_unique(explode(',', $row['blinks'])));
+  $row['published'] = sql_rows_collect('SELECT type, file FROM publish WHERE note = ?', [ $id ]);
   return $row;
 }
 function select_recent_notes($count, $offset = 0) {
@@ -590,6 +625,13 @@ function update_note($id, $note) {
   foreach ($GLOBALS['extra_ids'] as $id) {
     $rows[$id] = select_note($id);
   }
+
+  $res = sql_rows('SELECT file, type FROM publish WHERE note = ?', [ $id ]);
+  foreach ($res as $pub) {
+    require_once('Flowdown.php');
+    publish($note, $pub['file'], $pub['type']);
+  }
+
   if ($row['modified'] > query_setting('lastupdate', 0)) store_setting('lastupdate', $row['modified']);
   return $rows;
 }
@@ -670,8 +712,10 @@ function upgrade_database() {
       sql_single('INSERT INTO "snapshot_new" (id, note, created, modified, title, content, locked) SELECT id, note, modified, modified, title, content, locked FROM "snapshot"');
       sql_single('DROP TABLE "snapshot"');
       sql_single('ALTER TABLE "snapshot_new" RENAME to "snapshot"');
+    case 8:
+      sql_single('CREATE TABLE publish (id integer primary key, note integer not null, type text not null, file text not null)');
   }
-  store_setting('dbversion', 8);
+  store_setting('dbversion', 9);
 }
 
 function handle_cli() {
@@ -735,6 +779,21 @@ function sql_rows($query, $params = []) {
     return false;
   }
   return $stmt;
+}
+function sql_rows_collect($query, $params = []) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare($query))) {
+    error_log("sql_rows_collect() prepare failed: " . $dbh->errorInfo()[2]);
+    return null;
+  }
+  if (!($stmt->execute($params))) {
+    error_log("sql_rows_collect() execute failed: " . $stmt->errorInfo()[2]);
+    return null;
+  }
+  $res = [];
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) $res[] = $row;
+  if (empty($res)) return null;
+  return $res;
 }
 function sql_if($query, $params = []) {
   global $dbh;
@@ -837,6 +896,21 @@ function fatalerr($msg) {
   header('Content-type: application/json');
   print json_encode([ 'error' => $msg ]);
   exit(1);
+}
+
+function publish($note, $file, $type) {
+  if (!($fh = fopen($file, 'w'))) return "Failed to create file; is the exports folder '" . query_setting('publicdir', 'public') . "' writable?";
+  if ($type == 'html') {
+    $head = file_get_contents('html-header.html');
+    if (!fwrite($fh, str_replace('#title#', $note['title'], $head))) return 'Failed to write export file';
+  }
+  $pd = new Flowdown();
+  $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
+  if (!fwrite($fh, $pd->text($note['content']))) return 'Failed to write export file';
+  if ($type == 'html') {
+    if (!fwrite($fh, file_get_contents('html-footer.html'))) return 'Failed to write export file';
+  }
+  return 'OK';
 }
 
 function streamToZip($html = false) { // Adapted from the ZipExtension class from PhpMyAdmin - GPL 2+ license

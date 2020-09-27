@@ -1,0 +1,5 @@
+This folder is used by FlowNotes to export notes publicly. It needs to be
+writable by the PHP user for this to work. It's best to only manipulate the
+files here through FlowNotes, or it may complain. All files published here are
+assumed to be fully public. Not access controls are provided through FlowNotes
+itself.
