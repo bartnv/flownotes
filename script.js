@@ -156,7 +156,6 @@ $().ready(function() {
       app.prepended = null;
     }
     if (app.prepend) {
-      console.log(app.prepend);
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition().start;
       $('#input')
@@ -582,7 +581,7 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.inactive%15 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate });
+  else if (app.inactive%15 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
 }
 
 function pushUpdate(beacon, retransmit) {

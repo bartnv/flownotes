@@ -439,7 +439,7 @@ function select_pinned_notes($count) {
 }
 function select_notes_since($lastupdate) {
   global $dbh;
-  // global $activenote;
+  global $activenote;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
     $err = $dbh->errorInfo();
     error_log("select_notes_since() prepare failed: " . $err[2]);
@@ -454,7 +454,7 @@ function select_notes_since($lastupdate) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $notes[$row['id']] = array_slice($row, 1);
   }
-  // if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
+  if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
   return $notes;
 }
 function select_note_snapshots($id) {
