@@ -1123,6 +1123,7 @@ function loadSnapshots() {
       if (!confirm('Are you sure you want to delete the snapshot ' + li.find('.snap-modified').text() + '?')) return false;
       sendToServer({ req: 'snapshot', mode: 'del', note: app.activenote, snapshot: li.data('id') });
       $('#status').html('Deleting snapshot...').css('opacity', 1);
+      if (app.snap && (app.snap == li.data('modified'))) window.location = window.location.hash.split('@')[0];
     }
     return false;
   });
