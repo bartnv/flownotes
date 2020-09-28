@@ -626,6 +626,7 @@ function sendToServer(data, beacon) {
 function parseFromServer(data, textStatus, xhr) {
   if (xhr.status != 200) return offline(xhr);
   if (data.error) return offline(data.error);
+  if (data.alert) alert(data.alert);
   if (data.log) console.log(data.log);
   if (data.logout) return logout();
   if (!app.init) {

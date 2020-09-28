@@ -142,7 +142,8 @@ switch ($data['req']) {
       foreach ($data['notes'] as $id => $note) {
         if (isset($note['content'])) {
           if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ? AND content != ?", [ $id, $data['lastupdate'], $note['content'] ])) {
-            fatalerr('Note has been edited from another location; save your edits and reload the window to continue');
+            add_snapshot($id);
+            $ret['alert'] = 'Note #' . $id . ' has been edited from another device. To avoid lost changes, that version has been saved as a snapshot.';
           }
           $ret['notes'] = update_note($id, $note) + $ret['notes'];
         }
