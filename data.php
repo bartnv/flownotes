@@ -277,7 +277,7 @@ switch ($data['req']) {
         header('Content-disposition: attachment; filename="' . $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html"');
         $head = file_get_contents('html-header.html');
         print str_replace('#title#', $note['title'], $head);
-        $pd = new Flowdown();
+        $pd = new Flowdown('download');
         $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
         print $pd->text($note['content']);
         readfile('html-footer.html');
@@ -905,7 +905,7 @@ function publish($note, $file, $type) {
     $head = file_get_contents('html-header.html');
     if (!fwrite($fh, str_replace('#title#', $note['title'], $head))) return 'Failed to write export file';
   }
-  $pd = new Flowdown();
+  $pd = new Flowdown('publish');
   $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
   if (!fwrite($fh, $pd->text($note['content']))) return 'Failed to write export file';
   if ($type == 'html') {
@@ -923,7 +923,7 @@ function streamToZip($html = false) { // Adapted from the ZipExtension class fro
   $eof_ctrl_dir = "\x50\x4b\x05\x06\x00\x00\x00\x00"; // End of central directory record
 
   if ($html) {
-    $pd = new Flowdown();
+    $pd = new Flowdown('download');
     $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
     $head = file_get_contents('html-header.html');
     $foot = file_get_contents('html-footer.html');

@@ -3,8 +3,9 @@
 require('3rdparty/Parsedown.php');
 
 class Flowdown extends Parsedown {
-  function __construct() {
+  function __construct($mode) {
     $this->InlineTypes['['][] = 'CheckBox';
+    $this->fn_mode = $mode;
   }
   protected function inlineCheckBox($excerpt) {
     if (preg_match('/^\[(x| )\]/', $excerpt['text'], $matches)) {
@@ -26,8 +27,15 @@ class Flowdown extends Parsedown {
     $href = $link['element']['attributes']['href']??null;
     if (!empty($href) && (preg_match('/^#\d+$/', $href))) {
       $id = substr($href, 1);
-      $title = sql_single('SELECT title FROM note WHERE id = ?', [ $id ]);
-      $link['element']['attributes']['href'] = $id . ' - ' . str_replace('/', '-', $title) . '.html';
+      if ($this->fn_mode == 'download') {
+        $title = sql_single('SELECT title FROM note WHERE id = ?', [ $id ]);
+        $link['element']['attributes']['href'] = $id . ' - ' . str_replace('/', '-', $title) . '.html';
+      }
+      else { // fn_mode == 'publish'
+        $file = sql_single('SELECT file FROM publish WHERE note = ?', [ $id ]);
+        if (empty($file)) $link['element']['attributes']['href'] = $id . '.html';
+        else $link['element']['attributes']['href'] = '../' . $file;
+      }
       if (substr($link['element']['handler']['argument'], 0, 1) == '=') {
         $link['element']['handler']['argument'] = substr($link['element']['handler']['argument'], 1);
       }
