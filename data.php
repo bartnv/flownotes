@@ -545,16 +545,31 @@ function prune_snapshots() {
 
 function search_notes($term) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content LIKE ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("search_notes() prepare failed: " . $err[2]);
-    return [];
+
+  if (substr($term, 0, 1) == '/') { // Regex search
+    $dbh->sqliteCreateFunction('regexp', function($pattern, $data) {
+      return (preg_match("/$pattern/i", $data));
+    });
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content REGEXP ?"))) {
+      error_log("search_notes() prepare failed: " . $dbh->errorInfo()[2]);
+      return [];
+    }
+    if (!($stmt->execute([ substr($term, 1) ]))) {
+      error_log("search_notes() execute failed: " . $stmt->errorInfo()[2]);
+      return [];
+    }
   }
-  if (!($stmt->execute([ '%' . preg_replace('/[^a-z0-9]/', '%', strtolower($term)) . '%' ]))) {
-    $err = $stmt->errorInfo();
-    error_log("search_notes() execute failed: " . $err[2]);
-    return [];
+  else {
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content LIKE ?"))) {
+      error_log("search_notes() prepare failed: " . $dbh->errorInfo()[2]);
+      return [];
+    }
+    if (!($stmt->execute([ '%' . preg_replace('/[^a-z0-9]/', '%', strtolower($term)) . '%' ]))) {
+      error_log("search_notes() execute failed: " . $stmt->errorInfo()[2]);
+      return [];
+    }
   }
+
   $notes = [];
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $notes[$row['id']] = array_slice($row, 1);
