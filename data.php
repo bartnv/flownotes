@@ -369,13 +369,11 @@ function add_note($content) {
   if (!empty($content)) $title = find_title($content);
   else $title = null;
   if (!($stmt = $dbh->prepare("INSERT INTO note (title, content) VALUES (?, ?)"))) {
-    $err = $dbh->errorInfo();
-    error_log("add_note() query prepare failed: " . $err[2]);
+    error_log("add_note() query prepare failed: " . $dbh->errorInfo()[2]);
     return null;
   }
   if (!($stmt->execute([ $title, $content ]))) {
-    $err = $stmt->errorInfo();
-    error_log("add_note() query execute failed: " . $err[2]);
+    error_log("add_note() query execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
   return $dbh->lastInsertId();
@@ -383,13 +381,11 @@ function add_note($content) {
 function select_note($id) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT note.*, group_concat(flink.target) AS flinks, group_concat(blink.source) AS blinks FROM note LEFT JOIN link AS flink ON flink.source = note.id LEFT JOIN link AS blink ON blink.target = note.id WHERE note.id = ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("select_note() select prepare failed: " . $err[2]);
+    error_log("select_note() select prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
   if (!($stmt->execute([ $id ]))) {
-    $err = $stmt->errorInfo();
-    error_log("select_note() select execute failed: " . $err[2]);
+    error_log("select_note() select execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -405,13 +401,11 @@ function select_note($id) {
 function select_recent_notes($count, $offset = 0) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 0 ORDER BY modified DESC LIMIT $count OFFSET $offset"))) {
-    $err = $dbh->errorInfo();
-    error_log("select_recent_notes() prepare failed: " . $err[2]);
+    error_log("select_recent_notes() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
   if (!($stmt->execute())) {
-    $err = $stmt->errorInfo();
-    error_log("select_recent_notes() execute failed: " . $err[2]);
+    error_log("select_recent_notes() execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
   $notes = [];
@@ -423,13 +417,11 @@ function select_recent_notes($count, $offset = 0) {
 function select_pinned_notes($count) {
   global $dbh;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned, deleted FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
-    $err = $dbh->errorInfo();
-    error_log("select_pinned_notes() prepare failed: " . $err[2]);
+    error_log("select_pinned_notes() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
   if (!($stmt->execute())) {
-    $err = $stmt->errorInfo();
-    error_log("select_pinned_notes() execute failed: " . $err[2]);
+    error_log("select_pinned_notes() execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
   $notes = [];
@@ -442,13 +434,11 @@ function select_notes_since($lastupdate) {
   global $dbh;
   global $activenote;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
-    $err = $dbh->errorInfo();
-    error_log("select_notes_since() prepare failed: " . $err[2]);
+    error_log("select_notes_since() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
   if (!($stmt->execute([ $lastupdate ]))) {
-    $err = $stmt->errorInfo();
-    error_log("select_notes_since() execute failed: " . $err[2]);
+    error_log("select_notes_since() execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
   $notes = [];
@@ -581,8 +571,7 @@ function update_note($id, $note) {
   if ($note['pinned']) {
     if ($note['pinned'] === true) {
       if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
-        $err = $dbh->errorInfo();
-        error_log("update_note() pinned select failed: " . $err[2]);
+        error_log("update_note() pinned select failed: " . $dbh->errorInfo()[2]);
         $pinned = 'NULL';
       }
       $pinned = $res->fetch(PDO::FETCH_NUM)[0];
@@ -628,8 +617,7 @@ function update_note($id, $note) {
   update_links($id, $note['content']);
 
   if (!($stmt = $dbh->query("SELECT modified, pinned FROM note WHERE id = $id"))) {
-    $err = $dbh->errorInfo();
-    error_log("update_note() select query failed: " . $err[2]);
+    error_log("update_note() select query failed: " . $dbh->errorInfo()[2]);
     return [];
   }
   $rows = [];
@@ -698,9 +686,8 @@ function update_note_meta($id, $note) {
     return 0;
   }
   if (!($stmt->execute([ $pinned, $cursor, $note['mode'] ?? 'edit', $id ]))) {
-    $err = $stmt->errorInfo();
     $processUser = posix_getpwuid(posix_geteuid());
-    error_log("FlowNotes: update_note_meta() update execute failed: " . $err[2] . ' (userid: ' . json_encode($processUser) . ')');
+    error_log("FlowNotes: update_note_meta() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
     return 0;
   }
   return $pinned;
