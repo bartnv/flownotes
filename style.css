@@ -7,7 +7,7 @@
     src: url('fonts/Lato-Bold.woff2') format('woff2'), url('fonts/Lato-Bold.woff') format('woff');
 }
 HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: pan-y; }
-BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; }
+BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; background-color: grey; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
 PRE:hover .code-copy { display: block; }
@@ -24,15 +24,17 @@ H5 { margin-top: 0.5rem; margin-bottom: 0; font-size: 16px; }
 H5::first-letter { padding-bottom: 3px; border-bottom: dotted #ccc 1px; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
-DIV#panels { position: fixed; height: 100vh; width: 100vw; display: flex; }
-DIV#panel-left { position: relative; display: flex; flex-direction: column; width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
-DIV#panel-left A { text-decoration: none; color: inherit; }
-DIV#panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
-DIV#panel-buttons > DIV { cursor: pointer; padding: 5px; }
+DIV#panels { position: fixed; height: 100vh; min-width: 100vw; display: flex; }
+DIV.sidepanel { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); }
+DIV.sidepanel A { text-decoration: none; color: inherit; }
+DIV#panel-left { position: relative; display: flex; flex-direction: column; transition: margin 1s; }
+DIV#panel-right { width: 0; transition: width 1s; }
+DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; height: 100vh; margin: auto; justify-content: center; align-items: center; min-width: 256px; max-width: calc(100vw - 64px); background-color: grey; }
+DIV.panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
+DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
 .button-svg { display: block; margin-left: auto; margin-right: auto; user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
 DIV#button-export { margin-top: auto; }
-DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; height: 100vh; margin: auto; justify-content: center; align-items: center; min-width: 286px /* needs a min-width to override `auto` value implied by flex */; background-color: grey; }
 DIV#status { position: absolute; top: 0; right: 0; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 DIV#stats { position: absolute; right: 0; bottom: 0; background-color: #E0D17B; padding: 0.1em 0.2em; font-size: 0.9rem; }
 DIV#snap { position: absolute; top: 0; left: 50%; transform: translateX(-50%); padding: 0.2rem 0.5rem; background-color: rgba(0,0,0,0.5); color: white; text-align: center; }
@@ -88,6 +90,7 @@ UL#snapshots:empty::after { content: 'No snapshots for this note'; margin-right:
 .snap-delete { top: 24px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 120 120"><path stroke="red" stroke-width="8" stroke-linecap="round" d="m14,14 92,92m0-92-92,92"/></svg>'); }
 .snap-modified,.snap-stats { white-space: nowrap; }
 .notransition { transition: none !important; }
+.nointeraction { pointer-events: none; }
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */

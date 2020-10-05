@@ -19,7 +19,7 @@ if ('serviceWorker' in navigator) {
 </head>
 <body>
   <div id="panels">
-    <div id="panel-left">
+    <div id="panel-left" class="sidepanel">
       <div id="tabbar-left" class="tabbar">
         <div id="label-recent" class="tablabel noselect" tabindex="-1">Recent</div>
         <div id="label-search" class="tablabel noselect" tabindex="-1">Search</div>
@@ -38,8 +38,8 @@ if ('serviceWorker' in navigator) {
       </div>
       <div id="tab-pinned" class="tab" style="display: none;"></div>
     </div>
-    <div id="panel-buttons">
-      <div id="button-panel-hide" class="button-active" title="Hide left panel">
+    <div id="buttons-left" class="panel-buttons">
+      <div id="button-panel-left-hide" class="button-active" title="Hide left panel">
         <svg class="button-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512"><rect y="0" x="0" height="512" width="512" stroke="white" fill="none" style="stroke-width: 100px;"/><rect y="0" x="0" height="512" width="200" stroke="white" fill="white"/></svg>
       </div>
       <div id="button-mode-edit" class="button-mode button-active" title="Switch to edit mode">
@@ -102,9 +102,16 @@ if ('serviceWorker' in navigator) {
         <input id="button-restore" class="modal-button-small" type="button" value="Restore">
       </div>
     </div>
-    <div id="panel-right"></div>
+    <div id="buttons-right" class="panel-buttons">
+      <div id="button-panel-right-hide" title="Show right panel">
+        <svg class="button-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512" style="transform: scale(-1,1)"><rect y="0" x="0" height="512" width="512" stroke="white" fill="none" style="stroke-width: 100px;"/><rect y="0" x="0" height="512" width="200" stroke="white" fill="white"/></svg>
+      </div>
+    </div>
+    <div id="panel-right" class="sidepanel">
+      <div id="tab-right" class="tab"></div>
+    </div>
   </div>
   <div id="modal-overlay"></div>
-  <div id="status">Loading...</div>
+  <div id="status" class="nointeraction">Loading...</div>
 </body>
 </html>

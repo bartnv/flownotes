@@ -15,6 +15,7 @@ let app = {
   modal: null,
   password: false,
   hidepanelleft: false,
+  hidepanelright: true,
   keys: [],
   scroll: { recent: 0, search: 0, pinned: 0 },
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
@@ -170,10 +171,16 @@ $().ready(function() {
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
     updateStats();
   }).on('focus', function() {
-    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) togglePanelLeft('close');
+    if ($('#panel-main').width() < parseInt($('#panel-main').css('min-width'))) {
+      togglePanelLeft('close');
+      togglePanelRight('close');
+    }
   });
   $('#render').on('click', function() {
-    if ($('#panel-main').width() <= parseInt($('#panel-main').css('min-width'))) togglePanelLeft('close');
+    if ($('#panel-main').width() < parseInt($('#panel-main').css('min-width'))) {
+      togglePanelLeft('close');
+      togglePanelRight('close');
+    }
   });
   $('#render').on('click', 'code', function () {
     if (window.getSelection().type == 'Range') return;
@@ -236,6 +243,7 @@ $().ready(function() {
     }
     localStorage.setItem('flownotes-activenote', app.activenote);
     localStorage.setItem('flownotes-hidepanelleft', app.hidepanelleft);
+    localStorage.setItem('flownotes-hidepanelright', app.hidepanelright);
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
@@ -252,7 +260,8 @@ $().ready(function() {
     $('#search-input').select();
     $('#search-results').empty().append(app.loader);
   });
-  $('#button-panel-hide').on('click', togglePanelLeft);
+  $('#button-panel-left-hide').on('click', togglePanelLeft);
+  $('#button-panel-right-hide').on('click', togglePanelRight);
   $('#panel-left').on('mousedown', '.note-li', function (evt) {
     app.linkid = $(evt.currentTarget).addClass('note-selected').data('id');
     $('body').css('cursor', 'alias');
@@ -285,11 +294,14 @@ $().ready(function() {
       app.linkid = null;
     }
   });
-  $('#panel-buttons').on('click', '.button-mode', function(e) {
+  $('#buttons-left').on('click', '.button-mode', function(e) {
     switchMode(this.id.split('-')[2]);
   });
-  $('#panel-left,#panel-buttons').on('touchstart', function(e) {
-    app.touchstart = { pageX: e.changedTouches[0].pageX, pageY: e.changedTouches[0].pageY };
+  $('#panel-left,#buttons-left').on('touchstart', function(e) {
+    app.touchstart = { from: 'left', pageX: e.changedTouches[0].pageX, pageY: e.changedTouches[0].pageY };
+  });
+  $('#panel-right,#buttons-right').on('touchstart', function(e) {
+    app.touchstart = { from: 'right', pageX: e.changedTouches[0].pageX, pageY: e.changedTouches[0].pageY };
   });
   $('.tab').on('scroll', function(evt) {
     if (this.scrollTop == 0) $('#scrolled').hide();
@@ -316,12 +328,14 @@ $().ready(function() {
   $(window).on('touchend', function(e) {
     if (app.touchstart) {
       let end = e.changedTouches[0];
-      if (Math.abs(app.touchstart.pageX-end.pageX) > Math.abs(app.touchstart.pageY-end.pageY)) {
-        if (end.pageX > app.touchstart.pageX+10) {
-          if (app.hidepanelleft) togglePanelLeft();
+      if (Math.abs(app.touchstart.pageX-end.pageX) > Math.abs(app.touchstart.pageY-end.pageY)) { // Horizontal swipe
+        if (end.pageX > app.touchstart.pageX+10) { // Swipe right
+          if ((app.touchstart.from == 'left') && app.hidepanelleft) togglePanelLeft();
+          else if ((app.touchstart.from == 'right') && !app.hidepanelright) togglePanelRight();
         }
-        else if (end.pageX < app.touchstart.pageX-10) {
-          if (!app.hidepanelleft) togglePanelLeft();
+        else if (end.pageX < app.touchstart.pageX-10) { // Swipe left
+          if ((app.touchstart.from == 'left') && !app.hidepanelleft) togglePanelLeft();
+          else if ((app.touchstart.from == 'right') && app.hidepanelright) togglePanelRight();
         }
       }
       app.touchstart = null;
@@ -419,15 +433,29 @@ function init() {
 }
 
 function togglePanelLeft(force) {
-  if ((force == 'close') || !app.hidepanelleft) {
+  if ((force == 'close') || (!app.hidepanelleft && (force != 'open'))) {
     app.hidepanelleft = true;
-    $('#button-panel-hide').removeClass('button-active').attr('title', 'Show left panel');
+    $('#button-panel-left-hide').removeClass('button-active').attr('title', 'Show left panel');
     $('#panel-left').css('margin-left', '-20em');
   }
   else {
     app.hidepanelleft = false;
-    $('#button-panel-hide').addClass('button-active').attr('title', 'Hide left panel');
+    $('#button-panel-left-hide').addClass('button-active').attr('title', 'Hide left panel');
     $('#panel-left').css('margin-left', '0');
+    $('#panels').css({ left: '0', right: '' });
+  }
+}
+function togglePanelRight(force) {
+  if ((force == 'open') || (app.hidepanelright && (force != 'close'))) {
+    app.hidepanelright = false;
+    $('#button-panel-right-hide').addClass('button-active').attr('title', 'Hide right panel');
+    $('#panel-right').css('width', '20rem');
+    $('#panels').css({ left: '', right: '0' });
+  }
+  else {
+    app.hidepanelright = true;
+    $('#button-panel-right-hide').removeClass('button-active').attr('title', 'Show right panel');
+    $('#panel-right').css('width', '0');
   }
 }
 
@@ -632,6 +660,7 @@ function parseFromServer(data, textStatus, xhr) {
   if (!app.init) {
     app.init = true;
     if (localStorage.getItem('flownotes-hidepanelleft') == 'true') togglePanelLeft('close');
+    if (localStorage.getItem('flownotes-hidepanelright') == 'false') togglePanelRight('open');
   }
   app.lastcomm = Date.now();
   if (app.offline) {
@@ -981,8 +1010,11 @@ function activateNote(id, nopost) {
     }
     sendToServer(data);
   }
-  if (!app.hidepanelleft && ($('#panel-main')[0].getBoundingClientRect().right > window.innerWidth)) {
+  if (!app.hidepanelleft && ($('#buttons-right')[0].getBoundingClientRect().right > window.innerWidth)) {
     togglePanelLeft('close');
+  }
+  if (!app.hidepanelright && ($('#buttons-left')[0].getBoundingClientRect().left < 0)) {
+    togglePanelRight('close');
   }
 }
 function activateTab(name) {
