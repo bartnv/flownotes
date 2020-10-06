@@ -34,7 +34,7 @@ DIV.panel-buttons { display: flex; flex-direction: column; background-color: rgb
 DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
 .button-svg { display: block; margin-left: auto; margin-right: auto; user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
-DIV#button-export { margin-top: auto; }
+DIV#button-export,DIV#button-settings { margin-top: auto; }
 DIV#status { position: absolute; top: 0; right: 0; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 DIV#stats { position: absolute; right: 0; bottom: 0; background-color: #E0D17B; padding: 0.1em 0.2em; font-size: 0.9rem; }
 DIV#snap { position: absolute; top: 0; left: 50%; transform: translateX(-50%); padding: 0.2rem 0.5rem; background-color: rgba(0,0,0,0.5); color: white; text-align: center; }
@@ -50,6 +50,8 @@ DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .note-deleted { text-decoration: line-through; }
 .note-title { font-weight: bold; line-height: 1.4; }
 .note-modified { font-size: 0.9em; }
+.list-divider { padding: 0.5rem; background-color: rgb(150,150,150); }
+.list-none { padding: 0.5rem; font-style: italic; }
 .tabbar { display: flex; }
 .tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; z-index: 1000; }
 .tab-active { background-color: rgb(200,200,200) !important; }

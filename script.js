@@ -16,6 +16,7 @@ let app = {
   password: false,
   hidepanelleft: false,
   hidepanelright: true,
+  lastpanelright: 'links',
   keys: [],
   scroll: { recent: 0, search: 0, pinned: 0 },
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
@@ -294,8 +295,23 @@ $().ready(function() {
       app.linkid = null;
     }
   });
-  $('#buttons-left').on('click', '.button-mode', function(e) {
+  $('#buttons-left').on('click', '.button-mode', function() {
     switchMode(this.id.split('-')[2]);
+  });
+  $('#buttons-right').on('click', '.button-mode', function() {
+    let mode = this.id.split('-')[1];
+    if ($('#button-' + mode).hasClass('button-active')) {
+      togglePanelRight('close');
+      return;
+    }
+    else if (app.hidepanelright) togglePanelRight('open');
+    switch (mode) {
+      case 'links':
+        $('#button-links').addClass('button-active').siblings('.button-mode').removeClass('button-active');
+        updateLinks();
+        break;
+    }
+    app.lastpanelright = mode;
   });
   $('#panel-left,#buttons-left').on('touchstart', function(e) {
     app.touchstart = { from: 'left', pageX: e.changedTouches[0].pageX, pageY: e.changedTouches[0].pageY };
@@ -451,11 +467,13 @@ function togglePanelRight(force) {
     $('#button-panel-right-hide').addClass('button-active').attr('title', 'Hide right panel');
     $('#panel-right').css('width', '20rem');
     $('#panels').css({ left: '', right: '0' });
+    $('#button-' + app.lastpanelright).click();
   }
   else {
     app.hidepanelright = true;
     $('#button-panel-right-hide').removeClass('button-active').attr('title', 'Show right panel');
     $('#panel-right').css('width', '0');
+    $('#buttons-right .button-mode').removeClass('button-active');
   }
 }
 
@@ -896,26 +914,22 @@ function loadGraph() {
   let note = app.notes[app.activenote];
   app.graph.graph.addNode({ id: String(app.activenote), label: note.title, x: 50, y: 0, size: 1, color: '#6BA2A5' });
   let y = 0;
-  for (let i in note.flinks) {
-    let link = app.notes[note.flinks[i]];
-    try {
-      app.graph.graph.addNode({ id: String(note.flinks[i]), label: link && link.title || 'not loaded', x: 75, y: y, size: 1 });
-      app.graph.graph.addEdge({ id: app.activenote + '-' + note.flinks[i], source: String(app.activenote), target: String(note.flinks[i]) });
+  if (note.flinks) {
+    for (let flink of note.flinks) {
+      app.graph.graph.addNode({ id: flink.id, label: flink.title, x: 75, y: y, size: 1 });
+      app.graph.graph.addEdge({ id: app.activenote + '-' + flink.id, source: String(app.activenote), target: flink.id });
+      if (y > 0) y = -y;
+      else y = -y+10;
     }
-    catch (e) {}
-    if (y > 0) y = -y;
-    else y = -y+10;
+    y = 0;
   }
-  y = 0;
-  for (let i in note.blinks) {
-    let link = app.notes[note.blinks[i]];
-    try {
-      app.graph.graph.addNode({ id: String(note.blinks[i]), label: link && link.title || 'not loaded', x: 25, y: y, size: 1 });
-      app.graph.graph.addEdge({ id: app.activenote + '-' + note.blinks[i], source: String(note.blinks[i]), target: String(app.activenote) });
+  if (note.blinks) {
+    for (let blink of note.blinks) {
+      app.graph.graph.addNode({ id: blink.id, label: blink.title, x: 25, y: y, size: 1 });
+      app.graph.graph.addEdge({ id: app.activenote + '-' + blink.id, source: blink.id, target: String(app.activenote) });
+      if (y > 0) y = -y;
+      else y = -y+10;
     }
-    catch (e) {}
-    if (y > 0) y = -y;
-    else y = -y+10;
   }
   app.graph.refresh();
 }
@@ -924,6 +938,14 @@ function updatePanels() {
   if ($('#label-pinned').hasClass('tab-active')) updatePinned();
   else if ($('#label-recent').hasClass('tab-active')) updateRecent();
   else updateSearch();
+
+  if (!app.hidepanelright) {
+    switch (app.lastpanelright) {
+      case 'links':
+        updateLinks();
+        break;
+    }
+  }
 }
 
 function updateRecent() {
@@ -974,6 +996,29 @@ function updatePinned() {
     pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
   }
   $('#tab-pinned').empty().html(pinned);
+}
+function updateLinks() {
+  let note = app.notes[app.activenote];
+  if (!note) return;
+  let str = '<div class="list-divider">Links to this note</div>';
+  if (note.blinks) {
+    for (let blink of note.blinks) {
+      str += '<a href="#' + blink.id + '"><div class="note-li" data-id="' + blink.id + '">';
+      str += '<span class="note-title">' + blink.title + '</span><br>';
+      str += '<span class="note-modified">saved at ' + new Date(blink.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    }
+  }
+  else str += '<div class="list-none">- none -</div>';
+  str += '<div class="list-divider">Links from this note</div>';
+  if (note.flinks) {
+    for (let flink of note.flinks) {
+      str += '<a href="#' + flink.id + '"><div class="note-li" data-id="' + flink.id + '">';
+      str += '<span class="note-title">' + flink.title + '</span><br>';
+      str += '<span class="note-modified">saved at ' + new Date(flink.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    }
+  }
+  else str += '<div class="list-none">- none -</div>';
+  $('#tab-right').html(str);
 }
 
 function findTitle(text) {

@@ -393,9 +393,23 @@ function select_note($id) {
     error_log("select_note() select for id $id returned no rows");
     return [];
   }
-  if ($row['flinks']) $row['flinks'] = array_map('intval', array_unique(explode(',', $row['flinks'])));
-  if ($row['blinks']) $row['blinks'] = array_map('intval', array_unique(explode(',', $row['blinks'])));
+  if ($row['flinks']) $row['flinks'] = array_map('select_note_meta', array_unique(explode(',', $row['flinks'])));
+  if ($row['blinks']) $row['blinks'] = array_map('select_note_meta', array_unique(explode(',', $row['blinks'])));
   $row['published'] = sql_rows_collect('SELECT type, file FROM publish WHERE note = ?', [ $id ]);
+  return $row;
+}
+function select_note_meta($id) {
+  global $dbh;
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE id = ?"))) {
+    error_log("select_recent_notes() prepare failed: " . $dbh->errorInfo()[2]);
+    return [ 'id' => $id, 'title' => '{note not found}' ];
+  }
+  if (!($stmt->execute([ $id ]))) {
+    error_log("select_recent_notes() execute failed: " . $stmt->errorInfo()[2]);
+    return [ 'id' => $id, 'title' => '{note not found}' ];
+  }
+  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$row) return [ 'id' => $id, 'title' => '{note not found}' ];
   return $row;
 }
 function select_recent_notes($count, $offset = 0) {
