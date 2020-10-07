@@ -452,27 +452,29 @@ function togglePanelLeft(force) {
   if ((force == 'close') || (!app.hidepanelleft && (force != 'open'))) {
     app.hidepanelleft = true;
     $('#button-panel-left-hide').removeClass('button-active').attr('title', 'Show left panel');
-    $('#panel-left').css('margin-left', '-20em');
+    $('#panel-left').css('margin-left', '-20rem');
   }
   else {
     app.hidepanelleft = false;
     $('#button-panel-left-hide').addClass('button-active').attr('title', 'Hide left panel');
     $('#panel-left').css('margin-left', '0');
     $('#panels').css({ left: '0', right: '' });
+    if ((window.innerWidth < 880) && !app.hidepanelright) togglePanelRight('close');
   }
 }
 function togglePanelRight(force) {
   if ((force == 'open') || (app.hidepanelright && (force != 'close'))) {
     app.hidepanelright = false;
     $('#button-panel-right-hide').addClass('button-active').attr('title', 'Hide right panel');
-    $('#panel-right').css('width', '20rem');
+    $('#panel-right').css('margin-right', '0');
     $('#panels').css({ left: '', right: '0' });
     $('#button-' + app.lastpanelright).click();
+    if ((window.innerWidth < 880) && !app.hidepanelleft) togglePanelLeft('close');
   }
   else {
     app.hidepanelright = true;
     $('#button-panel-right-hide').removeClass('button-active').attr('title', 'Show right panel');
-    $('#panel-right').css('width', '0');
+    $('#panel-right').css('margin-right', '-20rem');
     $('#buttons-right .button-mode').removeClass('button-active');
   }
 }

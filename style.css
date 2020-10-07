@@ -24,12 +24,12 @@ H5 { margin-top: 0.5rem; margin-bottom: 0; font-size: 16px; }
 H5::first-letter { padding-bottom: 3px; border-bottom: dotted #ccc 1px; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
-DIV#panels { position: fixed; height: 100vh; min-width: 100vw; display: flex; }
-DIV.sidepanel { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); }
+DIV#panels { position: absolute; height: 100vh; width: 100vw; display: flex; }
+DIV.sidepanel { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
 DIV.sidepanel A { text-decoration: none; color: inherit; }
-DIV#panel-left { position: relative; display: flex; flex-direction: column; transition: margin 1s; }
-DIV#panel-right { width: 0; transition: width 1s; }
-DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; height: 100vh; margin: auto; justify-content: center; align-items: center; min-width: 256px; max-width: calc(100vw - 64px); background-color: grey; }
+DIV#panel-left { position: relative; display: flex; flex-direction: column; }
+DIV#panel-right { margin-right: -20rem; }
+DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; min-width: 252px; max-width: calc(100vw - 68px); background-color: grey; }
 DIV.panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
 .button-svg { display: block; margin-left: auto; margin-right: auto; user-select: none; -webkit-user-select: none; -ms-user-select: none; }
@@ -65,7 +65,7 @@ DIV#search-results { position: relative; }
 INPUT#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 DIV.mask { overflow: hidden; }
 .search-controls { margin: 5px 5px 0 5px; }
-DIV#modal-overlay { position: fixed; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: background 0.3s linear; }
+DIV#modal-overlay { position: absolute; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: background 0.3s linear; }
 DIV#modal-overlay > DIV { display: flex; flex-direction: column; padding: 18px 25px; border-radius: 25px; box-sizing: border-box; max-height: 95%; background-color: rgba(50,50,50,1); color: white; }
 DIV#modal-overlay H1 { margin: 0; }
 DIV#modal-overlay H2 { margin-top: 1rem; }
@@ -168,6 +168,9 @@ UL#snapshots:empty::after { content: 'No snapshots for this note'; margin-right:
 }
 @media (max-width: 600px) {
   HTML { font-size: 10px; }
+}
+@media (max-width: 524px) {
+  DIV#panels { width: auto; min-width: 100vw; }
 }
 @media (max-width: 400px) {
   TEXTAREA#input,DIV#render,DIV#graph { width: 90%; }
