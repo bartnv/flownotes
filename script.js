@@ -1059,6 +1059,7 @@ function activateNote(id, nopost) {
       $('#status').html('Loading...').css('opacity', 1);
     }
     sendToServer(data);
+    setTimeout(idle, 8000);
   }
   if (!app.hidepanelleft && ($('#buttons-right')[0].getBoundingClientRect().right > window.innerWidth)) {
     togglePanelLeft('close');
