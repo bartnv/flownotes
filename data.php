@@ -384,6 +384,7 @@ function find_title($content) {
 
 function add_note($content) {
   global $dbh;
+  store_setting('lastupdate', time());
   if (!empty($content)) $title = find_title($content);
   else $title = null;
   if (!($stmt = $dbh->prepare("INSERT INTO note (title, content) VALUES (?, ?)"))) {
@@ -394,7 +395,6 @@ function add_note($content) {
     error_log("add_note() query execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
-  store_setting('lastupdate', time());
   return $dbh->lastInsertId();
 }
 function select_note($id) {
