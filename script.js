@@ -629,7 +629,10 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.inactive%15 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
+  else if (app.inactive%15 == 0) idle();
+}
+function idle() {
+  sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
 }
 
 function pushUpdate(beacon, retransmit) {
@@ -682,6 +685,7 @@ function parseFromServer(data, textStatus, xhr) {
     if (localStorage.getItem('flownotes-hidepanelleft') == 'true') togglePanelLeft('close');
     if (localStorage.getItem('flownotes-hidepanelright') == 'false') togglePanelRight('open');
   }
+  if (data.lastupdate) app.lastupdate = data.lastupdate;
   app.lastcomm = Date.now();
   if (app.offline) {
     app.offline = 0;
@@ -749,7 +753,6 @@ function parseFromServer(data, textStatus, xhr) {
       if (data.notes[i].modified) {
         app.notes[i].modified = data.notes[i].modified;
         if (app.notes[i].intransit) delete app.notes[i].intransit;
-        if (data.notes[i].modified > app.lastupdate) app.lastupdate = data.notes[i].modified;
       }
       if (data.notes[i].pinned) app.notes[i].pinned = parseInt(data.notes[i].pinned);
       if (data.notes[i].deleted == 1) app.notes[i].deleted = true;

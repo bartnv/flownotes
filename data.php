@@ -158,9 +158,10 @@ switch ($data['req']) {
     break;
   case 'activate':
     if (!isset($activenote)) fatalerr('Invalid activate request');
-    $ret['notes'] = [];
-    $ret['notes'][$activenote] = select_note($activenote);
-    if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
+    if (empty($data['lazy'])) {
+      $ret['notes'] = [];
+      $ret['notes'][$activenote] = select_note($activenote);
+    }
     break;
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in req search');
@@ -332,7 +333,9 @@ switch ($data['req']) {
 if (!empty($data['lastupdate']) && ($data['lastupdate'] < query_setting('lastupdate', 0))) {
   if (empty($ret['notes'])) $ret['notes'] = select_notes_since($data['lastupdate']);
   else $ret['notes'] = select_notes_since($data['lastupdate']) + $ret['notes'];
+  $ret['notes'][$activenote] = select_note($activenote);
 }
+$ret['lastupdate'] = query_setting('lastupdate', 0);
 send_and_exit($ret);
 
 function query_setting($setting, $def = '') {
@@ -365,7 +368,6 @@ function find_title($content) {
 
 function add_note($content) {
   global $dbh;
-  store_setting('lastupdate', time());
   if (!empty($content)) $title = find_title($content);
   else $title = null;
   if (!($stmt = $dbh->prepare("INSERT INTO note (title, content) VALUES (?, ?)"))) {
@@ -376,6 +378,7 @@ function add_note($content) {
     error_log("add_note() query execute failed: " . $stmt->errorInfo()[2]);
     return [];
   }
+  store_setting('lastupdate', time());
   return $dbh->lastInsertId();
 }
 function select_note($id) {
@@ -446,7 +449,6 @@ function select_pinned_notes($count) {
 }
 function select_notes_since($lastupdate) {
   global $dbh;
-  global $activenote;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
     error_log("select_notes_since() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
@@ -459,7 +461,6 @@ function select_notes_since($lastupdate) {
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $notes[$row['id']] = array_slice($row, 1);
   }
-  if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
   return $notes;
 }
 function select_note_snapshots($id) {
@@ -650,7 +651,7 @@ function update_note($id, $note) {
     publish($note, $pub['file'], $pub['type']);
   }
 
-  if ($row['modified'] > query_setting('lastupdate', 0)) store_setting('lastupdate', $row['modified']);
+  store_setting('lastupdate', time());
   return $rows;
 }
 function update_links($id, $content) {
@@ -704,6 +705,7 @@ function update_note_meta($id, $note) {
     error_log("FlowNotes: update_note_meta() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
     return 0;
   }
+  store_setting('lastupdate', time());
   return $pinned;
 }
 
