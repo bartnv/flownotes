@@ -393,8 +393,8 @@ function select_note($id) {
     error_log("select_note() select for id $id returned no rows");
     return [];
   }
-  if ($row['flinks']) $row['flinks'] = array_map('select_note_meta', array_unique(explode(',', $row['flinks'])));
-  if ($row['blinks']) $row['blinks'] = array_map('select_note_meta', array_unique(explode(',', $row['blinks'])));
+  if ($row['flinks']) $row['flinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['flinks']))));
+  if ($row['blinks']) $row['blinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['blinks']))));
   $row['published'] = sql_rows_collect('SELECT type, file FROM publish WHERE note = ?', [ $id ]);
   return $row;
 }
