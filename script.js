@@ -171,6 +171,11 @@ $().ready(function() {
     app.inactive = 0;
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
     updateStats();
+  }).on('mouseup', function(evt) {
+    if (evt.altKey && !evt.ctrlKey && !evt.shiftKey) {
+      let input = $('#input')[0];
+      cursorActivate(input.value, input.selectionStart);
+    }
   }).on('focus', function() {
     if ($('#panel-main').width() < parseInt($('#panel-main').css('min-width'))) {
       togglePanelLeft('close');
