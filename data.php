@@ -419,7 +419,7 @@ function select_note($id) {
 }
 function select_note_meta($id) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE id = ?"))) {
     error_log("select_recent_notes() prepare failed: " . $dbh->errorInfo()[2]);
     return [ 'id' => $id, 'title' => '{note not found}' ];
   }

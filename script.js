@@ -1008,7 +1008,9 @@ function updateLinks() {
   let str = '<div class="list-divider">Links to this note</div>';
   if (note.blinks) {
     for (let blink of note.blinks) {
-      str += '<a href="#' + blink.id + '"><div class="note-li" data-id="' + blink.id + '">';
+      let classes = 'note-li';
+      if (blink.deleted == 1) classes += ' note-deleted';
+      str += '<a href="#' + blink.id + '"><div class="' + classes + '" data-id="' + blink.id + '">';
       str += '<span class="note-title">' + blink.title + '</span><br>';
       str += '<span class="note-modified">saved at ' + new Date(blink.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
     }
@@ -1017,7 +1019,9 @@ function updateLinks() {
   str += '<div class="list-divider">Links from this note</div>';
   if (note.flinks) {
     for (let flink of note.flinks) {
-      str += '<a href="#' + flink.id + '"><div class="note-li" data-id="' + flink.id + '">';
+      let classes = 'note-li';
+      if (flink.deleted == 1) classes += ' note-deleted';
+      str += '<a href="#' + flink.id + '"><div class="' + classes + '" data-id="' + flink.id + '">';
       str += '<span class="note-title">' + flink.title + '</span><br>';
       str += '<span class="note-modified">saved at ' + new Date(flink.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
     }
