@@ -263,7 +263,7 @@ $().ready(function() {
   });
   $('#button-panel-left-hide').on('click', togglePanelLeft);
   $('#button-panel-right-hide').on('click', togglePanelRight);
-  $('#panel-left').on('mousedown', '.note-li', function (evt) {
+  $('#panel-left,#panel-right').on('mousedown', '.note-li', function (evt) {
     app.linkid = $(evt.currentTarget).addClass('note-selected').data('id');
     $('body').css('cursor', 'alias');
     $('#input').css('cursor', 'inherit');
