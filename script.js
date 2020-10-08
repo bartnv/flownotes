@@ -629,7 +629,10 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.inactive%15 == 0) sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
+  else if (app.inactive%15 == 0) idle();
+}
+function idle() {
+  sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
 }
 
 function pushUpdate(beacon, retransmit) {
@@ -1056,6 +1059,7 @@ function activateNote(id, nopost) {
       $('#status').html('Loading...').css('opacity', 1);
     }
     sendToServer(data);
+    setTimeout(idle, 8000);
   }
   if (!app.hidepanelleft && ($('#buttons-right')[0].getBoundingClientRect().right > window.innerWidth)) {
     togglePanelLeft('close');

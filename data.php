@@ -135,6 +135,13 @@ switch ($data['req']) {
     break;
   case 'idle':
     if (query_setting('autoprune', 0) && (date('i') == '13')) $ret['log'] = prune_snapshots();
+    $ret['notes'] = [];
+    $ret['notes'][$activenote] = select_note($activenote);
+    if ($data['lastupdate'] >= $ret['notes'][$activenote]['modified']) {
+      unset($ret['notes'][$activenote]['title']);
+      unset($ret['notes'][$activenote]['content']);
+      unset($ret['notes'][$activenote]['cursor']);
+    }
     break;
   case 'update':
     $ret['notes'] = [];
@@ -155,12 +162,22 @@ switch ($data['req']) {
       $ret['notes'] = $results + $ret['notes'];
       $ret['searchresults'] = array_keys($results);
     }
+    if (!isset($ret['notes'][$activenote])) {
+      $ret['notes'][$activenote] = select_note($activenote);
+      unset($ret['notes'][$activenote]['title']);
+      unset($ret['notes'][$activenote]['content']);
+      unset($ret['notes'][$activenote]['cursor']);
+    }
     break;
   case 'activate':
     if (!isset($activenote)) fatalerr('Invalid activate request');
     $ret['notes'] = [];
     $ret['notes'][$activenote] = select_note($activenote);
-    if (!empty($data['lazy']) && $data['lazy'] && !empty($data['modified']) && ($data['modified'] == $ret['notes'][$activenote]['modified'])) unset($ret['notes']);
+    if (!empty($data['lazy']) && $data['lazy'] && ($data['lastupdate'] >= $ret['notes'][$activenote]['modified'])) {
+      unset($ret['notes'][$activenote]['title']);
+      unset($ret['notes'][$activenote]['content']);
+      unset($ret['notes'][$activenote]['cursor']);
+    }
     break;
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in req search');
@@ -446,7 +463,6 @@ function select_pinned_notes($count) {
 }
 function select_notes_since($lastupdate) {
   global $dbh;
-  global $activenote;
   if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
     error_log("select_notes_since() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
@@ -457,9 +473,8 @@ function select_notes_since($lastupdate) {
   }
   $notes = [];
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $notes[$row['id']] = array_slice($row, 1);
+    if (empty($notes[$row['id']])) $notes[$row['id']] = array_slice($row, 1);
   }
-  if (!empty($notes[$activenote])) $notes[$activenote] = select_note($activenote);
   return $notes;
 }
 function select_note_snapshots($id) {
