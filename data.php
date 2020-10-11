@@ -168,6 +168,10 @@ switch ($data['req']) {
       unset($ret['notes'][$activenote]['content']);
       unset($ret['notes'][$activenote]['cursor']);
     }
+    if (!empty($data['snapshots'])) {
+      $ret['note'] = $activenote;
+      $ret['snapshots'] = select_note_snapshots($activenote);
+    }
     break;
   case 'activate':
     if (!isset($activenote)) fatalerr('Invalid activate request');
@@ -177,6 +181,10 @@ switch ($data['req']) {
       unset($ret['notes'][$activenote]['title']);
       unset($ret['notes'][$activenote]['content']);
       unset($ret['notes'][$activenote]['cursor']);
+    }
+    if (!empty($data['snapshots'])) {
+      $ret['note'] = $activenote;
+      $ret['snapshots'] = select_note_snapshots($activenote);
     }
     break;
   case 'search':
@@ -481,7 +489,7 @@ function select_notes_since($lastupdate) {
 }
 function select_note_snapshots($id) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, locked, title, content FROM snapshot WHERE note = ? ORDER BY modified"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, locked, title, content FROM snapshot WHERE note = ? ORDER BY modified DESC"))) {
     error_log("select_note_snapshots() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }

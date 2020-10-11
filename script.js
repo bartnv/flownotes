@@ -316,6 +316,10 @@ $().ready(function() {
         $('#button-links').addClass('button-active').siblings('.button-mode').removeClass('button-active');
         updateLinks();
         break;
+      case 'snaps':
+        $('#button-snaps').addClass('button-active').siblings('.button-mode').removeClass('button-active');
+        loadSnapshots();
+        break;
     }
     app.lastpanelright = mode;
   });
@@ -399,7 +403,6 @@ $().ready(function() {
   $('#button-fullscreen').on('click', function() {
     goFullscreen();
   });
-  $('#button-snapshots').on('click', loadSnapshots);
   $('#button-export').on('click', loadExports);
   $('#button-settings').on('click', loadSettings);
   $('#button-restore').on('click', function() {
@@ -643,6 +646,7 @@ function idle() {
 
 function pushUpdate(beacon, retransmit) {
   let data = { req: 'update', activenote: app.activenote, notes: {}, lastupdate: app.lastupdate };
+  if (!app.hidepanelright && (app.lastpanelright == 'snaps')) data.snapshots = true;
   if ($('#label-search').hasClass('tab-active') && $('#search-input').val().length) data.term = $('#search-input').val();
   for (let i in app.notes) {
     if (app.notes[i].touched) {
@@ -733,21 +737,8 @@ function parseFromServer(data, textStatus, xhr) {
 
   if ((data.snapshots) && (data.note == app.activenote)) {
     app.snapshots = data.snapshots;
-    if (app.modal == 'snapshots') {
-      let div = $('#snapshots').empty();
-      for (let snap of data.snapshots) {
-        let str = '<li data-id="' + snap.id + '" data-modified="' + snap.modified + '">';
-        str += '<span class="snap-title">' + snap.title + '</span><br>';
-        str += '<span class="snap-modified">saved at ' + new Date(snap.modified*1000).format('Y-m-d H:i') + '</span><br>';
-        let matches = snap.content.match(/\W\w/g);
-        str += '<span class="snap-stats">chars: ' + snap.content.length + ' / words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(snap.content)?0:1)) + '</span>';
-        if (snap.locked == 1) str += '<div class="snap-action snap-unlock" title="Unlock"></div>';
-        else str += '<div class="snap-action snap-lock" title="Lock"></div><div class="snap-action snap-delete" title="Delete"></div>';
-        str += '</li>';
-        div.append(str);
-      }
-    }
-    $(window).trigger('hashchange');
+    updateSnapshots();
+    if (window.location.hash.indexOf('@') > -1) $(window).trigger('hashchange');
   }
 
   let reload = false;
@@ -960,6 +951,9 @@ function updatePanels() {
       case 'links':
         updateLinks();
         break;
+      case 'snaps':
+        updateSnapshots();
+        break;
     }
   }
 }
@@ -1040,6 +1034,25 @@ function updateLinks() {
   else str += '<div class="list-none">- none -</div>';
   $('#tab-right').html(str);
 }
+function updateSnapshots() {
+  let div = $('#snapshots').empty();
+  if (!div.length || !app.snapshots) return;
+  if (!app.snapshots.length) {
+    $('#snapshots').append('<div class="list-none">- none -</div>');
+    return;
+  }
+  for (let snap of app.snapshots) {
+    let str = '<div class="snap-li" data-id="' + snap.id + '" data-modified="' + snap.modified + '">';
+    str += '<span class="snap-title">' + snap.title + '</span><br>';
+    str += '<span class="snap-modified">saved at ' + new Date(snap.modified*1000).format('Y-m-d H:i') + '</span><br>';
+    let matches = snap.content.match(/\W\w/g);
+    str += '<span class="snap-stats">chars: ' + snap.content.length + ' / words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(snap.content)?0:1)) + '</span>';
+    if (snap.locked == 1) str += '<div class="snap-action snap-unlock" title="Unlock"></div>';
+    else str += '<div class="snap-action snap-lock" title="Lock"></div><div class="snap-action snap-delete" title="Delete"></div>';
+    str += '</div>';
+    div.append(str);
+  }
+}
 
 function findTitle(text) {
   let matches = text.substring(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'&-]+[a-zA-Z\u00C0-\u024F0-9])/mg);
@@ -1062,6 +1075,7 @@ function activateNote(id, nopost) {
   $('#stats').hide();
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
+    if (!app.hidepanelright && (app.lastpanelright == 'snaps')) data.snapshots = true;
     if (app.notes[id] && (app.notes[id].content !== undefined)) {
       loadNote(app.activenote);
       updatePanels();
@@ -1192,41 +1206,43 @@ function handleSettings(settings) {
 }
 
 function loadSnapshots() {
-  let div = $('<div><h1>Snapshots</h1><div id="modal-body"><ul id="snapshots">Loading...</ul></div><p><input type="button" id="create-snapshot" class="modal-button-small" value="Create new snapshot"></div>');
+  let div = $('#tab-right').empty()
+    .append('<div><input type="button" id="create-snapshot" class="tab-button" value="Create new snapshot"></div><div class="list-divider">Snapshots</div><div id="snapshots"></div>');
   div.find('#create-snapshot').on('click', function() {
     let note = app.notes[app.activenote];
     if (note.touched) return alert('Last changes not saved yet; please wait 10 seconds and try again');
     sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote });
     $('#status').html('Saving snapshot...').css('opacity', 1);
-  });
-  div.find('#snapshots').on('click', 'LI', function(evt) {
-    let li = $(evt.currentTarget);
-    location.hash = '#' + app.activenote + '@' + li.data('modified');
-    hideModal();
-  });
-  div.find('#snapshots').on('click', '.snap-action', function(evt) {
-    let button = $(evt.currentTarget);
-    let li = button.parent();
-    if (button.hasClass('snap-unlock')) {
-      button.removeClass('snap-unlock').addClass('snap-lock').prop('title', 'Lock');
-      li.append('<div class="snap-action snap-delete" title="Delete"/>');
-      sendToServer({ req: 'snapshot', mode: 'pin', snapshot: li.data('id'), value: 0 });
-    }
-    else if (button.hasClass('snap-lock')) {
-      button.removeClass('snap-lock').addClass('snap-unlock').prop('title', 'Unlock');
-      li.find('.snap-delete').remove();
-      sendToServer({ req: 'snapshot', mode: 'pin', snapshot: li.data('id'), value: 1 });
-    }
-    else if (button.hasClass('snap-delete')) {
-      if (!confirm('Are you sure you want to delete the snapshot ' + li.find('.snap-modified').text() + '?')) return false;
-      sendToServer({ req: 'snapshot', mode: 'del', note: app.activenote, snapshot: li.data('id') });
-      $('#status').html('Deleting snapshot...').css('opacity', 1);
-      if (app.snap && (app.snap == li.data('modified'))) window.location = window.location.hash.split('@')[0];
-    }
-    return false;
-  });
-  sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
-  showModal('snapshots', div, true);
+  })
+  div.find('#snapshots')
+    .on('click', '.snap-li', function(evt) {
+      let snap = $(evt.currentTarget);
+      location.hash = '#' + app.activenote + '@' + snap.data('modified');
+    })
+    .on('click', '.snap-action', function(evt) {
+      let button = $(evt.currentTarget);
+      let snap = button.parent();
+      if (button.hasClass('snap-unlock')) {
+        button.removeClass('snap-unlock').addClass('snap-lock').prop('title', 'Lock');
+        snap.append('<div class="snap-action snap-delete" title="Delete"/>');
+        sendToServer({ req: 'snapshot', mode: 'pin', snapshot: snap.data('id'), value: 0 });
+      }
+      else if (button.hasClass('snap-lock')) {
+        button.removeClass('snap-lock').addClass('snap-unlock').prop('title', 'Unlock');
+        snap.find('.snap-delete').remove();
+        sendToServer({ req: 'snapshot', mode: 'pin', snapshot: snap.data('id'), value: 1 });
+      }
+      else if (button.hasClass('snap-delete')) {
+        if (!confirm('Are you sure you want to delete the snapshot ' + snap.find('.snap-modified').text() + '?')) return false;
+        sendToServer({ req: 'snapshot', mode: 'del', note: app.activenote, snapshot: snap.data('id') });
+        $('#status').html('Deleting snapshot...').css('opacity', 1);
+        if (app.snap && (app.snap == snap.data('modified'))) window.location = window.location.hash.split('@')[0];
+      }
+      return false;
+    })
+    .append(app.loader);
+  if (app.snapshots) updateSnapshots();
+  else sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
 }
 
 function showModal(type, content, escapable) {
