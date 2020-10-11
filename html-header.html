@@ -8,8 +8,7 @@ HTML { font-size: 16px; font-family: sans-serif; }
 BODY { display: flex; justify-content: center; margin: 0; background-color: grey; }
 MAIN { padding: 0 20px; max-width: 50rem; background-color: white; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
-PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
-PRE:hover .code-copy { display: block; }
+PRE[data-info]::after { content: attr(data-info); position: absolute; top: 0; right: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.7); border-left: solid #ddcb8e 1px; border-bottom: solid #ddcb8e 1px; }
 CODE { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
 A.link-note { text-decoration-style: dashed; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }

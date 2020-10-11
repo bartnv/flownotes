@@ -57,6 +57,7 @@ $().ready(function() {
     return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
   }
   app.renderer.code = function(code, info, escaped) {
+    if (info) return '<pre data-info="' + info + '"><code>' + code + '</code></pre>';
     return '<pre><code>' + code + '</code></pre>';
   }
   app.renderer.codespan = function(code) {

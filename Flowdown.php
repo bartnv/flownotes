@@ -43,4 +43,11 @@ class Flowdown extends Parsedown {
     }
     return $link;
   }
+  protected function blockFencedCode($excerpt) {
+    $pre = parent::blockFencedCode($excerpt);
+    if (!empty($excerpt['text']) && preg_match('/^[~`]+(.*)$/', $excerpt['text'], $matches)) {
+      $pre['element']['attributes']['data-info'] = $matches[1];
+    }
+    return $pre;
+  }
 }
