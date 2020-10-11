@@ -60,7 +60,7 @@ $().ready(function() {
     return '<pre><code>' + code + '</code></pre>';
   }
   app.renderer.codespan = function(code) {
-    return '<code>' + code.replace('&amp;', '&') + '</code>';
+    return '<code class="inline">' + code.replace('&amp;', '&') + '</code>';
   }
   app.graph = new sigma('graph');
   app.graph.settings({
@@ -545,7 +545,7 @@ function render(content) {
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
-  content = content.replace(/\*`([^`]+)`/g, '<code onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
+  content = content.replace(/\*`([^`]+)`/g, '<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
   el.html(marked(content, { renderer: app.renderer }));
   return el;
 }

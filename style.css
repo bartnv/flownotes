@@ -11,7 +11,7 @@ BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; background-color: 
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE .code-copy { display: none; position: absolute; top: 0px; right: 0px; width: 16px; height: 20px; padding: 2px; cursor: pointer; }
 PRE:hover .code-copy { display: block; }
-CODE { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
+CODE.inline { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
 A.link-note { text-decoration-style: dashed; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
