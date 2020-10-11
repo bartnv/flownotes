@@ -894,6 +894,7 @@ function handleWebauthn(data) {
 }
 
 function switchMode(newmode) {
+  let pct = null;
   app.prev = app.mode;
   app.mode = newmode;
   if (app.notes[app.activenote]) {
@@ -902,13 +903,17 @@ function switchMode(newmode) {
     app.notes[app.activenote].metatouched = true;
   }
   if (app.mode == 'edit') {
+    if (app.prev == 'view') pct = $('#render').getScrolledPct();
     $('#input').show().focus();
     $('#render').hide().empty();
     $('#graph').hide();
+    if (pct !== null) $('#input').setScrolledPct(pct);
   }
   else if (app.mode == 'view') {
+    if (app.prev == 'edit') pct = $('#input').getScrolledPct();
     $('#input,#graph,#stats').hide();
     render($('#input').val()).show();
+    if (pct !== null) $('#render').setScrolledPct(pct);
   }
   else if (app.mode == 'graph') {
     $('#input,#stats').hide();
@@ -1299,6 +1304,13 @@ $.fn.setCursorPosition = function(start, end) {
   });
   return this;
 };
+$.fn.getScrolledPct = function() {
+  return 100 * this[0].scrollTop / (this[0].scrollHeight-this[0].clientHeight);
+}
+$.fn.setScrolledPct = function(pct) {
+  this[0].scrollTop = pct/100 * (this[0].scrollHeight-this[0].clientHeight);
+}
+
 function selectText(el) {
   if (document.selection) {
     let range = document.body.createTextRange();
