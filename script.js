@@ -609,7 +609,7 @@ function cursorActivate(text, cursor) {
   }
 
   if (res.substring(0, 1) == '#') window.location = res;
-  else if (res.substring(0, 4) == 'http') window.open(res, '_blank');
+  else if (res.substring(0, 4) == 'http') window.open(res, '_blank', 'noopener');
 }
 
 function tick() {
