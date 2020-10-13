@@ -1176,6 +1176,9 @@ function loadSettings() {
         div.find('#modal-error').html('Please verify your new password entries');
         return;
       }
+      if (!new1.val()) {
+        if (!confirm('Entering your old password and no new password in settings will remove the security from your FlowNotes. Are you sure you want to continue?')) return;
+      }
       div.find('#modal-error').empty();
       if (old.length) data.oldpw = old.val();
       data.newpw = new1.val();
