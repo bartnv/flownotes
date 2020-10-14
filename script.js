@@ -42,10 +42,6 @@ function goFullscreen() {
 }
 
 $().ready(function() {
-  marked.setOptions({
-    breaks: true,
-    smartypants: true
-  });
   app.renderer = new marked.Renderer();
   app.renderer.link = function(href, title, text) {
     if (title == null) title = '';
@@ -54,6 +50,14 @@ $().ready(function() {
       else if (app.notes[href.substring(1)]) title = app.notes[href.substring(1)].title;
       return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
     }
+    else if (href.match(/^#[A-Za-z -]+$/)) {
+      if (text == '') {
+        title = href.substring(1).toLowerCase();
+        text = href.substring(1).replaceAll('-', ' ');
+      }
+      href = '#' + app.activenote + '_' + title;
+      return '<a class="link-head" href="' + href + '" title="' + title + '">' + text + '</a>';
+    }
     return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
   }
   app.renderer.code = function(code, info, escaped) {
@@ -61,8 +65,14 @@ $().ready(function() {
     return '<pre><code>' + code + '</code></pre>';
   }
   app.renderer.codespan = function(code) {
-    return '<code class="inline">' + code.replace('&amp;', '&') + '</code>';
+    return '<code class="inline">' + code.replaceAll('&amp;', '&') + '</code>';
   }
+  marked.setOptions({
+    breaks: true,
+    smartypants: true,
+    renderer: app.renderer
+  });
+
   app.graph = new sigma('graph');
   app.graph.settings({
     labelSize: 'proportional',
@@ -550,7 +560,8 @@ function render(content) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
   content = content.replace(/\*`([^`]+)`/g, '<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
-  el.html(marked(content, { renderer: app.renderer }));
+  marked.use({ headerPrefix: app.activenote + '_' });
+  el.html(marked(content));
   return el;
 }
 function renderToWindow(content) {
@@ -561,7 +572,7 @@ function renderToWindow(content) {
   let win = window.open('', 'print', 'height=400,width=400');
   win.document.write('<html><head><title>' + app.notes[app.activenote].title + '</title>');
   win.document.write('<link rel="stylesheet" href="style.css"/></head><body>');
-  win.document.write(marked(content, { renderer: app.renderer }));
+  win.document.write(marked(content));
   win.document.write('</body></html>');
   win.document.close();
   win.focus();
