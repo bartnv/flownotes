@@ -24,8 +24,6 @@ let app = {
 
 $(document).on('keydown', function(evt) {
   if (evt.key == 'F2') {
-    if (app.mode == 'graph') switchMode(app.prev);
-    else switchMode('graph');
     return false;
   }
   else if (evt.key == 'F4') {
@@ -71,18 +69,6 @@ $().ready(function() {
     breaks: true,
     smartypants: true,
     renderer: app.renderer
-  });
-
-  app.graph = new sigma('graph');
-  app.graph.settings({
-    labelSize: 'proportional',
-    labelSizeRatio: 2,
-    labelThreshold: 4,
-    defaultNodeColor: '#9ABCBD',
-    sideMargin: 10
-  });
-  app.graph.bind('clickNode', function(evt) {
-    location.hash = '#' + evt.data.node.id;
   });
 
   init();
@@ -527,7 +513,6 @@ function unpinNote(id) {
 function loadNote(id) {
   if (app.notes[id].mode && (app.mode != app.notes[id].mode)) switchMode(app.notes[id].mode);
   if (app.mode == 'view') render(app.notes[id].content);
-  else if (app.mode == 'graph') loadGraph();
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
   else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
   if (app.notes[id].deleted) {
@@ -548,7 +533,6 @@ function loadNote(id) {
 }
 function loadSnap(snap) {
   if (app.mode == 'view') render(snap.content);
-  else if (app.mode == 'graph') switchmode('edit');
   $('#input').val(snap.content).attr('readonly', 'readonly');
   $('#snap').css('display', 'flex').find('#snapdate').text(new Date(snap.modified*1000).format('Y-m-d H:i'));
 }
@@ -909,47 +893,15 @@ function switchMode(newmode) {
     if (app.prev == 'view') pct = $('#render').getScrolledPct();
     $('#input').show().focus();
     $('#render').hide().empty();
-    $('#graph').hide();
     if (pct !== null) $('#input').setScrolledPct(pct);
   }
   else if (app.mode == 'view') {
     if (app.prev == 'edit') pct = $('#input').getScrolledPct();
-    $('#input,#graph,#stats').hide();
+    $('#input,#stats').hide();
     render($('#input').val()).show();
     if (pct !== null) $('#render').setScrolledPct(pct);
   }
-  else if (app.mode == 'graph') {
-    $('#input,#stats').hide();
-    $('#render').hide().empty();
-    $('#graph').show();
-    loadGraph();
-  }
   $('#button-mode-' + app.mode).addClass('button-active').siblings('.button-mode').removeClass('button-active');
-}
-function loadGraph() {
-  app.graph.graph.clear();
-  app.graph.refresh();
-  let note = app.notes[app.activenote];
-  app.graph.graph.addNode({ id: String(app.activenote), label: note.title, x: 50, y: 0, size: 1, color: '#6BA2A5' });
-  let y = 0;
-  if (note.flinks) {
-    for (let flink of note.flinks) {
-      app.graph.graph.addNode({ id: flink.id, label: flink.title, x: 75, y: y, size: 1 });
-      app.graph.graph.addEdge({ id: app.activenote + '-' + flink.id, source: String(app.activenote), target: flink.id });
-      if (y > 0) y = -y;
-      else y = -y+10;
-    }
-    y = 0;
-  }
-  if (note.blinks) {
-    for (let blink of note.blinks) {
-      app.graph.graph.addNode({ id: blink.id, label: blink.title, x: 25, y: y, size: 1 });
-      app.graph.graph.addEdge({ id: app.activenote + '-' + blink.id, source: blink.id, target: String(app.activenote) });
-      if (y > 0) y = -y;
-      else y = -y+10;
-    }
-  }
-  app.graph.refresh();
 }
 
 function updatePanels() {
@@ -1309,8 +1261,6 @@ function login(error, challenge) {
 }
 function clear() {
   app.notes = [];
-  app.graph.graph.clear();
-  app.graph.refresh();
   $('#input').val(null).attr('disabled', true);
   $('#render').empty();
   $('#tab-recent').empty();
