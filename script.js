@@ -124,7 +124,7 @@ $().ready(function() {
       let start1 = content.lastIndexOf("\n", cursor.start-1);
       if (start1 == -1) return false;
       else if (start1 == 0) start1 = 1; // Empty first line
-      let end1 = content.indexOf("\n", cursor.end);
+      let end1 = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1));
       if (end1 == -1) {
         end1 = content.length;
         if (end1-start1 == 1) return false;
@@ -140,7 +140,7 @@ $().ready(function() {
       let cursor = $('#input').getCursorPosition();
       let start1 = content.lastIndexOf("\n", cursor.start-1);
       if (start1 == -1) start1 = 0;
-      let end1 = content.indexOf("\n", cursor.end);
+      let end1 = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1));
       if (end1 == -1) return false;
       let end2 = content.indexOf("\n", end1+1);
       if (end2 == -1) end2 = content.length;
