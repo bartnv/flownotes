@@ -11,7 +11,7 @@ if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
-if (query_setting('dbversion') < 9) upgrade_database();
+if (query_setting('dbversion') < 10) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -122,10 +122,7 @@ switch ($data['req']) {
       $ret['notes'] = $results + $ret['notes'];
       $ret['searchresults'] = array_keys($results);
     }
-    if (!empty($data['snapshots'])) {
-      $ret['note'] = $activenote;
-      $ret['snapshots'] = select_note_snapshots($activenote);
-    }
+    $ret['lastupdate'] = time();
     break;
   case 'recent':
     if (empty($data['offset'])) fatalerr('No offset in recent request');
@@ -135,13 +132,6 @@ switch ($data['req']) {
     break;
   case 'idle':
     if (query_setting('autoprune', 0) && (date('i') == '13')) $ret['log'] = prune_snapshots();
-    $ret['notes'] = [];
-    $ret['notes'][$activenote] = select_note($activenote);
-    if ($data['lastupdate'] >= $ret['notes'][$activenote]['modified']) {
-      unset($ret['notes'][$activenote]['title']);
-      unset($ret['notes'][$activenote]['content']);
-      unset($ret['notes'][$activenote]['cursor']);
-    }
     break;
   case 'update':
     $ret['notes'] = [];
@@ -162,29 +152,12 @@ switch ($data['req']) {
       $ret['notes'] = $results + $ret['notes'];
       $ret['searchresults'] = array_keys($results);
     }
-    if (!isset($ret['notes'][$activenote])) {
-      $ret['notes'][$activenote] = select_note($activenote);
-      unset($ret['notes'][$activenote]['title']);
-      unset($ret['notes'][$activenote]['content']);
-      unset($ret['notes'][$activenote]['cursor']);
-    }
-    if (!empty($data['snapshots'])) {
-      $ret['note'] = $activenote;
-      $ret['snapshots'] = select_note_snapshots($activenote);
-    }
     break;
   case 'activate':
     if (!isset($activenote)) fatalerr('Invalid activate request');
-    $ret['notes'] = [];
-    $ret['notes'][$activenote] = select_note($activenote);
-    if (!empty($data['lazy']) && $data['lazy'] && ($data['lastupdate'] >= $ret['notes'][$activenote]['modified'])) {
-      unset($ret['notes'][$activenote]['title']);
-      unset($ret['notes'][$activenote]['content']);
-      unset($ret['notes'][$activenote]['cursor']);
-    }
-    if (!empty($data['snapshots'])) {
-      $ret['note'] = $activenote;
-      $ret['snapshots'] = select_note_snapshots($activenote);
+    if (empty($data['lazy']) || !$data['lazy']) {
+      $ret['notes'] = [];
+      $ret['notes'][$activenote] = select_note($activenote);
     }
     break;
   case 'search':
@@ -204,7 +177,7 @@ switch ($data['req']) {
     if (!empty($data['undelete'])) $change = 0;
     else $change = 1;
 
-    if (!sql_updateone("UPDATE note SET deleted = $change WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
+    if (!sql_updateone("UPDATE note SET deleted = $change, changed = strftime('%s', 'now') WHERE id = ?", [ $data['id'] ])) fatalerr("Failed to set delete to $change");
     $ret['notes'] = [];
     $ret['notes'][$data['id']] = [];
     $ret['notes'][$data['id']]['deleted'] = $change;
@@ -265,27 +238,21 @@ switch ($data['req']) {
     }
     break;
   case 'snapshot':
+    if (empty($activenote)) fatalerr('Invalid snapshot request');
     switch ($data['mode']) {
       case 'list':
-        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
-        $ret['note'] = $data['note'];
-        $ret['snapshots'] = select_note_snapshots($data['note']);
+        $data['snapshots'] = true;
         break;
       case 'add':
-        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
         add_snapshot($data['note'], $data['locked'] ?? 1);
-        $ret['note'] = $data['note'];
-        $ret['snapshots'] = select_note_snapshots($data['note']);
+        $data['snapshots'] = true;
         break;
       case 'del':
-        if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid snapshot request');
         if (empty($data['snapshot']) || !is_numeric($data['snapshot'])) fatalerr('Invalid snapshot request');
         del_snapshot($data['snapshot']);
-        $ret['note'] = $data['note'];
-        $ret['snapshots'] = select_note_snapshots($data['note']);
+        $data['snapshots'] = true;
         break;
       case 'pin':
-        if (empty($data['snapshot']) || !is_numeric($data['snapshot'])) fatalerr('Invalid snapshot request');
         if (!isset($data['value']) || !is_numeric($data['value'])) fatalerr('Invalid snapshot request');
         sql_updateone('UPDATE snapshot SET locked = ? WHERE id = ?', [ $data['value'], $data['snapshot'] ]);
         break;
@@ -321,6 +288,7 @@ switch ($data['req']) {
         $res = publish($note, $filename, 'html');
         if ($res != 'OK') fatalerr($res);
         if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'html', $filename ])) fatalerr('Failed to create publish entry');
+        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
         $note['published'] = [ [ 'type' => 'html', 'file' => $filename ] ];
         $ret['notes'][$note['id']] = $note;
         break;
@@ -332,6 +300,7 @@ switch ($data['req']) {
         $res = publish($note, $filename, 'frag');
         if ($res != 'OK') fatalerr($res);
         if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'frag', $filename ])) fatalerr('Failed to create publish entry');
+        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
         $note['published'] = [ [ 'type' => 'frag', 'file' => $filename ] ];
         $ret['notes'][$note['id']] = $note;
         break;
@@ -343,6 +312,7 @@ switch ($data['req']) {
         if (!file_exists($note['published'][0]['file'])) $ret['log'] = "File '" . $note['published'][0]['file'] . "' doesn't exist; removing published status";
         elseif (!unlink($note['published'][0]['file'])) fatalerr('Failed to delete file ' . $note['published'][0]['file']);
         if (!sql_updateone("DELETE FROM publish WHERE note = ? AND type = ?", [ $data['note'], $data['type'] ])) fatalerr('Failed to delete publish entry');
+        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
         $note['published'] = null;
         $ret['notes'][$note['id']] = $note;
         break;
@@ -354,12 +324,21 @@ switch ($data['req']) {
     fatalerr('Invalid request');
 }
 
-if (!empty($data['lastupdate']) && ($data['lastupdate'] < query_setting('lastupdate', 0))) {
-  if (empty($ret['notes'])) $ret['notes'] = select_notes_since($data['lastupdate']);
-  else $ret['notes'] = select_notes_since($data['lastupdate']) + $ret['notes'];
-  $ret['notes'][$activenote] = select_note($activenote);
+if (!empty($data['lastupdate'])) {
+  if ($data['lastupdate'] < query_setting('lastupdate', 0)) {
+    if (empty($ret['notes'])) $ret['notes'] = select_notes_since($data['lastupdate']);
+    else $ret['notes'] = $ret['notes'] + select_notes_since($data['lastupdate']);
+  }
+  if (!empty($activenote) && ($data['lastupdate'] < sql_single('SELECT changed FROM note WHERE id = ?', [ $activenote ]))) {
+    $ret['notes'][$activenote] = select_note($activenote);
+  }
+  $ret['lastupdate'] = time();
 }
-$ret['lastupdate'] = query_setting('lastupdate', 0);
+if (!empty($data['snapshots']) && !empty($activenote)) {
+  $ret['snapshotsfrom'] = $activenote;
+  $ret['snapshots'] = select_note_snapshots($activenote);
+}
+
 send_and_exit($ret);
 
 function query_setting($setting, $def = '') {
@@ -473,7 +452,7 @@ function select_pinned_notes($count) {
 }
 function select_notes_since($lastupdate) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE modified > ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned, deleted FROM note WHERE modified > ?"))) {
     error_log("select_notes_since() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -513,7 +492,7 @@ function add_snapshot($id, $locked = 0) {
     error_log("add_snapshot() execute failed: " . $stmt->errorInfo()[2]);
     return;
   }
-  sql_updateone("UPDATE note SET snapped = strftime('%s', 'now') WHERE id = ?", [ $id ]);
+  sql_updateone("UPDATE note SET snapped = strftime('%s', 'now'), changed = strftime('%s', 'now') WHERE id = ?", [ $id ]);
 }
 function del_snapshot($id) {
   global $dbh;
@@ -525,6 +504,7 @@ function del_snapshot($id) {
     error_log("del_snapshot() execute failed: " . $stmt->errorInfo()[2]);
     return;
   }
+  sql_updateone("UPDATE note SET snapped = strftime('%s', 'now'), changed = strftime('%s', 'now') WHERE id = ?", [ $id ]);
 }
 function prune_snapshots() {
   $pruneafter = query_setting('pruneafter', 0);
@@ -639,7 +619,7 @@ function update_note($id, $note) {
       }
     }
   }
-  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, modified = strftime('%s', 'now'), pinned = ?, cursor = ?, mode = ? WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, changed = strftime('%s', 'now'), modified = strftime('%s', 'now'), pinned = ?, cursor = ?, mode = ? WHERE id = ?"))) {
     error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -655,15 +635,18 @@ function update_note($id, $note) {
   }
   update_links($id, $note['content']);
 
-  if (!($stmt = $dbh->query("SELECT modified, pinned FROM note WHERE id = $id"))) {
+  if (!($stmt = $dbh->query("SELECT note.modified, note.pinned, group_concat(flink.target) AS flinks, group_concat(blink.source) AS blinks FROM note LEFT JOIN link AS flink ON flink.source = note.id LEFT JOIN link AS blink ON blink.target = note.id WHERE note.id = $id"))) {
     error_log("update_note() select query failed: " . $dbh->errorInfo()[2]);
     return [];
   }
-  $rows = [];
   if (!$row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     error_log("update_note() select query returned no results");
     return [];
   }
+  if (!empty($row['flinks'])) $row['flinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['flinks']))));
+  if (!empty($row['blinks'])) $row['blinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['blinks']))));
+
+  $rows = [];
   $rows[$id] = $row;
   foreach ($GLOBALS['extra_ids'] as $id) {
     $rows[$id] = select_note($id);
@@ -699,7 +682,7 @@ function update_links($id, $content) {
 function update_backlinks($id, $target, $title) {
   $content = sql_single("SELECT content FROM note WHERE id = $id");
   $content = preg_replace("/\[=[^]]*\]\(#$target\)/", "[=$title](#$target)", $content);
-  if (!sql_updateone("UPDATE note SET content = ? WHERE id = $id", [ $content ])) fatalerr("Failed to update backlinks in note $id");
+  if (!sql_updateone("UPDATE note SET content = ?, changed = strftime('%s', 'now') WHERE id = $id", [ $content ])) fatalerr("Failed to update backlinks in note $id");
 }
 function update_note_meta($id, $note) {
   global $dbh;
@@ -720,7 +703,7 @@ function update_note_meta($id, $note) {
   if (isset($note['cursor'])) $cursor = implode(',', $note['cursor']);
   else $cursor = NULL;
 
-  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ?, mode = ? WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("UPDATE note SET pinned = ?, cursor = ?, mode = ?, changed = strftime('%s', 'now') WHERE id = ?"))) {
     error_log("FlowNotes: update_note_meta() update prepare failed: " . $dbh->errorInfo()[2]);
     return 0;
   }
@@ -729,7 +712,6 @@ function update_note_meta($id, $note) {
     error_log("FlowNotes: update_note_meta() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
     return 0;
   }
-  store_setting('lastupdate', time());
   return $pinned;
 }
 
@@ -757,8 +739,13 @@ function upgrade_database() {
       sql_single('ALTER TABLE "snapshot_new" RENAME to "snapshot"');
     case 8:
       sql_single('CREATE TABLE publish (id integer primary key, note integer not null, type text not null, file text not null)');
+    case 9:
+      sql_single('CREATE TABLE "note_new" (id integer primary key, snapped integer default (strftime(\'%s\', \'now\')), changed integer default (strftime(\'%s\', \'now\')), modified integer default (strftime(\'%s\', \'now\')), content text, title text, published text, pinned integer default 0, deleted boolean default 0, cursor text, mode text default \'edit\')');
+      sql_single('INSERT INTO "note_new" (id, snapped, changed, modified, content, title, published, pinned, deleted, cursor, mode) SELECT id, snapped, modified, modified, content, title, published, pinned, deleted, cursor, mode FROM "note"');
+      sql_single('DROP TABLE "note"');
+      sql_single('ALTER TABLE "note_new" RENAME TO "note"');
   }
-  store_setting('dbversion', 9);
+  store_setting('dbversion', 10);
 }
 
 function handle_cli() {
