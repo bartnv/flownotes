@@ -9,16 +9,7 @@
 HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: pan-y; }
 BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; background-color: grey; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
-PRE[data-info]::after {
-  content: attr(data-info);
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 5px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-left: solid #ddcb8e 1px;
-  border-bottom: solid #ddcb8e 1px;
-}
+PRE[data-info]::after { content: attr(data-info); position: absolute; top: 0; right: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.7); border-left: solid #ddcb8e 1px; border-bottom: solid #ddcb8e 1px; }
 CODE.inline { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
 A.link-note { text-decoration-style: dashed; }
 A.link-head { text-decoration-style: dotted; }
@@ -45,7 +36,7 @@ DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
 .button-active { background-color: rgb(80,80,80) !important; }
 DIV#button-export,DIV#button-settings { margin-top: auto; }
 DIV#status { position: absolute; top: 0; right: 0; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
-DIV#stats { position: absolute; right: 0; bottom: 0; background-color: #E0D17B; padding: 0.1em 0.2em; font-size: 0.9rem; }
+DIV#stats { position: absolute; right: 0; bottom: 0; padding: 0.1em 0.2em; font-size: 0.9rem; text-align: right; }
 DIV#snap { position: absolute; top: 0; left: 50%; transform: translateX(-50%); padding: 0.2rem 0.5rem; background-color: rgba(0,0,0,0.5); color: white; text-align: center; }
 DIV#link { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background-color: rgb(251, 244, 208); padding: 0.3rem 5px; border: solid #ddcb8e 1px; white-space: nowrap; }
 .button-unpin { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; background: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDEyMCAxMjAiPgogIDxwYXRoIHN0cm9rZT0iI0YwMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGQ9Im0xNCwxNCA5Miw5Mm0wLTkyLTkyLDkyIi8+Cjwvc3ZnPgo=); }
