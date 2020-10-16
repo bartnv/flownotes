@@ -79,7 +79,7 @@ $().ready(function() {
       if (!app.changed) app.changed = Date.now();
     }
 
-    if ((e.key != 'Enter') && (e.key != 'Backspace')) app.prepended = null;
+    if ((e.key != 'Enter') && (e.key != 'Backspace') && (e.key != ' ')) app.prepended = null;
 
     if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
@@ -136,22 +136,25 @@ $().ready(function() {
     }
   }).on('input', function(e) {
     if (app.prepended) { // Previous keystroke prepended text
-      if ((e.originalEvent.inputType == 'insertLineBreak') || (e.originalEvent.inputType == 'deleteContentBackward')) {
-        let content = $('#input').val();
-        let cursor = $('#input').getCursorPosition().start;
-        let len = app.prepended.length;
-        if (e.originalEvent.inputType == 'insertLineBreak') { // Enter pressed
-          $('#input')
-            .val(content.substring(0, cursor-len-1) + content.substring(cursor-1))
-            .setCursorPosition(cursor-len);
-        }
-        else { // Backspace pressed
-          $('#input')
-            .val(content.substring(0, cursor-len+1) + content.substring(cursor))
-            .setCursorPosition(cursor-len+1);
-        }
-        app.prepend = null;
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition().start;
+      let len = app.prepended.length;
+      if (e.originalEvent.inputType == 'insertLineBreak') { // Enter pressed
+        $('#input')
+          .val(content.substring(0, cursor-len-1) + content.substring(cursor-1))
+          .setCursorPosition(cursor-len);
       }
+      else if (e.originalEvent.inputType == 'deleteContentBackward') { // Backspace pressed
+        $('#input')
+          .val(content.substring(0, cursor-len+1) + content.substring(cursor))
+          .setCursorPosition(cursor-len+1);
+      }
+      else if ((e.originalEvent.inputType == 'insertText') && (e.originalEvent.data == ' ')) { // Spacebar pressed
+        $('#input')
+          .val(content.substring(0, cursor-len-1) + ' '.repeat(len) + content.substring(cursor))
+          .setCursorPosition(cursor-1);
+      }
+      app.prepend = null;
       app.prepended = null;
     }
     if (app.prepend) {
