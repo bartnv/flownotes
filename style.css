@@ -6,7 +6,7 @@
     font-family: 'LatoWeb'; font-style: normal; font-weight: bold;
     src: url('fonts/Lato-Bold.woff2') format('woff2'), url('fonts/Lato-Bold.woff') format('woff');
 }
-HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: pan-y; }
+HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: none; }
 BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; background-color: grey; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE[data-info]::after { content: attr(data-info); position: absolute; top: 0; right: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.7); border-left: solid #ddcb8e 1px; border-bottom: solid #ddcb8e 1px; }
@@ -24,7 +24,7 @@ H5 { margin-top: 0.5rem; margin-bottom: 0; font-size: 16px; }
 H5::first-letter { padding-bottom: 3px; border-bottom: dotted #ccc 1px; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
-DIV#panels { position: absolute; height: 100vh; width: 100vw; display: flex; }
+DIV#panels { position: absolute; height: 100vh; width: 100vw; display: flex; overflow: hidden; touch-action: none; }
 DIV.sidepanel { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
 DIV.sidepanel A { text-decoration: none; color: inherit; }
 DIV#panel-left { position: relative; display: flex; flex-direction: column; }
@@ -42,8 +42,8 @@ DIV#link { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%)
 .button-unpin { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; background: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDEyMCAxMjAiPgogIDxwYXRoIHN0cm9rZT0iI0YwMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGQ9Im0xNCwxNCA5Miw5Mm0wLTkyLTkyLDkyIi8+Cjwvc3ZnPgo=); }
 DIV#button-unpublish { display: inline-block; margin-left: 5px; width: 16px; height: 16px; vertical-align: middle; cursor: pointer; background: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDEyMCAxMjAiPgogIDxwYXRoIHN0cm9rZT0iI0YwMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGQ9Im0xNCwxNCA5Miw5Mm0wLTkyLTkyLDkyIi8+Cjwvc3ZnPgo=); }
 INPUT#button-restore { align-self: center; margin-left: 0.5rem; }
-TEXTAREA#input,DIV#render { width: 80%; height: 80%; background-color: white; }
-DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
+TEXTAREA#input,DIV#render { width: 80%; height: 80%; background-color: white; overscroll-behavior: contain; }
+DIV#render { box-sizing: border-box; padding: 0 20px; overflow: auto; }
 .note-li { position: relative; margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-active { background-color: #6BA2A5 !important; }
 .note-selected { border: solid black 1px; }
@@ -62,7 +62,7 @@ DIV#render { box-sizing: border-box; padding: 0 20px; overflow-y: auto; }
 .tabbar { display: flex; }
 .tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; z-index: 1000; }
 .tab-active { background-color: rgb(200,200,200) !important; }
-.tab { width: 20em; position: relative; overflow-y: scroll; scrollbar-width: none; }
+.tab { width: 20em; position: relative; overflow-y: scroll; scrollbar-width: none; touch-action: pan-y; }
 .tab::-webkit-scrollbar { display: none; }
 .tab-button { display: block; margin: 5px auto; border: none; border-radius: 8px; padding: 0.7em 1em; background-color: rgb(50,50,50); color: white; font-size: 1em; }
 .tab-button:hover { background-color: rgb(75,75,75); cursor: pointer; }
