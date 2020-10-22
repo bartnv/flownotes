@@ -740,8 +740,8 @@ function upgrade_database() {
     case 8:
       sql_single('CREATE TABLE publish (id integer primary key, note integer not null, type text not null, file text not null)');
     case 9:
-      sql_single('CREATE TABLE "note_new" (id integer primary key, snapped integer default (strftime(\'%s\', \'now\')), changed integer default (strftime(\'%s\', \'now\')), modified integer default (strftime(\'%s\', \'now\')), content text, title text, published text, pinned integer default 0, deleted boolean default 0, cursor text, mode text default \'edit\')');
-      sql_single('INSERT INTO "note_new" (id, snapped, changed, modified, content, title, published, pinned, deleted, cursor, mode) SELECT id, snapped, modified, modified, content, title, published, pinned, deleted, cursor, mode FROM "note"');
+      sql_single('CREATE TABLE "note_new" (id integer primary key, snapped integer default (strftime(\'%s\', \'now\')), changed integer default (strftime(\'%s\', \'now\')), modified integer default (strftime(\'%s\', \'now\')), content text, title text, pinned integer default 0, deleted boolean default 0, cursor text, mode text default \'edit\')');
+      sql_single('INSERT INTO "note_new" (id, snapped, changed, modified, content, title, pinned, deleted, cursor, mode) SELECT id, snapped, modified, modified, content, title, pinned, deleted, cursor, mode FROM "note"');
       sql_single('DROP TABLE "note"');
       sql_single('ALTER TABLE "note_new" RENAME TO "note"');
   }
