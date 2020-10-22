@@ -1062,7 +1062,7 @@ function activateNote(id, nopost) {
     sendToServer(data);
     setTimeout(idle, 8000);
   }
-  if (!app.hidepanelleft && ($('#buttons-right')[0].getBoundingClientRect().right > window.innerWidth)) {
+  if (!app.hidepanelleft && (Math.floor($('#buttons-right')[0].getBoundingClientRect().right) > window.innerWidth)) {
     togglePanelLeft('close');
   }
   if (!app.hidepanelright && ($('#buttons-left')[0].getBoundingClientRect().left < 0)) {
