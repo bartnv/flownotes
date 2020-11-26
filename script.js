@@ -247,9 +247,11 @@ $().ready(function() {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
     }
-    localStorage.setItem('flownotes-activenote', app.activenote);
-    localStorage.setItem('flownotes-hidepanelleft', app.hidepanelleft);
-    localStorage.setItem('flownotes-hidepanelright', app.hidepanelright);
+    let instance = '-';
+    instance += location.pathname.split('/').slice(1, -1).join('-');
+    localStorage.setItem('flownotes' + instance + 'activenote', app.activenote);
+    localStorage.setItem('flownotes' + instance + 'hidepanelleft', app.hidepanelleft);
+    localStorage.setItem('flownotes' + instance + 'hidepanelright', app.hidepanelright);
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
@@ -439,12 +441,14 @@ function init() {
   }
   else {
     activateTab('recent');
+    let instance = '-';
+    instance += location.pathname.split('/').slice(1, -1).join('-');
     if (location.hash.match(/^#[0-9]/)) {
       app.activenote = parseInt(location.hash.substring(1), 10);
       data.activenote = app.activenote;
     }
-    else if (localStorage.getItem('flownotes-activenote')) {
-      app.activenote = parseInt(localStorage.getItem('flownotes-activenote'), 10);
+    else if (localStorage.getItem('flownotes' + instance + 'activenote')) {
+      app.activenote = parseInt(localStorage.getItem('flownotes' + instance + 'activenote'), 10);
       data.activenote = app.activenote;
     }
     if (location.hash.indexOf('@') > -1) {
@@ -690,8 +694,10 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.logout) return logout();
   if (!app.init) {
     app.init = true;
-    if (localStorage.getItem('flownotes-hidepanelleft') == 'true') togglePanelLeft('close');
-    if (localStorage.getItem('flownotes-hidepanelright') == 'false') togglePanelRight('open');
+    let instance = '-';
+    instance += location.pathname.split('/').slice(1, -1).join('-');
+    if (localStorage.getItem('flownotes' + instance + 'hidepanelleft') == 'true') togglePanelLeft('close');
+    if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') togglePanelRight('open');
   }
   if (data.lastupdate) app.lastupdate = data.lastupdate;
   app.lastcomm = Date.now();
