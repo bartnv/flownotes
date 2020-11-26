@@ -108,8 +108,8 @@ $ret = [];
 
 switch ($data['req']) {
   case 'init':
-    if (!isset($activenote)) {
-      $activenote = sql_single('SELECT MAX(id) FROM note');
+    if (!isset($activenote) || !sql_if('SELECT true FROM note WHERE id = ?', [ $activenote ])) {
+      $activenote = sql_single('SELECT id FROM note ORDER BY modified DESC LIMIT 1');
       $ret['switchnote'] = $activenote;
     }
     $ret['notes'] = select_recent_notes(25);
