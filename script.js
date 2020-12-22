@@ -1158,7 +1158,7 @@ function loadSettings() {
     let new2 = body.find('input[name=new2]');
     if (new1.val().length || new2.val().length || (old.length && old.val().length)) {
       if (new1.val() != new2.val()) {
-        div.find('#modal-error').html('Please verify your new password entries');
+        div.find('#modal-error').show().html('Please verify your new password entries');
         return;
       }
       if (!new1.val()) {
