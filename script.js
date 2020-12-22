@@ -455,6 +455,9 @@ function init() {
       app.snap = location.hash.substring(location.hash.indexOf('@')+1);
       data.snapshots = true;
     }
+    if (location.hash == '#share') {
+      app.returntoshare = true;
+    }
     $('#tab-recent').append(app.loader);
   }
   sendToServer(data);
@@ -731,6 +734,8 @@ function parseFromServer(data, textStatus, xhr) {
     handleWebauthn(data);
     return;
   }
+
+  if (app.returntoshare) window.history.go(-1);
 
   if (data.modalerror) {
     let error = $('#modal-error');
@@ -1131,6 +1136,8 @@ function loadSettings() {
   body.append('<h2>Automatic snapshots</h2>');
   body.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
   body.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br>snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
+  body.append('<h2>Share to FlowNotes</h2>');
+  body.append('<p><span class="settings-label">Append-to note IDs:</span><input type="text" id="shareappend" placeholder="7,12,45" pattern="[0-9]+(, ?[0-9]+)*"></p>');
   div.append('<p id="modal-error"></p>');
   div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
   body.find('#logout-this').on('click', function() {
@@ -1170,6 +1177,11 @@ function loadSettings() {
     data.prunedays = $('#prunedays').val();
     data.pruneweeks = $('#pruneweeks').val();
     data.prunemonths = $('#prunemonths').val();
+    if ($('#shareappend').is(':invalid')) {
+      div.find('#modal-error').show().text('Invalid input for "Append-to note IDs"');
+      return;
+    }
+    data.shareappend = $('#shareappend').val();
     sendToServer(data);
     if (data.length > 1) $('#status').html('Saving settings...').css('opacity', 1);
   });
@@ -1183,7 +1195,8 @@ function handleSettings(settings) {
   $('#pruneafter').val(settings.pruneafter);
   $('#prunedays').val(settings.prunedays);
   $('#pruneweeks').val(settings.pruneweeks);
-  $('#prunemonths').val(settings.prunemonths).trigger('input');
+  $('#prunemonths').val(settings.prunemonths);
+  $('#shareappend').val(settings.shareappend);
 }
 
 function loadSnapshots() {

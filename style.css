@@ -90,6 +90,7 @@ P#modal-error { display: none; color: rgb(255,0,0); }
 #settings-save { margin-top: 1rem; }
 .input-password { width: 10em; }
 .input-smallint { width: 2.5em; }
+#shareappend { width: 10em; }
 .notransition { transition: none !important; }
 .nointeraction { pointer-events: none; }
 .noselect {

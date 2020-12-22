@@ -172,6 +172,18 @@ switch ($data['req']) {
     $ret['switchnote'] = $activenote;
     $ret['notes'][$activenote] = select_note($activenote);
     break;
+  case 'append':
+    if (empty($data['id'])) fatalerr('No note id passed in req append');
+    if (empty($data['content'])) fatalerr('No content passed in req append');
+    $last = sql_single("SELECT substr(content, -1) FROM note WHERE id = ?", [ $data['id'] ]);
+    if ($last != "\n") $data['content'] = "\n" . $data['content'];
+    if (!sql_updateone("UPDATE note SET content = content || ?, changed = strftime('%s', 'now'), modified = strftime('%s', 'now') WHERE id = ?", [ $data['content'], $data['id'] ])) fatalerr('Failed to append content to note ' . $data['id']);
+    $title = sql_single("SELECT title FROM note WHERE id = ?", [ $data['id'] ]);
+    $ret['append'] = [];
+    $ret['append']['id'] = $data['id'];
+    $ret['append']['title'] = $title;
+    store_setting('lastupdate', time());
+    break;
   case 'delete':
     if (empty($data['id']) || !is_numeric($data['id'])) fatalerr('Invalid id passed in req delete');
     if (!empty($data['undelete'])) $change = 0;
@@ -201,6 +213,7 @@ switch ($data['req']) {
         store_setting('prunedays', $data['prunedays']);
         store_setting('pruneweeks', $data['pruneweeks']);
         store_setting('prunemonths', $data['prunemonths']);
+        if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['shareappend'])) store_setting('shareappend', $data['shareappend']);
         send_and_exit([ 'settings' => 'stored' ]);
         break;
       case 'get':
@@ -217,7 +230,12 @@ switch ($data['req']) {
         $settings['prunedays'] = query_setting('prunedays', 3);
         $settings['pruneweeks'] = query_setting('pruneweeks', 3);
         $settings['prunemonths'] = query_setting('prunemonths', 5);
+        $settings['shareappend'] = query_setting('shareappend', '');
         send_and_exit([ 'webauthn' => 'list', 'keys' => $ret, 'settings' => $settings ]);
+      case 'share':
+        $settings = [];
+        $settings['appendnotes'] = sql_rows_collect('SELECT id, title FROM note WHERE id IN (' . query_setting('shareappend') . ')');
+        send_and_exit($settings);
     }
   case 'webauthn':
     if (empty($data['mode'])) fatalerr('Invalid webauthn request');

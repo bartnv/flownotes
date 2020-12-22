@@ -2,6 +2,15 @@ let version = 'v3.2';
 
 self.addEventListener('install', evt => {
   console.log('Service worker ' + version + ' is being installed');
+  evt.waitUntil(
+    caches.open(version).then(cache => {
+      return cache.addAll([
+        './script.js?' + version,
+        './style.css?' + version,
+        './share.html?' + version
+      ]);
+    })
+  );
 });
 self.addEventListener('activate', evt => {
   console.log('Service worker ' + version + ' is being activated');
@@ -16,9 +25,21 @@ self.addEventListener('activate', evt => {
 
 self.addEventListener('fetch', evt => {
   if (evt.request.url.match(/\/data.php(\?.*)?$/)) return;
-  evt.respondWith(
-    tryNetwork(evt.request, 500).catch(() => tryCache(evt.request))
-  );
+  if (evt.request.url.match(/\/share.html/)) {
+    evt.respondWith(
+      tryCache(evt.request, { ignoreSearch: true }).catch(() => tryNetwork(evt.request, 60000))
+    );
+  }
+  else if (evt.request.url.match(/\/(script.js|style.css|favicon.ico|cdnjs.cloudflare.com)/)) {
+    evt.respondWith(
+      tryCache(evt.request).catch(() => tryNetwork(evt.request, 60000))
+    );
+  }
+  else {
+    evt.respondWith(
+      tryNetwork(evt.request, 500).catch(() => tryCache(evt.request))
+    );
+  }
 });
 
 function tryNetwork(request, timeout) {
@@ -31,13 +52,14 @@ function tryNetwork(request, timeout) {
         console.log('Caching ' + request.url);
         caches.open(version).then(cache => cache.put(request, response));
       }
+      else console.log(`Request for ${request.url} failed with status ${response.status} (${response.statusText})`);
     }, reject);
   });
 }
-function tryCache(request) {
+function tryCache(request, options = {}) {
   console.log('Service worker ' + version + ' checking cache for request ' + request.url);
   return caches.open(version).then(
-    cache => cache.match(request).then(
+    cache => cache.match(request, options).then(
       matching => matching || Promise.reject('no-match')
     )
   );
