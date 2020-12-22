@@ -176,17 +176,6 @@ $().ready(function() {
       let input = $('#input')[0];
       cursorActivate(input.value, input.selectionStart);
     }
-  }).on('focus', function() {
-    if ($('#panel-main').width() < parseInt($('#panel-main').css('min-width'))) {
-      togglePanelLeft('close');
-      togglePanelRight('close');
-    }
-  });
-  $('#render').on('click', function() {
-    if ($('#panel-main').width() < parseInt($('#panel-main').css('min-width'))) {
-      togglePanelLeft('close');
-      togglePanelRight('close');
-    }
   });
   $('#render').on('click', 'code', function () {
     if (window.getSelection().type == 'Range') return;
@@ -1073,10 +1062,10 @@ function activateNote(id, nopost) {
     sendToServer(data);
     setTimeout(idle, 8000);
   }
-  if (!app.hidepanelleft && (Math.floor($('#buttons-right')[0].getBoundingClientRect().right) > window.innerWidth)) {
+  if (!app.hidepanelleft && ($('#panel-main').width() == parseInt($('#panel-main').css('min-width')))) {
     togglePanelLeft('close');
   }
-  if (!app.hidepanelright && ($('#buttons-left')[0].getBoundingClientRect().left < 0)) {
+  if (!app.hidepanelright && ($('#panel-main').width() == parseInt($('#panel-main').css('min-width')))) {
     togglePanelRight('close');
   }
 }
