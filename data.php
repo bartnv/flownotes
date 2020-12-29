@@ -4,6 +4,8 @@ require('3rdparty/WebAuthn/WebAuthn.php');
 require('3rdparty/CBOR/CBOREncoder.php');
 require('3rdparty/CBOR/Types/CBORByteString.php');
 
+$authlifetime = 3600*24*61; // Max lifetime of auth tokens in seconds; this is reset whenever they are used
+
 $dbfile = 'db/notes.sq3';
 if (getcwd() != __DIR__) chdir(__DIR__);
 if (!file_exists(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '/' . dirname($dbfile) . " doesn't exist");
@@ -43,8 +45,8 @@ if (!empty($password)) {
         if (isset($data['remember']) && $data['remember']) {
           $token = base64_encode(openssl_random_pseudo_bytes(32));
           $hash = hash('sha256', $token, FALSE);
-          $expire = time()+60*60*24*30;
-          $id = sql_insert_id("INSERT INTO auth_token (hash, expires) VALUES ('$hash', $expire)");
+          $expire = time()+$authlifetime;
+          $id = sql_insert_id("INSERT INTO auth_token (hash, expires, device) VALUES (?, ?, ?)", [ $hash, $expire, getDevice() ]);
           if (!$id) fatalerr('Failed to add authentication token to database');
           $_SESSION['login'.$instance] = $id;
           setcookie('flownotes_remember', "$id:$token", $expire);
@@ -65,7 +67,9 @@ if (!empty($password)) {
       if (hash_equals(hash('sha256', $token, FALSE), $hash)) {
         $_SESSION['login'.$instance] = $id;
         $_SESSION['since'.$instance] = time();
-        sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
+        $expire = time()+$authlifetime;
+        sql_updateone("UPDATE auth_token SET expires = ?, device = ? WHERE id = $id", [ $expire, getDevice() ]);
+        setcookie('flownotes_remember', "$id:$token", $expire);
       }
       else send_and_exit([ 'needpass' => 'missing', 'modalerror' => 'Please login with your password', 'challenge' => $challenge ]);
     }
@@ -132,6 +136,7 @@ switch ($data['req']) {
     break;
   case 'idle':
     if (query_setting('autoprune', 0) && (date('i') == '13')) $ret['log'] = prune_snapshots();
+    sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
     break;
   case 'update':
     $ret['notes'] = [];
@@ -762,8 +767,10 @@ function upgrade_database() {
       sql_single('INSERT INTO "note_new" (id, snapped, changed, modified, content, title, pinned, deleted, cursor, mode) SELECT id, snapped, modified, modified, content, title, pinned, deleted, cursor, mode FROM "note"');
       sql_single('DROP TABLE "note"');
       sql_single('ALTER TABLE "note_new" RENAME TO "note"');
+    case 10:
+      sql_single('ALTER TABLE "auth_token" ADD COLUMN device text');
   }
-  store_setting('dbversion', 10);
+  store_setting('dbversion', 11);
 }
 
 function handle_cli() {
@@ -809,6 +816,16 @@ function handle_cli() {
       print " - prepend <id>: prepend the input to the note with the specified id, but after the first line\n";
   }
   exit();
+}
+
+function getDevice() {
+  $useragent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+  if (empty($useragent)) return 'Unknown';
+  // It's impossible to get this right in all cases; just keep it simple and get it right in most cases.
+  $regex = '/[^(]+\((?:Linux; |X11; )?([^ ;]+)[^)]+\)(?:.*(Edge|OPR)|.*?(Chrome|CriOS|FxiOS|Safari|Firefox)|.* ([^\/]+)\/)/';
+  if (!preg_match($regex, $useragent, $matches)) return 'Unknown';
+  $str = $matches[2] . $matches[3] . ' on ' . $matches[1];
+  return str_replace([ 'CriOS', 'FxiOS', 'CrOS', 'OPR' ], [ 'Chrome', 'Firefox', 'ChromeOS', 'Opera' ], $str);
 }
 
 /* * * * * * * * * * * * * *
