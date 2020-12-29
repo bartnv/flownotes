@@ -81,6 +81,21 @@ $().ready(function() {
 
     if ((e.key != 'Enter') && (e.key != 'Backspace') && (e.key != ' ')) app.prepended = null;
 
+    if (e.key == 'F1') {
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition();
+      let newcontent = content.substring(0, cursor.start) + new Date().format('Y-m-d') + content.substring(cursor.end);
+      $('#input').val(newcontent).setCursorPosition(cursor.start+10);
+      return false;
+    }
+    else if (e.key == 'F2') {
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition();
+      let newcontent = content.substring(0, cursor.start) + new Date().format('Y-m-d H:i') + content.substring(cursor.end);
+      $('#input').val(newcontent).setCursorPosition(cursor.start+16);
+      return false;
+    }
+
     if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
