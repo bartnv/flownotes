@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<title>MMVI FlowNotes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" type="text/css" href="style.css?v3.3">
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" crossorigin="anonymous"></script>
+<script>
+var app = {
+  content: ''
+};
+$().ready(function() {
+  let url = new URL(window.location);
+  if (url.searchParams.get('title')) app.content += 'Title: ' + url.searchParams.get('title') + '\n';
+  if (url.searchParams.get('url')) app.content += 'URL: ' + url.searchParams.get('url') + '\n';
+  if (url.searchParams.get('text')) app.content += url.searchParams.get('text');
+  $('#content').html(app.content.replace('\n', '<br>'));
+  $('#save-new').on('click', function() {
+    sendToServer({ req: 'add', content: app.content });
+  });
+  $('#modal-body').on('click', '.append-to', function() {
+    let content = app.content;
+    if (!content.endsWith('\n')) content += '\n';
+    if ($('#separator').is(':checked')) {
+      content = '\n---\n\n' + content;
+      localStorage.setItem('flownotes-appendwithseparator', 'true');
+    }
+    sendToServer({ req: 'append', id: $(this).data('id'), content: content });
+  });
+  if (localStorage.getItem('flownotes-appendwithseparator') === 'true') $('#separator').prop('checked', 'true');
+  sendToServer({ req: 'settings', mode: 'share' });
+});
+function sendToServer(data) {
+  $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
+}
+function replacePage(url) {
+  window.history.replaceState(null, '', url);
+  window.history.go();
+}
+function parseFromServer(data, textStatus, xhr) {
+  if (xhr.status != 200) return offline(xhr);
+  if (data.error) return offline(data.error);
+  if (data.alert) alert(data.alert);
+  $('#status').css('opacity', '0');
+
+  if (data.needpass || data.logout) { // Not logged in; refer to main app to handle login procedure
+    window.location = './#share';
+  }
+
+  if (data.switchnote) {
+    $('#modal-body').empty().append(
+      '<p class="ok">Content saved to note with id ' + data.switchnote + '</p>' +
+      '<p><input type="button" class="modal-button" value="View note" onclick="replacePage(\'./#' + data.switchnote + '\')"></p>'
+    );
+  }
+  if (data.append) {
+    $('#modal-body').empty().append(
+      "<p class=\"ok\">Content appended to note '" + data.append.title + "'</p>" +
+      '<p><input type="button" class="modal-button" value="View note" onclick="replacePage(\'./#' + data.append.id + '\')"></p>'
+    );
+  }
+  if (data.appendnotes) {
+    for (let note of data.appendnotes) {
+      $('#appendnotes').append('<p><input type="button" class="append-to modal-button" value="Append to note \'' + note.title + '\'" data-id="' + note.id + '"></p>');
+    }
+  }
+}
+function offline(msg = 'No network connection') {
+  if (typeof msg != 'string') {
+    if (msg.status) msg = 'Error from server: ' + msg.status + ' (' + msg.statusText + ')';
+    else msg = 'No network connection';
+  }
+  $('#status').html(msg).css('opacity', 1);
+}
+</script>
+<style>
+#content { padding: 5px; background-color: white; color: black; overflow: auto; }
+.ok { font-size: 1.5rem; color: rgb(0, 200, 0); }
+</style>
+</head>
+<body>
+  <div id="panels"></div>
+  <div id="modal-overlay">
+    <div>
+      <h1>Save to flownotes</h1>
+      <div id="content"></div>
+      <div id="modal-body">
+        <p><input type="button" id="save-new" class="modal-button" value="Save as new note"></p>
+        <hr>
+        <p><input type="checkbox" id="separator"> Append with separator</p>
+        <div id="appendnotes"></div>
+      </div>
+    </div>
+  </div>
+  <div id="status" class="nointeraction">Loading...</div>
+</body>
+</html>
