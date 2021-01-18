@@ -267,7 +267,7 @@ switch ($data['req']) {
         $data['snapshots'] = true;
         break;
       case 'add':
-        add_snapshot($data['note'], $data['locked'] ?? 1);
+        add_snapshot($activenote, $data['locked'] ?? 1);
         $data['snapshots'] = true;
         break;
       case 'del':
