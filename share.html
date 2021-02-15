@@ -15,12 +15,12 @@ $().ready(function() {
   if (url.searchParams.get('title')) app.content += url.searchParams.get('title') + '\n';
   if (url.searchParams.get('url')) app.content += url.searchParams.get('url') + '\n';
   if (url.searchParams.get('text')) app.content += url.searchParams.get('text');
-  $('#content').html(app.content.replace('\n', '<br>'));
+  $('#content').text(app.content);
   $('#save-new').on('click', function() {
     sendToServer({ req: 'add', content: app.content });
   });
   $('#modal-body').on('click', '.append-to', function() {
-    let content = app.content;
+    let content = $('#content').val();
     if (!content.endsWith('\n')) content += '\n';
     if ($('#separator').is(':checked')) {
       content = '\n---\n\n' + content;
@@ -75,7 +75,7 @@ function offline(msg = 'No network connection') {
 }
 </script>
 <style>
-#content { padding: 5px; background-color: white; color: black; overflow: auto; }
+#content { border: none; margin-top: 0.5rem; }
 .ok { font-size: 1.5rem; color: rgb(0, 200, 0); }
 </style>
 </head>
@@ -84,7 +84,7 @@ function offline(msg = 'No network connection') {
   <div id="modal-overlay">
     <div>
       <h1>Save to flownotes</h1>
-      <div id="content"></div>
+      <textarea id="content"></textarea>
       <div id="modal-body">
         <p><input type="button" id="save-new" class="modal-button" value="Save as new note"></p>
         <hr>
