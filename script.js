@@ -409,6 +409,7 @@ $().ready(function() {
     goFullscreen();
   });
   $('#button-export').on('click', loadExports);
+  $('#button-help').on('click', loadHelp);
   $('#button-settings').on('click', loadSettings);
   $('#button-restore').on('click', function() {
     if (app.notes[app.activenote].modified > app.snapshots[app.snapshots.length-1].modified) {
@@ -1122,6 +1123,30 @@ function loadExports() {
     hideModal();
   });
   showModal('export', div, true);
+}
+
+function loadHelp() {
+  let div = $('<div><h1>Help</h1><div id="modal-body"></div><p><input type="button" class="modal-button" value="Close"></p></div>');
+  let body = div.find('#modal-body');
+  body.append('<h2>Hotkeys</h2>');
+  body.append('<p><em>R / S / P</em>: Switch to Recent, Search or Pinned tab respectively</p>');
+  body.append('<p><em>N</em>: add a new note</p>');
+  body.append('<p><em>F1</em>: insert the current date at the cursor position</p>');
+  body.append('<p><em>F2</em>: insert the current date and time at the cursor position</p>');
+  body.append('<p><em>F4</em>: switch between edit mode and view mode</p>');
+  body.append('<p><em>CTRL+Enter</em>: create new note and link to it at the cursor position</p>');
+  body.append('<p><em>CTRL+ArrowUp</em>: move selected text one line up</p>');
+  body.append('<p><em>CTRL+ArrowDown</em>: move selected text one line down</p>');
+  body.append('<p><em>ALT+Enter</em>: in edit mode: follow the link at the cursor position</p>');
+  body.append('<p><em>ALT+Click</em>: in edit mode: follow the link at the clicked location</p>');
+  body.append('<p><em>ALT+ArrowLeft</em>: go back a page (actually a browser hotkey)</p>');
+  body.append('<p><em>ALT+ArrowRight</em>: go forward a page (actually a browser hotkey)</p>');
+  body.append('<h2>Gestures</h2>');
+  body.append('<p><em>Swipe left/right on sidebar</em>: open/close the sidebar');
+  body.append('<p><em>Drag note onto edit field</em>: create link to the note');
+  body.find('#start-tour').on('click', function() { hideModal(); tourStep(); });
+  div.find('.modal-button').on('click', hideModal);
+  showModal('help', div, true);
 }
 
 function loadSettings() {
