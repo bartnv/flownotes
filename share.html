@@ -12,8 +12,8 @@ var app = {
 };
 $().ready(function() {
   let url = new URL(window.location);
-  if (url.searchParams.get('title')) app.content += 'Title: ' + url.searchParams.get('title') + '\n';
-  if (url.searchParams.get('url')) app.content += 'URL: ' + url.searchParams.get('url') + '\n';
+  if (url.searchParams.get('title')) app.content += url.searchParams.get('title') + '\n';
+  if (url.searchParams.get('url')) app.content += url.searchParams.get('url') + '\n';
   if (url.searchParams.get('text')) app.content += url.searchParams.get('text');
   $('#content').html(app.content.replace('\n', '<br>'));
   $('#save-new').on('click', function() {
