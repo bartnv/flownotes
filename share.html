@@ -15,7 +15,8 @@ $().ready(function() {
   if (url.searchParams.get('title')) app.content += url.searchParams.get('title') + '\n';
   if (url.searchParams.get('url')) app.content += url.searchParams.get('url') + '\n';
   if (url.searchParams.get('text')) app.content += url.searchParams.get('text');
-  $('#content').text(app.content);
+  $('#content').val(app.content);
+  $('#content').height($('#content').prop('scrollHeight'));
   $('#save-new').on('click', function() {
     sendToServer({ req: 'add', content: app.content });
   });
@@ -75,7 +76,7 @@ function offline(msg = 'No network connection') {
 }
 </script>
 <style>
-#content { border: none; margin-top: 0.5rem; }
+#content { border: none; margin-top: 0.5rem; min-width: 75vw; }
 .ok { font-size: 1.5rem; color: rgb(0, 200, 0); }
 </style>
 </head>
