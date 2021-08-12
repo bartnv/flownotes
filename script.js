@@ -81,11 +81,46 @@ $().ready(function() {
 
     if ((e.key != 'Enter') && (e.key != 'Backspace') && (e.key != ' ')) app.prepended = null;
 
-    if (e.key == 'F1') {
+    if (e.ctrlKey && (e.key == 'F1')) {
+      let cursor = $('#input').getCursorPosition();
+      let before = $('#input').val().substring(0, cursor.start);
+      let after = $('#input').val().substring(cursor.end);
+      let sep;
+      if (before.slice(-2) == "\n\n") sep = '---';
+      else if (before.slice(-1) == "\n") sep = '\n---';
+      else sep = '\n\n---';
+      let skip = sep.length+2;
+      if (after.length == 0) sep += '\n\n';
+      else if ((after.substring(0, 2) == "\n\n")); // Do nothing
+      else if (after.substring(0, 1) == "\n") sep += '\n';
+      else sep += '\n\n';
+      $('#input').val(before + sep + after).setCursorPosition(cursor.start+skip);
+      return false;
+    }
+    else if (e.key == 'F1') {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition();
       let newcontent = content.substring(0, cursor.start) + new Date().format('Y-m-d') + content.substring(cursor.end);
       $('#input').val(newcontent).setCursorPosition(cursor.start+10);
+      return false;
+    }
+    else if (e.ctrlKey && (e.key == 'F2')) {
+      let cursor = $('#input').getCursorPosition();
+      let before = $('#input').val().substring(0, cursor.start);
+      let after = $('#input').val().substring(cursor.end);
+      let nostartsep = false;
+      let start = before.lastIndexOf('\n---\n');
+      if (start == -1) { start = before.indexOf('\n'); nostartsep = true; }
+      if (start == -1) return false;
+      start += 1;
+      let end = after.indexOf('\n---\n');
+      if (end == -1) end = before.length+after.length;
+      else {
+        end += before.length;
+        if (nostartsep) end += 4;
+        else end += 1;
+      }
+      $('#input').setCursorPosition(start, end);
       return false;
     }
     else if (e.key == 'F2') {
@@ -246,7 +281,7 @@ $().ready(function() {
         }
       }
     }
-  }).on('unload', function() {
+  }).on('unload', function() { // TODO: switch this over to visiblitychange/pagehide
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
