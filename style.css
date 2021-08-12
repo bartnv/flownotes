@@ -6,7 +6,7 @@
     font-family: 'LatoWeb'; font-style: normal; font-weight: bold;
     src: url('fonts/Lato-Bold.woff2') format('woff2'), url('fonts/Lato-Bold.woff') format('woff');
 }
-HTML,BODY { width: 100vw; height: 100vh; overflow: hidden; touch-action: none; }
+HTML,BODY { width: 100vw; height: 100vh; /*overflow: hidden;*/ touch-action: none; }
 BODY { margin: 0; font-family: 'Lato', 'LatoWeb', sans-serif; background-color: grey; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE[data-info]::after { content: attr(data-info); position: absolute; top: 0; right: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.7); border-left: solid #ddcb8e 1px; border-bottom: solid #ddcb8e 1px; }
@@ -60,7 +60,10 @@ DIV#render { box-sizing: border-box; padding: 0 20px; overflow: auto; }
 .snap-delete { top: 24px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 120 120"><path stroke="red" stroke-width="8" stroke-linecap="round" d="m14,14 92,92m0-92-92,92"/></svg>'); }
 .snap-modified,.snap-stats { font-size: 0.9em; white-space: nowrap; }
 .tabbar { display: flex; }
-.tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; z-index: 1000; }
+.tablabel { flex-grow: 1; padding: 5px; background-color: rgb(150,150,150); cursor: pointer; }
+#label-recent { z-index: 1002; }
+#label-search { z-index: 1001; }
+#label-pinned { z-index: 1000; }
 .tab-active { background-color: rgb(200,200,200) !important; }
 .tab { width: 20em; position: relative; overflow-y: scroll; scrollbar-width: none; touch-action: pan-y; }
 .tab::-webkit-scrollbar { display: none; }
@@ -90,7 +93,14 @@ P#modal-error { display: none; color: rgb(255,0,0); }
 #settings-save { margin-top: 1rem; }
 .input-password { width: 10em; }
 .input-smallint { width: 2.5em; }
-#shareappend { width: 10em; }
+#tour-bubble { position: absolute; min-width: 12rem; max-width: 25rem; border-radius: 1rem; background-color: rgba(0,0,0,0.7); padding: 0 1rem; color: white; z-index: 1000; transition: opacity 0.5s; }
+#tour-bubble::before { content: ""; position: absolute; border-style: solid; }
+#tour-bubble.top-left::before { top: 0; left: 0; border-width: 0 0 1rem 1rem; border-color: transparent orange; }
+#tour-bubble.top-right::before { top: 0; right: 0; border-width: 0 1rem 1rem 0; border-color: transparent orange; }
+#tour-bubble.bottom-right::before { bottom: 0; right: 0; border-width: 1rem 1rem 0 0; border-color: transparent orange; }
+#tour-bubble.bottom-left::before { bottom: 0; left: 0; border-width: 1rem 0 0 1rem; border-color: transparent orange; }
+#tour-bubble INPUT { margin: 0 1rem 1rem 0; }
+.tour-anchor { position: relative; }
 .notransition { transition: none !important; }
 .nointeraction { pointer-events: none; }
 .noselect {

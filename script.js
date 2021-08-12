@@ -33,6 +33,19 @@ $(document).on('keydown', function(evt) {
   }
   else if (evt.key == 'Escape') {
     if (app.modal && (app.modal != 'password')) hideModal();
+    if (app.tour) {
+      app.tourdiv.remove();
+      delete app.tour;
+      delete app.tourdiv;
+    }
+  }
+  else if ((evt.key == 'ArrowLeft') && (app.tour)) {
+    tourStep(true);
+    return false;
+  }
+  else if ((evt.key == 'ArrowRight') && (app.tour)) {
+    tourStep();
+    return false;
   }
 });
 function goFullscreen() {
@@ -523,7 +536,7 @@ function togglePanelRight(force) {
     $('#button-panel-right-hide').addClass('button-active').attr('title', 'Hide right panel');
     $('#panel-right').css('margin-right', '0');
     $('#panels').css({ left: '', right: '0' });
-    $('#button-' + app.lastpanelright).click();
+    if (!force) $('#button-' + app.lastpanelright).click();
     if ((window.innerWidth < 880) && !app.hidepanelleft) togglePanelLeft('close');
   }
   else {
@@ -1160,15 +1173,74 @@ function loadExports() {
   showModal('export', div, true);
 }
 
+function tourStep(back = false) {
+  if (!app.tour) app.tour = 1;
+  else if (back) app.tour--;
+  else app.tour++;
+
+  let tour = [
+    null,
+    [ 'Left sidebar', '#button-panel-left-hide', 'top', 'left', null,
+      "With this button you can show or hide the left sidebar. This sidebar helps you find your notes. On a touchscreen, you can also swipe to the right to open it and to the left to close it." ],
+    [ 'Recent notes', '#label-recent', 'top', 'left', function() { togglePanelLeft('open'); },
+      "This list shows your notes in chronological order, with the most recent ones on top. You can scroll back as far as you need to. When you update an older note you'll notice it jumps to the top of the list as soon as it's saved." ],
+    [ 'Search notes', '#label-search', 'top', 'left', null,
+      "On this tab you can search through your notes. The full text of the notes is searched and all notes with your term in it will be returned. More complex selections are possible with Regular Expressions by starting the search with a forward slash." ],
+    [ 'Pinned notes', '#label-pinned', 'top', 'left', function() { togglePanelLeft('open'); },
+      'This tab shows your pinned notes. You can click the pin button to add to or remove from this list. This way you can keep your most-used notes close at hand.' ],
+    [ 'Right sidebar', '#button-panel-right-hide', 'top', 'right', function() { togglePanelLeft('close'); },
+      'Show or hide the right sidebar. This sidebar provides some miscellaneous functionality, such as an overview of links from/to the current note and a list of its snapshots.' ],
+    [ 'Links', '#button-links', 'top', 'right', function() { $('#button-links').click(); },
+      'This shows an overview of all notes that link to the current one and all notes the current one links to.' ],
+    [ 'Snapshots', '#button-snaps', 'top', 'right', function() { $('#button-snaps').click(); },
+      'This shows a list of the previously created snapshots for the current note (you can configure the automatic creation of snapshots in the settings). You can also make a new snapshot manually.' ],
+    [ 'Export functions', '#button-export', 'bottom', 'right', function() { togglePanelRight('close'); },
+      'Here you find a set of export functions to use your notes in other applications. You can download a copy of your notes or publish an continously updated version as a public link.' ],
+    [ 'Settings', '#button-settings', 'bottom', 'left', null,
+      'In the settings panel you can manage security for your FlowNotes and configure things like snapshots and the share-to-FlowNotes functionality.' ]
+  ];
+  if (tour[app.tour]) {
+    if (app.tourdiv) app.tourdiv.css('opacity', '0');
+    if (tour[app.tour][4]) tour[app.tour][4]();
+    setTimeout(function() { tourShow(tour[app.tour]); }, 350);
+  }
+  else {
+    app.tourdiv.remove();
+    delete app.tour;
+    delete app.tourdiv;
+  }
+}
+function tourShow(step) {
+  if (!app.tourdiv) {
+    app.tourdiv = $('<div id="tour-bubble"></div>');
+    app.tourdiv.on('click', function(evt) { return false; });
+  }
+  app.tourdiv.empty().removeAttr('style').removeClass().addClass(step[2] + '-' + step[3]);
+  app.tourdiv.append('<h2>' + step[0] + '</h2><p>' + step[5] + '</p>');
+  app.tourdiv.append('<input type="button" class="modal-button" value="Prev" onclick="tourStep(true); event.cancelBubble = true;">');
+  app.tourdiv.append('<input type="button" class="modal-button" value="Next" onclick="tourStep(); event.cancelBubble = true;">');
+  if (step[2] == 'top') app.tourdiv.css('top', $(step[1]).height() + 'px');
+  else app.tourdiv.css('bottom', $(step[1]).height() + 'px');
+  if (step[3] == 'left') app.tourdiv.css('left', $(step[1]).width() + 'px');
+  else app.tourdiv.css('right', $(step[1]).width() + 'px');
+  app.tourdiv.css('border-' + step[2] + '-' + step[3] + '-radius', '0');
+  $('#tour-arrow').removeAttr('style').css(step[2], '0').css(step[3], '0');
+  $('.tour-anchor').removeClass('tour-anchor');
+  $(step[1]).addClass('tour-anchor').append(app.tourdiv);
+}
+
 function loadHelp() {
   let div = $('<div><h1>Help</h1><div id="modal-body"></div><p><input type="button" class="modal-button" value="Close"></p></div>');
   let body = div.find('#modal-body');
+  body.append('<p><input type="button" id="start-tour" class="modal-button-small" value="Start tour of application"></p>');
   body.append('<h2>Hotkeys</h2>');
   body.append('<p><em>R / S / P</em>: Switch to Recent, Search or Pinned tab respectively</p>');
   body.append('<p><em>N</em>: add a new note</p>');
   body.append('<p><em>F1</em>: insert the current date at the cursor position</p>');
   body.append('<p><em>F2</em>: insert the current date and time at the cursor position</p>');
   body.append('<p><em>F4</em>: switch between edit mode and view mode</p>');
+  body.append('<p><em>CTRL+F1</em>: insert a divider at the cursor position</p>');
+  body.append('<p><em>CTRL+F2</em>: select text between nearest two dividers</p>');
   body.append('<p><em>CTRL+Enter</em>: create new note and link to it at the cursor position</p>');
   body.append('<p><em>CTRL+ArrowUp</em>: move selected text one line up</p>');
   body.append('<p><em>CTRL+ArrowDown</em>: move selected text one line down</p>');
