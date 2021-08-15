@@ -225,7 +225,7 @@ switch ($data['req']) {
         $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
         $keys = json_decode(query_setting('webauthnkeys', '[]'));
         foreach ($keys as $key) {
-          $ret[] = dechex(crc32(implode('', $key->id)));
+          $ret[] = $key->name ?? dechex(crc32(implode('', $key->id)));
         }
         $settings = [];
         $settings['autosnap'] = query_setting('autosnap', 0);
@@ -251,7 +251,7 @@ switch ($data['req']) {
         break;
       case 'register':
         if (empty($data['response'])) fatalerr('Invalid webauthn response');
-        $keys = $webauthn->register($data['response'], query_setting('webauthnkeys', ''));
+        $keys = $webauthn->register($data['response'], query_setting('webauthnkeys', ''), $data['name'] ?? null);
         if (empty($keys)) send_and_exit([ 'modalerror' => 'Failed to register U2F key on the server' ]);
         store_setting('webauthnkeys', $keys);
         send_and_exit([ 'webauthn' => 'registered' ]);

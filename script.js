@@ -937,13 +937,14 @@ function handleWebauthn(data) {
   if (data.webauthn == 'register') {
     webauthnRegister(data.challenge, function(success, info) {
       if (success) {
-        sendToServer({ req: 'webauthn', mode: 'register', response: info });
+        let name = prompt('Enter a name for this key');
+        sendToServer({ req: 'webauthn', mode: 'register', response: info, name: name });
         showModal('webauthn', '<div><h2>Please wait...</h2><p>Registering U2F key on the server</p></div>', false);
       }
-      else showModal('error', '<div><p id="modal-error">' + info + '</p></div>', true);
+      else showModal('error', '<div><p id="modal-error" style="display: block;">Error registering U2F key: ' + info + '</p><p><input type="button" class="modal-button" value="Continue" onclick="loadSettings();"></p></div>', true);
     });
   }
-  else if (data.webauthn == 'registered') hideModal();
+  else if (data.webauthn == 'registered') loadSettings();
   else if (data.webauthn == 'list') {
     let str = '';
     for (let i in data.keys) {

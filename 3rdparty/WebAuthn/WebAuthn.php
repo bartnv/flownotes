@@ -102,7 +102,7 @@ class WebAuthn
     *        this code)
     * @return string modified to store in the user's webauthn field in your database
     */
-    public function register($info, $userwebauthn)
+    public function register($info, $userwebauthn, $name = null)
     {
         if (! is_string($info)) {
             $this->oops('info must be a string', 1);
@@ -170,7 +170,7 @@ class WebAuthn
         $publicKey = (object)array();
         $publicKey->key = $ao->attData->keyBytes;
         $publicKey->id = $info->rawId;
-        //log($publicKey->key);
+        $publicKey->name = $name;
 
         if (empty($userwebauthn)) {
             $userwebauthn = [$publicKey];
@@ -186,7 +186,7 @@ class WebAuthn
                 break;
             }
             if (! $found) {
-                array_unshift($userwebauthn, $publicKey);
+                array_push($userwebauthn, $publicKey);
             }
         }
         $userwebauthn = json_encode($userwebauthn);
