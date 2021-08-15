@@ -7,29 +7,7 @@ use phpseclib\Math\BigInteger;
 
 /**
 * @package davidearl\webauthn
-*
-*
-* A class to help manage keys via the webauthn protocol.
-*
-* Webauthn allows for browser logins using a physical key (such as a
-* Yubikey 2) or, in due course, biometrics such as fingerprints, that
-* support the protocol.
-*
-* This is based on the Javascript example at
-* https://webauthn.bin.coffee/, but offers a PHP server side.
-*
-* You need to store a webauthn string (which does not need to be
-* indexed) in user records in your database, the value of which is
-* consulted and amended by the various functions in this class.
-*
-* Errors are thrown as simple Exception, with code 0 for user errors (such as validation failure) or 1 for
-* programming errors (wrong argument types etc)
-*
-* Dependencies
-* ------------
-*
-* - You will need to include https://github.com/2tvenom/CBOREncode
-* - openssl that supports SHA256
+* With some updates by Bart Noordervliet for FlowNotes
 */
 
 class WebAuthn
@@ -78,7 +56,7 @@ class WebAuthn
   public function prepareChallengeForRegistration($username, $userid, $crossPlatform=FALSE)
     {
         $result = (object)array();
-        $rbchallenge = self::randomBytes(16);
+        $rbchallenge = random_bytes(16);
         $result->challenge = self::stringToArray($rbchallenge);
         $result->user = (object)array();
         $result->user->name = $result->user->displayName = $username;
@@ -245,7 +223,7 @@ class WebAuthn
 
         /* generate key request */
         $publickey = (object)array();
-        $publickey->challenge = self::stringToArray(self::randomBytes(16));
+        $publickey->challenge = self::stringToArray(random_bytes(16));
         $publickey->timeout = 60000;
         $publickey->allowCredentials = $allows;
         $publickey->userVerification = 'discouraged';
@@ -487,26 +465,6 @@ class WebAuthn
     }
 
     /**
-    * shim for random_bytes which doesn't exist pre php7
-    * @param int $length the number of bytes required
-    * @return string length cryptographically random bytes
-    */
-    private static function randomBytes($length)
-    {
-      if (function_exists('random_bytes')) {
-          return random_bytes($length);
-      } else if (function_exists('openssl_random_pseudo_bytes')) {
-          $bytes = openssl_random_pseudo_bytes($length, $crypto_strong);
-          if (! $crypto_strong) {
-              throw new \Exception("openssl_random_pseudo_bytes did not return a cryptographically strong result", 1);
-          }
-          return $bytes;
-      } else {
-          throw new \Exception("Neither random_bytes not openssl_random_pseudo_bytes exists. PHP too old? openssl PHP extension not installed?", 1);
-      }
-    }
-
-    /**
     * just an abbreviation to throw an error: never returns
     * @param string $s error message
     * @param int $c error code (0 for user error, 1 for incorrect usage)
@@ -516,9 +474,5 @@ class WebAuthn
     {
         error_log("oops: {$s} {$c}");
         throw new \Exception($s, $c);
-    }
-
-    protected function getUrlSuffix()
-    {
     }
 }
