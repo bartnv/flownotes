@@ -1380,7 +1380,7 @@ function showModal(type, content, escapable) {
   $('#button-' + type).addClass('button-active');
   app.modal = type;
   let modal = $('#modal-overlay');
-  modal.empty().append(content).css({ backgroundColor: 'rgba(0,0,0,0.5)', pointerEvents: 'auto' });
+  modal.empty().append(content).css({ opacity: '1', pointerEvents: 'auto' });
   if (escapable) modal.on('click', function(evt) {
     if (evt.target == this) hideModal();
   });
@@ -1390,7 +1390,7 @@ function hideModal() {
   $('#button-' + app.modal).removeClass('button-active');
   app.modal = null;
   let modal = $('#modal-overlay');
-  modal.empty().css({ backgroundColor: 'rgba(0,0,0,0)', pointerEvents: 'none' });
+  modal.empty().css({ opacity: '0', pointerEvents: 'none' });
   modal.off('click');
 }
 
@@ -1456,6 +1456,11 @@ $.fn.getScrolledPct = function() {
 $.fn.setScrolledPct = function(pct) {
   this[0].scrollTop = pct/100 * (this[0].scrollHeight-this[0].clientHeight);
 }
+$.event.special.touchstart = {
+  setup: function(_, ns, handle) {
+    this.addEventListener("touchstart", handle, { passive: true });
+  }
+};
 
 function selectText(el) {
   if (document.selection) {
