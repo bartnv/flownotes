@@ -92,7 +92,7 @@ $().ready(function() {
       if (!app.changed) app.changed = Date.now();
     }
 
-    if ((e.key != 'Enter') && (e.key != 'Backspace') && (e.key != ' ')) app.prepended = null;
+    if (app.prepended && (e.key != 'Enter') && (e.key != 'Backspace') && (e.key != ' ')) app.prepended = null;
 
     if (e.ctrlKey && (e.key == 'F1')) {
       let cursor = $('#input').getCursorPosition();
@@ -217,7 +217,6 @@ $().ready(function() {
           .val(content.substring(0, cursor-len-1) + ' '.repeat(len) + content.substring(cursor))
           .setCursorPosition(cursor-1);
       }
-      app.prepend = null;
       app.prepended = null;
     }
     if (app.prepend) {
@@ -331,6 +330,7 @@ $().ready(function() {
     if (evt.originalEvent.code == 'Space') this.click();
   });
   $('#input').on('mouseup', function() {
+    if (app.prepended) app.prepended = null;
     let input = $(this);
     if (!app.linkid) {
       if (!app.changed) app.changed = Date.now();
