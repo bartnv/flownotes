@@ -270,27 +270,47 @@ $().ready(function() {
         app.snap = null;
         loadNote(id);
       }
+      return;
     }
-    else {
-      let match = location.hash.match(/^#([0-9]+)@([0-9]+)$/);
-      if (match) {
-        let id = parseInt(match[1], 10);
-        app.snap = match[2];
-        if (id != app.activenote) activateNote(id, true);
-        $('#stats').hide();
-        if (app.snapshots === null) {
-          sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
-          $('#status').html('Loading...').css('opacity', 1);
-        }
-        else {
-          for (let snap of app.snapshots) {
-            if (snap.modified == app.snap) {
-              loadSnap(snap);
-              return;
-            }
+
+    let match = location.hash.match(/^#[0-9]+_(.*)$/);
+    if (match) {
+      if (app.mode != 'edit') return;
+      if (!app.slugtoraw) return;
+      let raw = app.slugtoraw[match[1]];
+      if (!raw) return;
+      let input = $('#input');
+      let idx = input.val().indexOf(raw);
+      if (idx == -1) return;
+      let end = idx+raw.length-1;
+      let fulltext = input.val();
+      input.val(fulltext.substring(0, end));
+      let scrollheight = input[0].scrollHeight;
+      input.val(fulltext);
+      input.setCursorPosition(idx, idx+raw.length-1).focus();
+      if (scrollheight > input[0].clientHeight) scrollheight -= input[0].clientHeight/2;
+      else scrollheight = 0;
+      input[0].scrollTop = scrollheight;
+      return;
+    }
+    match = location.hash.match(/^#([0-9]+)@([0-9]+)$/);
+    if (match) {
+      let id = parseInt(match[1], 10);
+      app.snap = match[2];
+      if (id != app.activenote) activateNote(id, true);
+      $('#stats').hide();
+      if (app.snapshots === null) {
+        sendToServer({ req: 'snapshot', mode: 'list', note: app.activenote });
+        $('#status').html('Loading...').css('opacity', 1);
+      }
+      else {
+        for (let snap of app.snapshots) {
+          if (snap.modified == app.snap) {
+            loadSnap(snap);
+            return;
           }
-          $('#status').html('Snapshot @' + app.snap + ' not found').css('opacity', 1);
         }
+        $('#status').html('Snapshot @' + app.snap + ' not found').css('opacity', 1);
       }
     }
   }).on('unload', function() { // TODO: switch this over to visiblitychange/pagehide
@@ -303,6 +323,7 @@ $().ready(function() {
     localStorage.setItem('flownotes' + instance + 'activenote', app.activenote);
     localStorage.setItem('flownotes' + instance + 'hidepanelleft', app.hidepanelleft);
     localStorage.setItem('flownotes' + instance + 'hidepanelright', app.hidepanelright);
+    localStorage.setItem('flownotes' + instance + 'lastpanelright', app.lastpanelright);
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
@@ -366,14 +387,16 @@ $().ready(function() {
     else if (app.hidepanelright) togglePanelRight('open');
     switch (mode) {
       case 'links':
-        $('#button-links').addClass('button-active').siblings('.button-mode').removeClass('button-active');
         updateLinks();
         break;
       case 'snaps':
-        $('#button-snaps').addClass('button-active').siblings('.button-mode').removeClass('button-active');
         loadSnapshots();
         break;
+      case 'toc':
+        loadToc();
+        break;
     }
+    $(this).addClass('button-active').siblings('.button-mode').removeClass('button-active');
     app.lastpanelright = mode;
   });
   $('#panel-left,#buttons-left').on('touchstart', function(e) {
@@ -536,7 +559,6 @@ function togglePanelRight(force) {
     $('#button-panel-right-hide').addClass('button-active').attr('title', 'Hide right panel');
     $('#panel-right').css('margin-right', '0');
     $('#panels').css({ left: '', right: '0' });
-    if (!force) $('#button-' + app.lastpanelright).click();
     if ((window.innerWidth < 880) && !app.hidepanelleft) togglePanelLeft('close');
   }
   else {
@@ -753,7 +775,9 @@ function parseFromServer(data, textStatus, xhr) {
     let instance = '-';
     instance += location.pathname.split('/').slice(1, -1).join('-');
     if (localStorage.getItem('flownotes' + instance + 'hidepanelleft') == 'true') togglePanelLeft('close');
-    if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') togglePanelRight('open');
+    if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') {
+      $('#button-' + localStorage.getItem('flownotes' + instance + 'lastpanelright')).click();
+    }
   }
   if (data.lastupdate) app.lastupdate = data.lastupdate;
   app.lastcomm = Date.now();
@@ -839,12 +863,12 @@ function parseFromServer(data, textStatus, xhr) {
       if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
     }
     if (data.recent) app.recent = data.recent;
-    updatePanels();
   }
   if (reload && !app.snap) {
     loadNote(app.activenote);
     if ($('#stats').is(':visible')) updateStats();
   }
+  updatePanels();
 
   if (data.searchresults) listSearchResults(data.searchresults, data.search);
   if (app.notes[app.activenote]) {
@@ -990,6 +1014,9 @@ function updatePanels() {
         break;
       case 'snaps':
         updateSnapshots();
+        break;
+      case 'toc':
+        loadToc();
         break;
     }
   }
@@ -1338,7 +1365,7 @@ function handleSettings(settings) {
 
 function loadSnapshots() {
   let div = $('#tab-right').empty()
-    .append('<div><input type="button" id="create-snapshot" class="tab-button" value="Create new snapshot"></div><div class="list-divider">Snapshots</div><div id="snapshots"></div>');
+    .append('<div><input type="button" id="create-snapshot" class="tab-button" value="Create new snapshot"></div><div class="list-divider">Snapshots</div><div id="snapshots" class="scrolly"></div>');
   div.find('#create-snapshot').on('click', function() {
     let note = app.notes[app.activenote];
     if (note.touched) return alert('Last changes not saved yet; please wait 10 seconds and try again');
@@ -1374,6 +1401,21 @@ function loadSnapshots() {
     .append(app.loader);
   if (app.snapshots) updateSnapshots();
   else sendToServer({ req: 'snapshot', mode: 'list', activenote: app.activenote });
+}
+function loadToc() {
+  let div = $('#tab-right').empty()
+    .append('<div class="list-divider">Headings</div><div id="toc" class="scrolly"></div>');
+  div = div.find('#toc');
+  let tokens = marked.lexer($('#input').val()).filter(x => x.type == 'heading');
+  let slugger = new marked.Slugger();
+  app.slugtoraw = {};
+  for (let tok of tokens) {
+    let slug = slugger.slug(tok.text);
+    app.slugtoraw[slug] = tok.raw;
+    let li = $('<a href="#' + app.activenote + '_' + slug + '"><div class="toc-li">' + tok.text + '</div></a>');
+    if (tok.depth > 1) li.children().first().css('margin-left', ((tok.depth-1)*2) + 'rem');
+    div.append(li);
+  }
 }
 
 function showModal(type, content, escapable) {
