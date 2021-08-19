@@ -1404,13 +1404,13 @@ function loadSnapshots() {
 }
 function loadToc() {
   let div = $('#tab-right').empty()
-    .append('<div class="list-divider">Headings</div><div id="toc" class="scrolly"></div>');
+    .append('<div class="list-divider">Table of contents</div><div id="toc" class="scrolly"></div>');
   div = div.find('#toc');
   let tokens = marked.lexer($('#input').val()).filter(x => x.type == 'heading');
   let slugger = new marked.Slugger();
   app.slugtoraw = {};
   for (let tok of tokens) {
-    let slug = slugger.slug(tok.text);
+    let slug = slugger.slug(tok.raw);
     app.slugtoraw[slug] = tok.raw;
     let li = $('<a href="#' + app.activenote + '_' + slug + '"><div class="toc-li">' + tok.text + '</div></a>');
     if (tok.depth > 1) li.children().first().css('margin-left', ((tok.depth-1)*2) + 'rem');
