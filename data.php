@@ -256,6 +256,15 @@ switch ($data['req']) {
         store_setting('webauthnkeys', $keys);
         send_and_exit([ 'webauthn' => 'registered' ]);
         break;
+      case 'delete':
+        if (!is_numeric($data['idx'])) fatalerr('Invalid webauthn request');
+        $keys = json_decode(query_setting('webauthnkeys', '[]'));
+        unset($keys[$data['idx']]);
+        store_setting('webauthnkeys', json_encode($keys));
+        foreach ($keys as $key) {
+          $ret[] = $key->name ?? dechex(crc32(implode('', $key->id)));
+        }
+        send_and_exit([ 'webauthn' => 'list', 'keys' => $ret ]);
       default:
         fatalerr('Invalid webauthn mode');
     }

@@ -972,10 +972,14 @@ function handleWebauthn(data) {
   else if (data.webauthn == 'list') {
     let str = '';
     for (let i in data.keys) {
-      str += 'Key ' + (Number(i)+1) + ': ' + data.keys[i] + '<br>';
+      str += 'Key ' + (Number(i)+1) + ': ' + data.keys[i];
+      str += ' <div class="webauthn-delete" onclick="if (confirm(\'Are you sure you want to delete ' + data.keys[i] + '?\')) deleteWebauthn(' + i + ')"></div><br>';
     }
     $('p#list-u2f').html(str);
   }
+}
+function deleteWebauthn(idx) {
+  sendToServer({ req: 'webauthn', mode: 'delete', idx: idx });
 }
 
 function switchMode(newmode) {
