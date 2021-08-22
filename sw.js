@@ -22,7 +22,6 @@ self.addEventListener('activate', evt => {
     })
   );
 });
-
 self.addEventListener('fetch', evt => {
   if (evt.request.url.match(/\/data.php(\?.*)?$/)) return;
   if (evt.request.url.match(/\/share.html/)) {
@@ -30,14 +29,14 @@ self.addEventListener('fetch', evt => {
       tryCache(evt.request, { ignoreSearch: true }).catch(() => tryNetwork(evt.request, 60000))
     );
   }
-  else if (evt.request.url.match(/\/(script.js|style.css|favicon.ico|cdnjs.cloudflare.com)/)) {
+  else if (evt.request.cache && ((evt.request.cache == 'no-cache') || (evt.request.cache == 'reload'))) {
     evt.respondWith(
-      tryCache(evt.request).catch(() => tryNetwork(evt.request, 60000))
+      tryNetwork(evt.request, 10000).catch(() => tryCache(evt.request))
     );
   }
   else {
     evt.respondWith(
-      tryNetwork(evt.request, 500).catch(() => tryCache(evt.request))
+      tryCache(evt.request).catch(() => tryNetwork(evt.request, 60000))
     );
   }
 });
@@ -48,16 +47,12 @@ function tryNetwork(request, timeout) {
     fetch(request).then(response => {
       clearTimeout(id);
       fulfill(response.clone());
-      if (response.status == 200) {
-        console.log('Caching ' + request.url);
-        caches.open(version).then(cache => cache.put(request, response));
-      }
+      if (response.status == 200) caches.open(version).then(cache => cache.put(request, response));
       else console.log(`Request for ${request.url} failed with status ${response.status} (${response.statusText})`);
     }, reject);
   });
 }
 function tryCache(request, options = {}) {
-  console.log('Service worker ' + version + ' checking cache for request ' + request.url);
   return caches.open(version).then(
     cache => cache.match(request, options).then(
       matching => matching || Promise.reject('no-match')
