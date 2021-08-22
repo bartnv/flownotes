@@ -1078,7 +1078,7 @@ function updatePinned() {
 function updateLinks() {
   let note = app.notes[app.activenote];
   if (!note) return;
-  let str = '<div class="list-divider">Links to this note</div>';
+  let str = '<div class="list-divider">Links to this note</div><div>';
   if (note.blinks) {
     for (let blink of note.blinks) {
       let classes = 'note-li';
@@ -1089,7 +1089,7 @@ function updateLinks() {
     }
   }
   else str += '<div class="list-none">- none -</div>';
-  str += '<div class="list-divider">Links from this note</div>';
+  str += '</div><div class="list-divider">Links from this note</div><div>';
   if (note.flinks) {
     for (let flink of note.flinks) {
       let classes = 'note-li';
@@ -1100,6 +1100,7 @@ function updateLinks() {
     }
   }
   else str += '<div class="list-none">- none -</div>';
+  str += '</div>';
   $('#tab-right').html(str);
 }
 function updateSnapshots() {
