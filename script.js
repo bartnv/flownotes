@@ -53,35 +53,50 @@ function goFullscreen() {
 }
 
 $().ready(function() {
-  app.renderer = new marked.Renderer();
-  app.renderer.link = function(href, title, text) {
-    if (title == null) title = '';
-    if (href.match(/^#[0-9]+$/)) {
-      if (text.startsWith('=') && (text != '=')) title = text = text.substring(1);
-      else if (app.notes[href.substring(1)]) title = app.notes[href.substring(1)].title;
-      return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
-    }
-    else if (href.match(/^#[A-Za-z -]+$/)) {
-      if (text == '') {
-        title = href.substring(1).toLowerCase();
-        text = href.substring(1).replaceAll('-', ' ');
+  let renderer = {
+    link(href, title, text) {
+      if (title == null) title = '';
+      if (href.match(/^#[0-9]+$/)) {
+        if (text.startsWith('=') && (text != '=')) title = text = text.substring(1);
+        else if (app.notes[href.substring(1)]) title = app.notes[href.substring(1)].title;
+        return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
       }
-      href = '#' + app.activenote + '_' + title;
-      return '<a class="link-head" href="' + href + '" title="' + title + '">' + text + '</a>';
+      else if (href.match(/^#[A-Za-z -]+$/)) {
+        if (text == '') {
+          title = href.substring(1).toLowerCase();
+          text = href.substring(1).replaceAll('-', ' ');
+        }
+        href = '#' + app.activenote + '_' + title;
+        return '<a class="link-head" href="' + href + '" title="' + title + '">' + text + '</a>';
+      }
+      return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
+    },
+    code(code, info, escaped) {
+      if (info) return '<pre data-info="' + info + '"><code>' + code + '</code></pre>';
+      return '<pre><code>' + code + '</code></pre>';
+    },
+    codespan(code) {
+      return '<code class="inline">' + code.replaceAll('&amp;', '&') + '</code>';
     }
-    return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
-  }
-  app.renderer.code = function(code, info, escaped) {
-    if (info) return '<pre data-info="' + info + '"><code>' + code + '</code></pre>';
-    return '<pre><code>' + code + '</code></pre>';
-  }
-  app.renderer.codespan = function(code) {
-    return '<code class="inline">' + code.replaceAll('&amp;', '&') + '</code>';
-  }
-  marked.setOptions({
+  };
+  let password = {
+    name: 'password',
+    level: 'inline',
+    start(src) { let match = src.match(/\*`/); return match?match.index:undefined; },
+    tokenizer(src, tokens) {
+      let rule = /^\*`([^`]+)`/;
+      let match = rule.exec(src);
+      if (match) return { type: 'password', raw: match[0], pass: match[1] }
+    },
+    renderer(token) {
+      return '<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="' + token.pass + '">*****</code>';
+    }
+  };
+  marked.use({
     breaks: true,
     smartypants: true,
-    renderer: app.renderer
+    renderer: renderer,
+    extensions: [ password ]
   });
 
   init();
@@ -628,7 +643,6 @@ function render(content) {
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
-  content = content.replace(/\*`([^`]+)`/g, '<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="$1">*****</code>');
   marked.use({ headerPrefix: app.activenote + '_' });
   el.html(marked(content));
   return el;
