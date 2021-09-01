@@ -199,6 +199,13 @@ switch ($data['req']) {
     $ret['notes'][$data['id']] = [];
     $ret['notes'][$data['id']]['deleted'] = $change;
     break;
+  case 'pindrag':
+    if (empty($data['id']) || !is_numeric($data['id'])) fatalerr('Invalid id passed in req pindrag');
+    if (empty($data['pinned']) || !is_numeric($data['pinned'])) fatalerr('Invalid id passed in req pindrag');
+    sql_single("UPDATE note SET pinned=pinned+1 WHERE pinned >= ?", [ $data['pinned'] ]); // Move everything above it one step up
+    if (!sql_updateone("UPDATE note SET pinned = ? WHERE id = ?", [ $data['pinned'], $data['id'] ])) fatalerr("Failed to set new pinned value");
+    $ret['notes'] = select_pinned_notes(25);
+    break;
   case 'settings':
     if (empty($data['mode'])) fatalerr('Invalid settings request');
     switch ($data['mode']) {

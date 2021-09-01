@@ -359,8 +359,9 @@ $().ready(function() {
   $('#button-panel-right-hide').on('click', togglePanelRight);
   $('#panel-left,#panel-right').on('mousedown', '.note-li', function (evt) {
     app.linkid = $(evt.currentTarget).addClass('note-selected').data('id');
-    $('body').css('cursor', 'alias');
-    $('#input').css('cursor', 'inherit');
+    $(window).one('mousemove', function(evt) {
+      $('body').addClass('dragging');
+    });
     return false;
   }).on('keyup', 'a', function(evt) {
     if (evt.originalEvent.code == 'Space') this.click();
@@ -382,11 +383,16 @@ $().ready(function() {
     this.setSelectionRange(pos, pos);
     input.trigger('input');
   });
-  $(window).on('mouseup', function() {
+  $(window).on('mouseup', function(evt) {
     if (app.linkid) {
+      let dropid = evt.target.dataset.id || evt.target.parentElement.dataset.id;
+      if (dropid && (app.linkid != dropid) && $(evt.target).parents('#tab-pinned').length) {
+        console.log('Pinned ' + app.notes[app.linkid].pinned + ' should become ' + (app.notes[dropid].pinned+1));
+        sendToServer({ req: 'pindrag', id: app.linkid, pinned: app.notes[dropid].pinned+1 });
+      }
       $('.note-li[data-id="' + app.linkid + '"]').removeClass('note-selected');
-      $('body').css('cursor', 'auto');
-      $('#input').css('cursor', 'auto');
+      $('body').removeClass('dragging');
+      $(window).off('mousemove');
       app.linkid = null;
     }
   });
@@ -1082,7 +1088,7 @@ function updatePinned() {
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
     if (note.deleted) extraclass += ' note-deleted';
-    pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '" draggable="true" ondragstart="drag(event)">';
+    pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
     pinned += '<span class="note-title">' + note.title + '</span><br>';
     pinned += '<div class="button-unpin" onclick="unpinNote(' + note.id + '); return false;" title="Unpin"></div>';
     pinned += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
@@ -1535,20 +1541,6 @@ function selectText(el) {
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
   }
-}
-
-function drag(evt) {
-  console.log('drag');
-  let id = $(evt.target).data('id');
-  evt.dataTransfer.setData("id", id);
-  if (app.notes[id].pinned) evt.dataTransfer.setData("rank", app.notes[id].pinned);
-}
-function drop(evt) {
-  console.log('drop', evt);
-  console.log('rank', evt.dataTransfer.getData('rank'));
-}
-function allowDrop(evt) {
-  evt.preventDefault();
 }
 
 Element.prototype.isInView = function(margin = 0) {
