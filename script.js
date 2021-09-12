@@ -1315,7 +1315,7 @@ function loadSettings() {
   let body = div.find('#modal-body');
   body.append('<h2>Logout</h2>');
   body.append('<p><input type="button" id="logout-this" class="modal-button-small" value="Logout this session"></p>');
-  body.append('<p><input type="button" id="logout-all" class="modal-button-small" value="Logout all sessions"></p>');
+  body.append('<p><input type="button" id="logout-all" class="modal-button-small" value="Logout all sessions"> <span id="token-list">🛈</span></p>');
   body.append('<h2>Password</h2>');
   if (app.password) body.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old" autocomplete="current-password"></p>');
   body.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1" autocomplete="new-password"></p>');
@@ -1338,6 +1338,7 @@ function loadSettings() {
     sendToServer({ req: 'logout', session: 'all' });
     showModal('logout', '', false);
   });
+  body.find('#token-list').attr('title', 'This function also invalidates all "Remember this device" tokens.');
   body.find('#register-u2f').on('click', function() {
     sendToServer({ req: 'webauthn', mode: 'prepare' });
   });
@@ -1387,6 +1388,8 @@ function handleSettings(settings) {
   $('#pruneweeks').val(settings.pruneweeks);
   $('#prunemonths').val(settings.prunemonths);
   $('#shareappend').val(settings.shareappend);
+  let tokens = settings.tokens.reduce((r, s) => r.concat(s.device), []).join(', ') || 'none';
+  $('#token-list').attr('title', 'This also invalidates all "Remember this device" tokens\nwhich you currently have for the following browsers:\n' + tokens);
 }
 
 function loadSnapshots() {

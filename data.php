@@ -243,6 +243,7 @@ switch ($data['req']) {
         $settings['pruneweeks'] = query_setting('pruneweeks', 3);
         $settings['prunemonths'] = query_setting('prunemonths', 5);
         $settings['shareappend'] = query_setting('shareappend', '');
+        $settings['tokens'] = sql_rows_collect("SELECT id, device FROM auth_token WHERE expires > strftime('%s', 'now')");
         send_and_exit([ 'webauthn' => 'list', 'keys' => $ret, 'settings' => $settings ]);
       case 'share':
         $settings = [];
