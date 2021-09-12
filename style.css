@@ -16,7 +16,7 @@ BODY.dragging #tab-pinned A:hover::before { content: ""; display: block; width: 
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE[data-info]::after { content: attr(data-info); position: absolute; top: 0; right: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.7); border-left: solid #ddcb8e 1px; border-bottom: solid #ddcb8e 1px; }
 CODE.inline { background-color: rgb(251, 244, 208); white-space: pre; padding: 1px; margin: -1px; }
-A.link-note { text-decoration-style: dashed; }
+A.link-note { text-decoration-style: dashed; text-decoration-thickness: from-font; }
 A.link-head { text-decoration-style: dotted; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
 TH, TD { border: solid #ccc 1px; padding: 0 3px; }
