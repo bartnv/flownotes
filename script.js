@@ -158,8 +158,7 @@ $().ready(function() {
       $('#input').val(newcontent).setCursorPosition(cursor.start+16);
       return false;
     }
-
-    if (e.ctrlKey && (e.key == 'Enter')) {
+    else if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
       sendToServer({ req: 'add', lastupdate: app.lastupdate });
       $('#status').html('Loading...').css('opacity', 1);
@@ -184,7 +183,7 @@ $().ready(function() {
     }
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       let content = $('#input').val();
-      let cursor = $('#input').getCursorPosition();
+      let cursor = $('#input').getCursorPosition(true);
       let start1 = content.lastIndexOf("\n", cursor.start-1);
       if (start1 == -1) return false;
       else if (start1 == 0) start1 = 1; // Empty first line
@@ -201,7 +200,7 @@ $().ready(function() {
     }
     else if (e.ctrlKey && (e.key == 'ArrowDown')) {
       let content = $('#input').val();
-      let cursor = $('#input').getCursorPosition();
+      let cursor = $('#input').getCursorPosition(true);
       let start1 = content.lastIndexOf("\n", cursor.start-1);
       if (start1 == -1) start1 = 0;
       let end1 = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1));
@@ -1516,9 +1515,15 @@ function logout() {
   showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
 
-$.fn.getCursorPosition = function() {
+$.fn.getCursorPosition = function(adjust = false) {
   let el = this.get(0);
-  return { start: el.selectionStart, end: el.selectionEnd };
+  let start = el.selectionStart;
+  let end = el.selectionEnd;
+  if (adjust && (start != end)) {
+    start = el.value.lastIndexOf("\n", start) + 1;
+    end = el.value.indexOf("\n", end-1) + 1;
+  }
+  return { start: start, end: end };
 }
 $.fn.setCursorPosition = function(start, end) {
   if (end === undefined) end = start;
