@@ -244,7 +244,10 @@ $().ready(function() {
       app.prepend = null;
     }
     if (!app.changed) app.changed = Date.now();
-    app.notes[app.activenote].touched = true;
+    if (!app.notes[app.activenote].touched) {
+      app.notes[app.activenote].touched = true;
+      $('.note-li[data-id=' + app.activenote + ']').addClass('note-touched');
+    }
     app.inactive = 0;
     if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
     updateStats();
@@ -1057,6 +1060,7 @@ function updateRecent() {
     let note = notes[i];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
+    if (note.touched) extraclass += ' note-touched';
     str += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
     str += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
     if (++count >= app.recent) break;
@@ -1072,6 +1076,7 @@ function updateSearch() {
     let note = app.notes[items[i]];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
+    if (note.touched) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
     results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
@@ -1088,6 +1093,7 @@ function updatePinned() {
     if (!note.pinned) break;
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
+    if (note.touched) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
     pinned += '<span class="note-title">' + note.title + '</span><br>';
