@@ -211,6 +211,38 @@ $().ready(function() {
       $('#input').val(newcontent).setCursorPosition(start1+end2-end1+cursor.start-start1, start1+end2-end1+cursor.end-start1).trigger('input');
       return false;
     }
+    else if (e.ctrlKey && (e.key == '>')) {
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition(true);
+      if (cursor.start == cursor.end) {
+        let start = content.lastIndexOf("\n", cursor.start-1);
+        let newcontent = content.substring(0, start+1) + '> ' + content.substring(start+1);
+        $('#input').val(newcontent).setCursorPosition(cursor.start+2).trigger('input');
+      }
+      else {
+        let selection = content.substring(cursor.start, cursor.end-1).replace(/^/gm, '> ');
+        let newcontent = content.substring(0, cursor.start) + selection + content.substring(cursor.end-1);
+        $('#input').val(newcontent).setCursorPosition(cursor.start, cursor.end+(selection.length-(cursor.end-cursor.start)+1)).trigger('input');
+      }
+      return false;
+    }
+    else if (e.ctrlKey && (e.key == '<')) {
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition(true);
+      if (cursor.start == cursor.end) {
+        let start = content.lastIndexOf("\n", cursor.start-1);
+        if (content.substring(start+1, start+3) == '> ') {
+          let newcontent = content.substring(0, start+1) + content.substring(start+3);
+          $('#input').val(newcontent).setCursorPosition(cursor.start-2).trigger('input');
+        }
+      }
+      else {
+        let selection = content.substring(cursor.start, cursor.end-1).replace(/^> /gm, '');
+        let newcontent = content.substring(0, cursor.start) + selection + content.substring(cursor.end-1);
+        $('#input').val(newcontent).setCursorPosition(cursor.start, cursor.end+(selection.length-(cursor.end-cursor.start)+1)).trigger('input');
+      }
+      return false;
+    }
   }).on('input', function(e) {
     if (app.prepended) { // Previous keystroke prepended text
       let content = $('#input').val();
@@ -1303,6 +1335,8 @@ function loadHelp() {
   body.append('<p><em>CTRL+Enter</em>: create new note and link to it at the cursor position</p>');
   body.append('<p><em>CTRL+ArrowUp</em>: move selected text one line up</p>');
   body.append('<p><em>CTRL+ArrowDown</em>: move selected text one line down</p>');
+  body.append('<p><em>CTRL+&gt;</em>: increase blockquote indentation level for selected text</p>');
+  body.append('<p><em>CTRL+&lt;</em>: decrease blockquote indentation level for selected text</p>');
   body.append('<p><em>ALT+Enter</em>: in edit mode: follow the link at the cursor position</p>');
   body.append('<p><em>ALT+Click</em>: in edit mode: follow the link at the clicked location</p>');
   body.append('<p><em>ALT+ArrowLeft</em>: go back a page (actually a browser hotkey)</p>');
