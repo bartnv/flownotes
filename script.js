@@ -1091,7 +1091,7 @@ function updateRecent() {
     let note = notes[i];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
-    if (note.touched) extraclass += ' note-touched';
+    if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     str += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
     str += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
     if (++count >= app.recent) break;
@@ -1107,7 +1107,7 @@ function updateSearch() {
     let note = app.notes[items[i]];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
-    if (note.touched) extraclass += ' note-touched';
+    if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
     results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
@@ -1124,7 +1124,7 @@ function updatePinned() {
     if (!note.pinned) break;
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
-    if (note.touched) extraclass += ' note-touched';
+    if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
     pinned += '<span class="note-title">' + note.title + '</span><br>';
