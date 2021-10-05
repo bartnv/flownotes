@@ -1,4 +1,4 @@
-let version = 'v3.5';
+let version = 'v3.6';
 
 self.addEventListener('install', evt => {
   console.log('Service worker ' + version + ' is being installed');
