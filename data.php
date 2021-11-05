@@ -435,10 +435,7 @@ function select_note($id) {
     return [];
   }
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  if (empty($row['id'])) {
-    error_log("select_note() select for id $id returned no rows");
-    return [];
-  }
+  if (empty($row['id'])) return [];
   if ($row['flinks']) $row['flinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['flinks']))));
   if ($row['blinks']) $row['blinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['blinks']))));
   $row['published'] = sql_rows_collect('SELECT type, file FROM publish WHERE note = ?', [ $id ]);
@@ -595,7 +592,11 @@ function prune_snapshots() {
 function search_notes($term) {
   global $dbh;
 
-  if (substr($term, 0, 1) == '/') { // Regex search
+  if (preg_match("/^#([0-9]+)$/", $term, $matches)) { // Note id search
+    $id = (int)$matches[1];
+    return [ $id => select_note($id) ];
+  }
+  elseif (substr($term, 0, 1) == '/') { // Regex search
     $dbh->sqliteCreateFunction('regexp', function($pattern, $data) {
       return (preg_match("/$pattern/i", $data));
     });
