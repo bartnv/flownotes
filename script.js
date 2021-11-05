@@ -685,7 +685,7 @@ function render(content) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
   });
   marked.use({ headerPrefix: app.activenote + '_' });
-  el.html(marked(content));
+  el.html(marked.parse(content));
   return el;
 }
 function renderToWindow(content) {
@@ -696,7 +696,7 @@ function renderToWindow(content) {
   let win = window.open('', 'print', 'height=400,width=400');
   win.document.write('<html><head><title>' + app.notes[app.activenote].title + '</title>');
   win.document.write('<link rel="stylesheet" href="style.css"/></head><body>');
-  win.document.write(marked(content));
+  win.document.write(marked.parse(content));
   win.document.write('</body></html>');
   win.document.close();
   win.focus();
