@@ -278,6 +278,7 @@ $().ready(function() {
     if (!app.notes[app.activenote].touched) {
       app.notes[app.activenote].touched = true;
       $('.note-li[data-id=' + app.activenote + ']').addClass('note-touched');
+      $('#button-mode-edit').addClass('button-touched');
     }
     app.inactive = 0;
     // if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
@@ -893,7 +894,10 @@ function parseFromServer(data, textStatus, xhr) {
       else if (!app.notes[i].title) app.notes[i].title = '{no title}';
       if (data.notes[i].modified) {
         app.notes[i].modified = data.notes[i].modified;
-        if (app.notes[i].intransit) delete app.notes[i].intransit;
+        if (app.notes[i].intransit) {
+          delete app.notes[i].intransit;
+          if (!app.notes[i].touched) $('#button-mode-edit').removeClass('button-touched');
+        }
       }
       if (data.notes[i].pinned) {
         app.notes[i].pinned = parseInt(data.notes[i].pinned);
@@ -1202,6 +1206,8 @@ function activateNote(id, nopost) {
   app.snapshots = null;
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
+  if (app.notes[id].touched || (app.notes[id].intransit == 'full')) $('#button-mode-edit').addClass('button-touched');
+  else $('#button-mode-edit').removeClass('button-touched');
   $('#stats').hide();
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };

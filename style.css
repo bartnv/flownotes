@@ -37,8 +37,10 @@ DIV#panel-right { margin-right: -20rem; }
 DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; min-width: 252px; max-width: calc(100vw - 68px); }
 DIV.panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
+#button-mode-edit { position: relative; }
 .button-svg { display: block; margin-left: auto; margin-right: auto; user-select: none; -webkit-user-select: none; -ms-user-select: none; }
 .button-active { background-color: rgb(80,80,80) !important; }
+.button-touched::after { border-radius: 5px; background-color: #F2A51B; content: ''; position: absolute; bottom: 5px; right: 5px; width: 7px; height: 7px; }
 DIV#button-export,DIV#button-help { margin-top: auto; }
 DIV#status { position: absolute; top: 0; right: 0; padding: 5px; color: white; background-color: rgb(180,0,0) !important; transition: opacity 1s ease-in; z-index: 1000; }
 DIV#stats { position: absolute; right: 0; bottom: 0; padding: 0.1em 0.2em; font-size: 0.9rem; text-align: right; }
