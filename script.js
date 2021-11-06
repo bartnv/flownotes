@@ -680,6 +680,9 @@ function loadSnap(snap) {
   if (app.mode == 'view') render(snap.content);
   $('#input').val(snap.content).attr('readonly', 'readonly');
   $('#snap').css('display', 'flex').find('#snapdate').text(new Date(snap.modified*1000).format('Y-m-d H:i'));
+  if (!app.hidepanelright && ($('#panel-main').width() == parseInt($('#panel-main').css('min-width')))) {
+    togglePanelRight('close');
+  }
 }
 
 function render(content) {
