@@ -343,7 +343,7 @@ $().ready(function() {
       return;
     }
     match = location.hash.match(/^#([0-9]+)@([0-9]+)$/);
-    if (match) {
+    if (match) { // Showing snapshot
       let id = parseInt(match[1], 10);
       app.snap = match[2];
       if (id != app.activenote) activateNote(id, true);
@@ -537,7 +537,10 @@ $().ready(function() {
   $('#button-export').on('click', loadExports);
   $('#button-help').on('click', loadHelp);
   $('#button-settings').on('click', loadSettings);
-  $('#button-restore').on('click', function() {
+  $('#button-snap-close').on('click', function() {
+    location.hash = '#' + app.activenote;
+  });
+  $('#button-snap-restore').on('click', function() {
     if (app.notes[app.activenote].modified > app.snapshots[app.snapshots.length-1].modified) {
       sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote, locked: 0 });
     }
