@@ -280,7 +280,7 @@ $().ready(function() {
       $('.note-li[data-id=' + app.activenote + ']').addClass('note-touched');
     }
     app.inactive = 0;
-    if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
+    // if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
     updateStats();
   }).on('mouseup', function(evt) {
     if (evt.altKey && !evt.ctrlKey && !evt.shiftKey) {
@@ -969,7 +969,7 @@ function parseFromServer(data, textStatus, xhr) {
 function offline(msg = 'Connection failed, switching to offline mode') {
   if (typeof msg != 'string') {
     if (msg.status) msg = 'Error from server: ' + msg.status + ' (' + msg.statusText + ')';
-    else msg = 'No network connection';
+    else msg = 'Network connection lost';
   }
   if (!app.offline) {
     app.offline = Date.now();
