@@ -1209,7 +1209,7 @@ function activateNote(id, nopost) {
   app.snapshots = null;
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
-  if (app.notes[id].touched || (app.notes[id].intransit == 'full')) $('#button-mode-edit').addClass('button-touched');
+  if (app.notes[id] && (app.notes[id].touched || (app.notes[id].intransit == 'full'))) $('#button-mode-edit').addClass('button-touched');
   else $('#button-mode-edit').removeClass('button-touched');
   $('#stats').hide();
   if (!nopost) {
