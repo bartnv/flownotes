@@ -22,11 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   if (empty($data['req'])) fatalerr('No req specified in POST request');
 }
 else {
-  if (empty($_GET['export']) || empty($_GET['note']) || !is_numeric($_GET['note'])) fatalerr('Invalid request');
+  if (empty($_GET['export'])) fatalerr('Invalid request');
   $data = [];
   $data['req'] = 'export';
   $data['mode'] = 'get' . $_GET['export'];
-  $data['note'] = $_GET['note'];
+  if (!empty($_GET['note']) && is_numeric($_GET['note'])) $data['note'] = $_GET['note'];
 }
 
 $password = query_setting('password', '');
