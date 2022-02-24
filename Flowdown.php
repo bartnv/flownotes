@@ -6,6 +6,7 @@ class Flowdown extends Parsedown {
   function __construct($mode) {
     $this->InlineTypes['['][] = 'CheckBox';
     $this->fn_mode = $mode;
+    error_reporting(error_reporting() & ~E_NOTICE); // Silence PHP Notices because Parsedown is outdated
   }
   protected function inlineCheckBox($excerpt) {
     if (preg_match('/^\[(x| )\]/', $excerpt['text'], $matches)) {
