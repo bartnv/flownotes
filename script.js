@@ -168,7 +168,19 @@ $().ready(function() {
       cursorActivate(input.value, input.selectionStart);
     }
     else if (e.shiftKey && (e.key == 'Enter')) {
-      // Reserved for future use
+      let content = $('#input').val();
+      let cursor = $('#input').getCursorPosition();
+      if (cursor.start == cursor.end) {
+        alert("Moving a paragraph to a new note (shift+enter) requires selected text");
+        return false;
+      }
+      let text = content.substring(cursor.start, cursor.end).replace(/^##/gm, '#');
+      $('#input')
+        .val(content.substring(0, cursor.start) + content.substring(cursor.end))
+        .setCursorPosition(cursor.start);
+      app.addlink = true;
+      sendToServer({ req: 'add', content: text, lastupdate: app.lastupdate });
+      $('#status').html('Loading...').css('opacity', 1);
       return false;
     }
     else if (e.key == 'Enter') {
@@ -949,7 +961,7 @@ function parseFromServer(data, textStatus, xhr) {
   }
 
   if (data.switchnote) { // App launched without note id in location hash OR new note created
-    if (app.addlink) { // New note created with ctrl+enter
+    if (app.addlink) { // New note created with ctrl+enter or shift+enter
       let input = $('#input')[0];
       let start = input.selectionStart;
       let end = input.selectionEnd;
@@ -960,6 +972,9 @@ function parseFromServer(data, textStatus, xhr) {
         app.notes[data.switchnote].title = findTitle(name);
         app.notes[data.switchnote].content = '# ' + name + '\n\n';
         app.notes[data.switchnote].touched = true;
+      }
+      else if (app.notes[data.switchnote].title) {
+        name = app.notes[data.switchnote].title;
       }
       let link = '[' + name + '](#' + data.switchnote + ')';
       input.value = val.substring(0, start) + link + val.substring(end);
