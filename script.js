@@ -56,9 +56,10 @@ $().ready(function() {
   let renderer = {
     link(href, title, text) {
       if (title == null) title = '';
-      if (href.match(/^#[0-9]+$/)) {
-        if (text.startsWith('=') && (text != '=')) title = text = text.substring(1);
-        else if (app.notes[href.substring(1)]) title = app.notes[href.substring(1)].title;
+      let match = href.match(/^#([0-9]+)/);
+      if (match) {
+        if (text.startsWith('=') && (text != '=')) title = text = match[1];
+        else if (app.notes[match[1]]) title = app.notes[match[1]].title;
         return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
       }
       else if (href.match(/^#[A-Za-z -]+$/)) {
@@ -335,11 +336,13 @@ $().ready(function() {
       return;
     }
 
-    let match = location.hash.match(/^#[0-9]+_(.*)$/);
+    let match = location.hash.match(/^#([0-9]+)_(.*)$/);
     if (match) {
+      let id = parseInt(match[1], 10);
+      if (id != app.activenote) activateNote(id);
       if (app.mode != 'edit') return;
       if (!app.slugtoraw) return;
-      let raw = app.slugtoraw[match[1]];
+      let raw = app.slugtoraw[match[2]];
       if (!raw) return;
       let input = $('#input');
       let idx = input.val().indexOf(raw);
