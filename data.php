@@ -279,18 +279,16 @@ switch ($data['req']) {
     break;
   case 'snapshot':
     if (empty($activenote)) fatalerr('Invalid snapshot request');
+    $data['snapshots'] = true;
     switch ($data['mode']) {
       case 'list':
-        $data['snapshots'] = true;
         break;
       case 'add':
         add_snapshot($activenote, $data['locked'] ?? 1);
-        $data['snapshots'] = true;
         break;
       case 'del':
         if (empty($data['snapshot']) || !is_numeric($data['snapshot'])) fatalerr('Invalid snapshot request');
         del_snapshot($data['snapshot']);
-        $data['snapshots'] = true;
         break;
       case 'pin':
         if (!isset($data['value']) || !is_numeric($data['value'])) fatalerr('Invalid snapshot request');
