@@ -48,8 +48,8 @@ class WebAuthn
     * @param $username string by which the user is known potentially displayed on the hardware key
     * @param $userid string by which the user can be uniquely identified. Don't use email address as this can change,
     *                user perhaps the database record id
-    * @param $crossPlatform bool default=FALSE, whether to link the identity to the key (TRUE, so it 
-    *               can be used cross-platofrm, on different computers) or the platform (FALSE, only on 
+    * @param $crossPlatform bool default=FALSE, whether to link the identity to the key (TRUE, so it
+    *               can be used cross-platofrm, on different computers) or the platform (FALSE, only on
     *               this computer, but with any available authentication device, e.g. known to Windows Hello)
     * @return string pass this JSON string back to the browser
     */
@@ -161,6 +161,23 @@ class WebAuthn
         $cborPubKey  = substr($bs, 55+$ao->attData->credIdLen); // after credId to end of string
 
         $ao->attData->keyBytes = self::COSEECDHAtoPKCS($cborPubKey);
+
+        if (is_null($ao->attData->keyBytes)) {
+          /* There is a bug in Firefox whereby it provides only one byte for the aaguid field.
+             This means everything else is shifted down by 15 bytes, resulting in a failure to pick up the
+             key algortihm field in COSEECDHAtoPKCS. So if that happens, try again with just that one byte,
+             and only then produce an error if that also fails.
+             Thank you: https://www.antradar.com/blog-firefox-webauthn-incompability
+           */
+          $ao->attData->aaguid = substr($bs, 37, 1);
+          $ao->attData->credIdLen = (ord($bs[38])<<8)+ord($bs[39]);
+          $ao->attData->credId = substr($bs, 40, $ao->attData->credIdLen);
+          $cborPubKey  = substr($bs, 40+$ao->attData->credIdLen); // after credId to end of string
+          $ao->attData->keyBytes = self::COSEECDHAtoPKCS($cborPubKey);
+          if (is_null($ao->attData->keyBytes)) {
+            $this->oops('cannot decode key response (8)');
+          }
+        }
 
         $rawId = self::arrayToString($info->rawId);
         if ($ao->attData->credId != $rawId) {
@@ -400,7 +417,7 @@ class WebAuthn
         $cosePubKey = \CBOR\CBOREncoder::decode($binary);
 
         if (! isset($cosePubKey[3] /* cose_alg */)) {
-            $this->oops('cannot decode key response (8)');
+            return NULL;
         }
 
         switch ($cosePubKey[3]) {
