@@ -58,7 +58,7 @@ $().ready(function() {
       if (title == null) title = '';
       let match = href.match(/^#([0-9]+)/);
       if (match) {
-        if (text.startsWith('=') && (text != '=')) title = text = match[1];
+        if (text.startsWith('=') && (text != '=')) title = text = text.substring(1);
         else if (app.notes[match[1]]) title = app.notes[match[1]].title;
         return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
       }
