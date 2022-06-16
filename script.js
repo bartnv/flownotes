@@ -161,7 +161,7 @@ $().ready(function() {
     }
     else if (e.ctrlKey && (e.key == 'Enter')) {
       app.addlink = true;
-      sendToServer({ req: 'add', lastupdate: app.lastupdate });
+      sendToServer({ req: 'add', addlink: 'true', lastupdate: app.lastupdate });
       $('#status').html('Loading...').css('opacity', 1);
     }
     else if (e.altKey && (e.key == 'Enter')) {
@@ -180,7 +180,7 @@ $().ready(function() {
         .val(content.substring(0, cursor.start) + content.substring(cursor.end))
         .setCursorPosition(cursor.start);
       app.addlink = true;
-      sendToServer({ req: 'add', content: text, lastupdate: app.lastupdate });
+      sendToServer({ req: 'add', addlink: 'true', content: text, lastupdate: app.lastupdate });
       $('#status').html('Loading...').css('opacity', 1);
       return false;
     }
@@ -310,6 +310,12 @@ $().ready(function() {
     }
     navigator.clipboard.writeText($(this).text());
     selectText(this);
+  }).on('dblclick', 'pre', function() {
+    this.contentEditable = true;
+    selectText(this);
+    $(this).on('blur', function() {
+      this.contentEditable = false;
+    });
   });
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
@@ -558,7 +564,7 @@ $().ready(function() {
   });
   $('#button-snap-restore').on('click', function() {
     if (app.notes[app.activenote].modified > app.snapshots[app.snapshots.length-1].modified) {
-      sendToServer({ req: 'snapshot', mode: 'add', note: app.activenote, locked: 0 });
+      sendToServer({ req: 'snapshot', mode: 'add', activenote: app.activenote, locked: 0 });
     }
     let snapshot = null;
     for (let snap of app.snapshots) {
@@ -702,6 +708,7 @@ function loadSnap(snap) {
 
 function render(content) {
   let el = $('#render');
+  content = content.replace(/&/g, '&amp;');
   content = content.replace(/</g, '&lt;');
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
     return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
@@ -886,6 +893,11 @@ function parseFromServer(data, textStatus, xhr) {
   }
   if (data.webauthn) {
     handleWebauthn(data);
+    return;
+  }
+  if (data.templates) {
+    loadTemplates(data.templates);
+    $('.loader').detach();
     return;
   }
 
@@ -1294,6 +1306,21 @@ function loadExports() {
   showModal('export', div, true);
 }
 
+function loadTemplates(templates) {
+  let div = $('<div><h1>Create new note</h1><div id="modal-body"></div></div>');
+  let body = div.find('#modal-body');
+  body.append('<p><input type="button" id="template-0" class="modal-button-small" value="New empty note"></p>');
+  body.append('<h2>New note from template:</h2>');
+  for (let template of templates) {
+    body.append('<p><input type="button" id="template-' + template[0] + '" class="modal-button-small" value="' + template[1] + '"></p>');
+  }
+  body.on('click', '.modal-button-small', function() {
+    sendToServer({ req: 'add', template: this.id.split('-')[1], lastupdate: app.lastupdate });
+    hideModal();
+  });
+  showModal('templates', div, true);
+}
+
 function tourStep(back = false) {
   if (!app.tour) app.tour = 1;
   else if (back) app.tour--;
@@ -1363,6 +1390,7 @@ function loadHelp() {
   body.append('<p><em>CTRL+F1</em>: insert a divider at the cursor position</p>');
   body.append('<p><em>CTRL+F2</em>: select text between nearest two dividers</p>');
   body.append('<p><em>CTRL+Enter</em>: create new note and link to it at the cursor position</p>');
+  body.append('<p><em>SHIFT+Enter</em>: create new note and move currently selected text to it</p>');
   body.append('<p><em>CTRL+ArrowUp</em>: move selected text one line up</p>');
   body.append('<p><em>CTRL+ArrowDown</em>: move selected text one line down</p>');
   body.append('<p><em>CTRL+&gt;</em>: increase blockquote indentation level for selected text</p>');
@@ -1397,6 +1425,8 @@ function loadSettings() {
   body.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br>snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
   body.append('<h2>Share to FlowNotes</h2>');
   body.append('<p><span class="settings-label">Append-to note IDs:</span><input type="text" id="shareappend" placeholder="7,12,45" pattern="[0-9]+(, ?[0-9]+)*"></p>');
+  body.append('<h2>New note templates</h2>');
+  body.append('<p><span class="settings-label">Template note IDs:</span><input type="text" id="templatenotes" placeholder="2,8,16" pattern="[0-9]+(, ?[0-9]+)*"></p>');
   div.append('<p id="modal-error"></p>');
   div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
   body.find('#logout-this').on('click', function() {
@@ -1442,6 +1472,11 @@ function loadSettings() {
       return;
     }
     data.shareappend = $('#shareappend').val();
+    if ($('#templatenotes').is(':invalid')) {
+      div.find('#modal-error').show().text('Invalid input for "Template note IDs"');
+      return;
+    }
+    data.templatenotes = $('#templatenotes').val();
     sendToServer(data);
     if (data.length > 1) $('#status').html('Saving settings...').css('opacity', 1);
   });
@@ -1457,6 +1492,7 @@ function handleSettings(settings) {
   $('#pruneweeks').val(settings.pruneweeks);
   $('#prunemonths').val(settings.prunemonths);
   $('#shareappend').val(settings.shareappend);
+  $('#templatenotes').val(settings.templatenotes);
   let tokens = settings.tokens.reduce((r, s) => r.concat(s.device), []).join(', ') || 'none';
   $('#token-list').attr('title', 'This also invalidates all "Remember this device" tokens\nwhich you currently have for the following browsers:\n' + tokens);
 }

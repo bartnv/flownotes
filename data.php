@@ -172,8 +172,18 @@ switch ($data['req']) {
     $ret['searchresults'] = array_keys($ret['notes']);
     break;
   case 'add':
+    if (query_setting('templatenotes', false) && empty($data['addlink']) && empty($data['template'])) {
+      $ret['templates'] = [];
+      foreach (explode(',', query_setting('templatenotes')) as $id) {
+        $ret['templates'][] = [ $id, sql_single('SELECT title FROM note WHERE id = ?', [ $id ]) ];
+      }
+      break;
+    }
     $ret['notes'] = [];
-    $activenote = add_note($data['content'] ?? '');
+    if (!empty($data['template']) && ($data['template'] != '0')) {
+      $activenote = add_note(sql_single('SELECT content FROM note WHERE id = ?', [ $data['template'] ]));
+    }
+    else $activenote = add_note($data['content'] ?? '');
     $ret['switchnote'] = $activenote;
     $ret['notes'][$activenote] = select_note($activenote);
     break;
@@ -226,6 +236,7 @@ switch ($data['req']) {
         store_setting('pruneweeks', $data['pruneweeks']);
         store_setting('prunemonths', $data['prunemonths']);
         if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['shareappend'])) store_setting('shareappend', $data['shareappend']);
+        if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['templatenotes'])) store_setting('templatenotes', $data['templatenotes']);
         send_and_exit([ 'settings' => 'stored' ]);
         break;
       case 'get':
@@ -243,6 +254,7 @@ switch ($data['req']) {
         $settings['pruneweeks'] = query_setting('pruneweeks', 3);
         $settings['prunemonths'] = query_setting('prunemonths', 5);
         $settings['shareappend'] = query_setting('shareappend', '');
+        $settings['templatenotes'] = query_setting('templatenotes', '');
         $settings['tokens'] = sql_rows_collect("SELECT id, device FROM auth_token WHERE expires > strftime('%s', 'now')");
         send_and_exit([ 'webauthn' => 'list', 'keys' => $ret, 'settings' => $settings ]);
       case 'share':
