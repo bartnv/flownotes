@@ -172,7 +172,7 @@ switch ($data['req']) {
     $ret['searchresults'] = array_keys($ret['notes']);
     break;
   case 'add':
-    if (query_setting('templatenotes', false) && empty($data['addlink']) && empty($data['template'])) {
+    if (query_setting('templatenotes', false) && !isset($data['addlink']) && !isset($data['template'])) {
       $ret['templates'] = [];
       foreach (explode(',', query_setting('templatenotes')) as $id) {
         $ret['templates'][] = [ $id, sql_single('SELECT title FROM note WHERE id = ?', [ $id ]) ];
