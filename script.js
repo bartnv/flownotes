@@ -302,17 +302,23 @@ $().ready(function() {
       cursorActivate(input.value, input.selectionStart);
     }
   });
-  $('#render').on('click', 'code', function () {
+  $('#render').on('click', 'code', function (e) {
+    if (!navigator.clipboard) return;
     if (window.getSelection().type == 'Range') return;
-    if (!navigator.clipboard) {
-      console.err("Browser doesn't support the Clipboard API");
-      return;
-    }
     navigator.clipboard.writeText($(this).text());
     selectText(this);
+    showCopied(e);
+  }).on('click', 'pre', function (e) {
+    if (!navigator.clipboard) return;
+    if (window.getSelection().type != 'Range') return;
+    let sel = window.getSelection();
+    if (sel.anchorNode !== sel.focusNode) return; // Selection continues outside of code block
+    navigator.clipboard.writeText(sel.toString());
+    showCopied(e);
   }).on('dblclick', 'pre', function() {
     this.contentEditable = true;
     selectText(this);
+    if (navigator.clipboard) navigator.clipboard.writeText($(this).text());
     $(this).on('blur', function() {
       this.contentEditable = false;
     });
@@ -747,18 +753,11 @@ function checkboxChange(checkbox, offset) {
   input.trigger('input');
 }
 function passwordToClipboard(el, evt) {
-  if (!navigator.clipboard) {
-    console.err("Browser doesn't support the Clipboard API");
-    return;
-  }
+  if (!navigator.clipboard) return;
   navigator.clipboard.writeText($(el).data('pass'));
   selectText(el);
+  showCopied(evt);
   evt.stopPropagation();
-}
-function copy(btn) {
-  selectText($(btn).parent().find('code').get(0));
-  document.execCommand('copy');
-  selectText(btn);
 }
 
 function cursorActivate(text, cursor) {
@@ -1558,6 +1557,12 @@ function loadToc() {
     if (tok.depth > 1) li.children().first().css('margin-left', ((tok.depth-1)*2) + 'rem');
     div.append(li);
   }
+}
+
+function showCopied(e) {
+  let copied = $('#copied');
+  copied.offset({ top: e.pageY-43, left: e.pageX-copied.outerWidth()/2 }).addClass('notransition').css('opacity', 1);
+  setTimeout(function() { copied.removeClass('notransition').css('opacity', 0); }, 1000);
 }
 
 function showModal(type, content, escapable) {

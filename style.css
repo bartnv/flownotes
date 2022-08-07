@@ -101,6 +101,7 @@ P#modal-error { display: none; color: rgb(255,0,0); }
 .modal-button:hover { background-color: white; cursor: pointer; }
 .modal-button-small { background-color: rgb(204,204,204); border-radius: 5px; border: none; padding: 0.35em 0.6em; font-size: 0.9em; }
 .modal-button-small:hover { background-color: white; cursor: pointer; }
+DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 5px; padding: 5px; background-color: black; color: white; transition: opacity 500ms; }
 .settings-label { display: inline-block; min-width: 10em; }
 #settings-save { margin-top: 1rem; }
 #token-list { cursor: help; }
