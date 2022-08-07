@@ -647,7 +647,8 @@ function togglePanelRight(force) {
     $('#panel-right').css('margin-right', '0');
     $('#panels').css({ left: '', right: '0' });
     if ((window.innerWidth < 880) && !app.hidepanelleft) togglePanelLeft('close');
-    if (app.lastpanelright) $('#button-' + app.lastpanelright).addClass('button-active');
+    $('#button-' + app.lastpanelright).addClass('button-active');
+    updatePanels();
   }
   else {
     app.hidepanelright = true;
