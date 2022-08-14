@@ -7,7 +7,7 @@
     src: url('fonts/Lato-Bold.woff2') format('woff2'), url('fonts/Lato-Bold.woff') format('woff');
 }
 BODY {
-  width: 100vw; height: 100vh; overflow: hidden; overflow: clip; touch-action: none; margin: 0;
+  width: 100vw; height: 100vh; margin: 0;
   background-color: grey; font-family: 'Lato', 'LatoWeb', sans-serif;
 }
 BODY.dragging { cursor: alias; }
@@ -32,7 +32,7 @@ H5::first-letter { padding-bottom: 3px; border-bottom: dotted #ccc 1px; }
 :target { border-bottom-color: red; }
 P { margin-top: 0.5rem; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
-DIV#panels { position: absolute; height: calc(100vh - var(--barheight, 0px)); width: 100vw; display: flex; overflow: hidden; touch-action: none; background-color: grey; }
+DIV#panels { position: fixed; height: 100%; width: 100vw; display: flex; overflow: hidden; touch-action: none; background-color: grey; }
 DIV.sidepanel { width: 20em; flex-shrink: 0; background-color: rgb(200,200,200); transition: margin 1s; }
 DIV.sidepanel A { text-decoration: none; color: inherit; }
 DIV#panel-left { position: relative; display: flex; flex-direction: column; }

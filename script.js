@@ -588,15 +588,9 @@ $().ready(function() {
     location.hash = '#' + note.id;
   });
 
-  if (window.visualViewport) window.visualViewport.onresize = checkHeight;
-  checkHeight();
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 4000);
 });
-
-function checkHeight() {
-  document.documentElement.style.setProperty('--barheight', ($('BODY').height()-window.innerHeight) + 'px');
-}
 
 function init() {
   let data = { req: 'init' };
