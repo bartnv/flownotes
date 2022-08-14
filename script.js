@@ -48,9 +48,6 @@ $(document).on('keydown', function(evt) {
     return false;
   }
 });
-function goFullscreen() {
-  $('#panel-main')[0].requestFullscreen();
-}
 
 $().ready(function() {
   let renderer = {
@@ -560,7 +557,7 @@ $().ready(function() {
     else if (app.mode == 'view') iframePrint('<html><head><link rel="stylesheet" type="text/css" href="style.css"></head><body>' + $('#render').html() + '</body></html>');
   });
   $('#button-fullscreen').on('click', function() {
-    goFullscreen();
+    $('#panel-main')[0].requestFullscreen();
   });
   $('#button-export').on('click', loadExports);
   $('#button-help').on('click', loadHelp);
@@ -724,19 +721,6 @@ function render(content) {
   marked.use({ headerPrefix: app.activenote + '_' });
   el.html(marked.parse(content));
   return el;
-}
-function renderToWindow(content) {
-  content = content.replace(/</g, '&lt;');
-  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
-    return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
-  });
-  let win = window.open('', 'print', 'height=400,width=400');
-  win.document.write('<html><head><title>' + app.notes[app.activenote].title + '</title>');
-  win.document.write('<link rel="stylesheet" href="style.css"/></head><body>');
-  win.document.write(marked.parse(content));
-  win.document.write('</body></html>');
-  win.document.close();
-  win.focus();
 }
 
 function checkboxChange(checkbox, offset) {
