@@ -966,15 +966,15 @@ function parseFromServer(data, textStatus, xhr) {
       let start = input.selectionStart;
       let end = input.selectionEnd;
       let val = input.value;
-      let name = '=';
+      let name;
       if (start != end) { // There is a text selection; use it as link text
         name = val.substring(start, end);
         app.notes[data.switchnote].title = findTitle(name);
         app.notes[data.switchnote].content = '# ' + name + '\n\n';
         app.notes[data.switchnote].touched = true;
       }
-      else if (app.notes[data.switchnote].title) {
-        name = app.notes[data.switchnote].title;
+      else if (app.notes[data.switchnote].title) { // Used for shift+enter function
+        name = '=' + app.notes[data.switchnote].title;
       }
       let link = '[' + name + '](#' + data.switchnote + ')';
       input.value = val.substring(0, start) + link + val.substring(end);

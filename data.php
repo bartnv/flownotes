@@ -141,6 +141,7 @@ switch ($data['req']) {
   case 'update':
     $ret['notes'] = [];
     if (!empty($data['notes'])) {
+      ksort($data['notes'], SORT_NUMERIC); // Process notes in ascending id order
       foreach ($data['notes'] as $id => $note) {
         if (isset($note['content'])) {
           if (!empty($data['lastupdate']) && sql_if("SELECT 1 FROM note WHERE id = ? AND modified > ? AND content != ?", [ $id, $data['lastupdate'], $note['content'] ])) {
