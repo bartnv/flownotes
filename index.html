@@ -4,8 +4,8 @@
 <meta charset="utf8">
 <title>MMVI FlowNotes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<script src="//cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<script src="//cdn.jsdelivr.net/npm/marked@4.0.16/marked.min.js" integrity="sha256-/SDjPL/36EsO4f76Gav6OW02Q5GUSLYYMBO3txrwnXI=" crossorigin="anonymous"></script>
+<script src="//cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+<script src="//cdn.jsdelivr.net/npm/marked@4.1.1/marked.min.js" integrity="sha256-Vzvb580BSDLXlnOXjvulLI+tznYO7MqNXu8Jjw8exgo=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="script.js?v3.6" defer></script>
 <link rel="stylesheet" type="text/css" href="style.css?v3.6">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -75,7 +75,7 @@
       </div>
     </div>
     <div id="panel-main">
-      <textarea id="input" autocomplete="off" spellcheck="false" ondrop="drop(event)" ondragover="allowDrop(event)"></textarea>
+      <textarea id="input" autocomplete="off" spellcheck="false" droppable></textarea>
       <div id="render" style="display: none;"></div>
       <div id="graph" style="display: none;"></div>
       <div id="stats" style="display: none;"></div>
