@@ -1052,10 +1052,10 @@ function handleWebauthn(data) {
   else if (data.webauthn == 'list') {
     let str = '';
     for (let i in data.keys) {
-      str += 'Key ' + (Number(i)+1) + ': ' + data.keys[i];
-      str += ' <div class="webauthn-delete" onclick="if (confirm(\'Are you sure you want to delete ' + data.keys[i] + '?\')) deleteWebauthn(' + i + ')"></div><br>';
+      str += '<li>' + data.keys[i];
+      str += ' <div class="webauthn-delete" onclick="if (confirm(\'Are you sure you want to delete ' + data.keys[i] + '?\')) deleteWebauthn(' + i + ')"></div>';
     }
-    $('p#list-u2f').html(str);
+    $('ul#list-u2f').html(str);
   }
 }
 function deleteWebauthn(idx) {
@@ -1403,7 +1403,7 @@ function loadSettings() {
   body.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1" autocomplete="new-password"></p>');
   body.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2" autocomplete="new-password"></p>');
   body.append('<h2>U2F keys</h2>');
-  body.append('<p id="list-u2f">Loading...</p>');
+  body.append('<ul id="list-u2f">Loading...</ul>');
   body.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
   body.append('<h2>Automatic snapshots</h2>');
   body.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
