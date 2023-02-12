@@ -835,7 +835,10 @@ function pushUpdate(beacon, retransmit) {
 }
 
 function sendToServer(data, beacon) {
-  if (beacon) return navigator.sendBeacon('data.php', JSON.stringify(data));
+  if (beacon) {
+    let blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    return navigator.sendBeacon('data.php', blob);
+  }
   return $.post({ url: 'data.php', data: JSON.stringify(data), contentType: 'application/json' }).done(parseFromServer).fail(offline);
 }
 function parseFromServer(data, textStatus, xhr) {
