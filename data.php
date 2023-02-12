@@ -17,16 +17,28 @@ if (query_setting('dbversion') < 11) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  $input = file_get_contents('php://input');
-  if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
-  if (empty($data['req'])) fatalerr('No req specified in POST request');
+  $type = explode(';', $_SERVER['CONTENT_TYPE'], 2)[0];
+  if ($type == 'application/json') {
+    $input = file_get_contents('php://input');
+    if (!($data = json_decode($input, true))) fatalerr('Invalid JSON data in request body');
+    if (empty($data['req'])) fatalerr('No req specified in POST request');
+  }
+  elseif ($type == 'multipart/form-data') handle_uploads(); // Doesn't return
+  else fatalerr('Invalid content-type: '. $type);
 }
 else {
-  if (empty($_GET['export'])) fatalerr('Invalid request');
-  $data = [];
-  $data['req'] = 'export';
-  $data['mode'] = 'get' . $_GET['export'];
-  if (!empty($_GET['note']) && is_numeric($_GET['note'])) $data['note'] = $_GET['note'];
+  if (!empty($_GET['export'])) {
+    $data = [];
+    $data['req'] = 'export';
+    $data['mode'] = 'get' . $_GET['export'];
+    if (!empty($_GET['note']) && is_numeric($_GET['note'])) $data['note'] = $_GET['note'];
+  }
+  else if (!empty($_GET['upload'])) {
+    $data = [];
+    $data['req'] = 'upload';
+    $data['file'] = $_GET['upload'];
+  }
+  else fatalerr('Invalid request');
 }
 
 $password = query_setting('password', '');
@@ -34,6 +46,10 @@ if (!empty($password)) {
   session_start();
   $instance = str_replace('/', '-', dirname($_SERVER['REQUEST_URI']));
   if (empty($_SESSION['login'.$instance])) {
+    if ($data['req'] == 'upload') { // This mode is unable to authenticate; reject immediately
+      print "Permission denied; please login to your FlowNotes first.";
+      exit();
+    }
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $keys = query_setting('webauthnkeys', '');
     if (!empty($keys)) $challenge = $webauthn->prepareForLogin($keys);
@@ -369,6 +385,15 @@ switch ($data['req']) {
         break;
     }
     break;
+  case 'upload':
+    $file = 'uploads/' . $data['file'];
+    if (!is_file($file)) print "File not found";
+    else if (!is_readable($file)) print "Permission to read file denied";
+    header('Content-type: ' . mime_content_type($file));
+    header('Content-length: ' . filesize($file));
+    header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file) . ' GMT'));
+    readfile($file);
+    exit();
   case 'logout':
     send_and_exit([ 'modalerror' => 'Logout has no function without a configured password' ]);
   default:
@@ -847,6 +872,19 @@ function handle_cli() {
   exit();
 }
 
+function handle_uploads() {
+  $ret = [];
+  if (empty($_POST['note']) || !is_numeric($_POST['note'])) fatalerr('Invalid note id in file upload');
+  foreach ($_FILES as $file) {
+    if (empty($file['name']) || empty($file['type'])) fatalerr('Invalid file upload');
+    if ($file['error'] != 0) fatalerr('Error in file upload');
+    $name = preg_replace('/[^a-zA-Z0-9.]+/', '-', $file['name']);
+    if (!move_uploaded_file($file['tmp_name'], "uploads/$name")) fatalerr('Failed to save uploaded file');
+    $ret[] = [ 'name' => $file['name'], 'path' => "uploads/$name", 'type' => $file['type'] ];
+  }
+  send_and_exit([ 'note' => $_POST['note'], 'files' => $ret ]);
+}
+
 function getDevice() {
   $useragent = $_SERVER['HTTP_USER_AGENT'] ?? '';
   if (empty($useragent)) return 'Unknown';
@@ -990,6 +1028,9 @@ function fatalerr($msg) {
   header('Content-type: application/json');
   print json_encode([ 'error' => $msg ]);
   exit(1);
+}
+function dbg($var) {
+  error_log('FlowNotes debug: ' . var_export($var, true));
 }
 
 function publish($note, $file, $type) {

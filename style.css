@@ -38,6 +38,7 @@ DIV.sidepanel A { text-decoration: none; color: inherit; }
 DIV#panel-left { position: relative; display: flex; flex-direction: column; }
 DIV#panel-right { margin-right: -20rem; }
 DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 252px; max-width: calc(100vw - 68px); }
+TEXTAREA#input.dragging-file { border: solid green 5px; }
 DIV.panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
 #button-mode-edit { position: relative; }

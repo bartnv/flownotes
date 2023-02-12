@@ -18,6 +18,7 @@ let app = {
   hidepanelright: true,
   lastpanelright: 'links',
   keys: [],
+  uploads: [],
   scroll: { recent: 0, search: 0, pinned: 0 },
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
@@ -47,6 +48,8 @@ $(document).on('keydown', function(evt) {
     tourStep();
     return false;
   }
+}).on('dragover', function(evt) {
+  evt.preventDefault();
 });
 
 $().ready(function() {
@@ -66,6 +69,9 @@ $().ready(function() {
         }
         href = '#' + app.activenote + '_' + title;
         return '<a class="link-head" href="' + href + '" title="' + title + '">' + text + '</a>';
+      }
+      else if (href.match(/^uploads/)) {
+        return '<a class="link-ext" href="data.php?upload=' + href.substring(8) + '" title="' + title + '" target="_blank">' + text + '</a>';
       }
       return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
     },
@@ -303,6 +309,18 @@ $().ready(function() {
       let input = $('#input')[0];
       cursorActivate(input.value, input.selectionStart);
     }
+  }).on('dragenter', function(evt) {
+    $(this).addClass('dragging-file');
+  }).on('dragleave', function(evt) {
+    $(this).removeClass('dragging-file');
+  }).on('drop', function(evt) {
+    $(this).removeClass('dragging-file');
+    if (app.uploads.length) {
+      $('#status').text('Please wait for the previous upload to finish').css('opacity', 1);
+      return;
+    }
+    for (let file of evt.originalEvent.dataTransfer.files) app.uploads.push(file);
+    doUpload();
   });
   $('#render').on('click', 'code', function (e) {
     if (!navigator.clipboard) return;
@@ -768,6 +786,7 @@ function cursorActivate(text, cursor) {
 
   if (res.substring(0, 1) == '#') window.location = res;
   else if (res.substring(0, 4) == 'http') window.open(res, '_blank', 'noopener');
+  else if (res.substring(0, 8) == 'uploads/') window.open('data.php?upload=' + res.substring(8));
 }
 
 function tick() {
@@ -1669,6 +1688,36 @@ Element.prototype.customScrollIntoView = function() {
     this.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   else this.scrollIntoView();
+}
+
+function doUpload() {
+  let data, xhr, file = app.uploads.shift();
+  if (!file) return;
+
+  data = new FormData();
+  data.append('note', app.activenote);
+  data.append('file', file);
+  xhr = new XMLHttpRequest();
+  xhr.open('POST', 'data.php');
+  xhr.onload = function(evt) {
+    console.log(this, evt);
+    if ((this.status == 200) && this.response.length) {
+      let data = JSON.parse(this.response);
+      let cursor = $('#input').getCursorPosition();
+      let before = $('#input').val().substring(0, cursor.start);
+      let after = $('#input').val().substring(cursor.end);
+      let links = '';
+      for (let file of data.files) {
+        links += '[' + file.name + '](' + file.path + ')\n';
+      }
+      $('#input').val(before + links + after).setCursorPosition(cursor.start+links.length);
+      app.notes[data.note].touched = true;
+      $('.note-li[data-id=' + data.note + ']').addClass('note-touched');
+      $('#button-mode-edit').addClass('button-touched');
+    }
+    if (app.uploads.length) doUpload();
+  }
+  xhr.send(data);
 }
 
 // WebAuthn support by David Earl - https://github.com/davidearl/webauthn/
