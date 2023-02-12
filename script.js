@@ -290,6 +290,11 @@ $().ready(function() {
       $('.note-li[data-id=' + app.activenote + ']').addClass('note-touched');
       $('#button-mode-edit').addClass('button-touched');
     }
+    else if (app.notes[app.activenote].content == $('#input').val()) {
+      app.notes[app.activenote].touched = false;
+      $('.note-li[data-id=' + app.activenote + ']').removeClass('note-touched');
+      $('#button-mode-edit').removeClass('button-touched');
+    }
     app.inactive = 0;
     // if (!app.offline && (app.lastcomm < Date.now()-90000)) $('#status').html('No communication with server; changes are not being saved').css('opacity', 1);
     updateStats();
