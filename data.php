@@ -36,6 +36,7 @@ else {
   else if (!empty($_GET['upload'])) {
     $data = [];
     $data['req'] = 'upload';
+    $data['mode'] = 'get';
     $data['file'] = $_GET['upload'];
   }
   else fatalerr('Invalid request');
@@ -386,14 +387,22 @@ switch ($data['req']) {
     }
     break;
   case 'upload':
-    $file = 'uploads/' . $data['file'];
-    if (!is_file($file)) print "File not found";
-    else if (!is_readable($file)) print "Permission to read file denied";
-    header('Content-type: ' . mime_content_type($file));
-    header('Content-length: ' . filesize($file));
-    header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file) . ' GMT'));
-    readfile($file);
-    exit();
+    switch ($data['mode']) {
+      case 'get':
+        $file = 'uploads/' . $data['file'];
+        if (!is_file($file)) print "File not found";
+        else if (!is_readable($file)) print "Permission to read file denied";
+        header('Content-type: ' . mime_content_type($file));
+        header('Content-length: ' . filesize($file));
+        header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file) . ' GMT'));
+        readfile($file);
+        exit();
+        break;
+      case 'list':
+        $data['uploads'] = true;
+        break;
+    }
+    break;
   case 'logout':
     send_and_exit([ 'modalerror' => 'Logout has no function without a configured password' ]);
   default:
@@ -413,6 +422,10 @@ if (!empty($data['lastupdate'])) {
 if (!empty($data['snapshots']) && !empty($activenote)) {
   $ret['snapshotsfrom'] = $activenote;
   $ret['snapshots'] = select_note_snapshots($activenote);
+}
+if (!empty($data['uploads']) && !empty($activenote)) {
+  $ret['uploadsfrom'] = $activenote;
+  $ret['uploads'] = select_note_uploads($activenote);
 }
 
 send_and_exit($ret);
@@ -555,6 +568,12 @@ function select_note_snapshots($id) {
   }
   return $snapshots;
 }
+function select_note_uploads($id) {
+  $uploads = [];
+  $uploads['linked'] = sql_rows_collect("SELECT id, filename, title, modified FROM upload WHERE note = ? AND unlinked IS NULL", [ $id ]);
+  $uploads['unlinked'] = sql_rows_collect("SELECT id, filename, title, modified, unlinked FROM upload WHERE unlinked IS NOT NULL");
+  return $uploads;
+}
 function add_snapshot($id, $locked = 0) {
   global $dbh;
   if (!($stmt = $dbh->prepare("INSERT INTO snapshot (note, modified, locked, title, content) SELECT id, modified, $locked, title, content FROM note WHERE id = ?"))) {
@@ -662,6 +681,7 @@ function search_notes($term) {
   }
   return $notes;
 }
+
 function update_note($id, $note) {
   global $dbh;
   if ($note['pinned']) {
@@ -710,8 +730,8 @@ function update_note($id, $note) {
     error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
     return [];
   }
-  update_links($id, $note['content']);
 
+  update_links($id, $note['content']);
   if (!($stmt = $dbh->query("SELECT note.modified, note.pinned, group_concat(flink.target) AS flinks, group_concat(blink.source) AS blinks FROM note LEFT JOIN link AS flink ON flink.source = note.id LEFT JOIN link AS blink ON blink.target = note.id WHERE note.id = $id"))) {
     error_log("update_note() select query failed: " . $dbh->errorInfo()[2]);
     return [];
@@ -722,6 +742,8 @@ function update_note($id, $note) {
   }
   if (!empty($row['flinks'])) $row['flinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['flinks']))));
   if (!empty($row['blinks'])) $row['blinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['blinks']))));
+
+  update_uploads($id, $note['content']);
 
   $rows = [];
   $rows[$id] = $row;
@@ -761,6 +783,19 @@ function update_backlinks($id, $target, $title) {
   $content = preg_replace("/\[=[^]]*\]\(#$target\)/", "[=$title](#$target)", $content);
   if (!sql_updateone("UPDATE note SET content = ?, changed = strftime('%s', 'now') WHERE id = $id", [ $content ])) fatalerr("Failed to update backlinks in note $id");
 }
+function update_uploads($id, $content) {
+  sql_single("UPDATE upload SET unlinked = strftime('%s', 'now') WHERE note = ?", [ $id ]);
+  if (!preg_match_all('/\[([^]]+)\]\(uploads\/([A-Za-z0-9.-]+)\)/', $content, $matches)) return;
+  for ($i = 0; isset($matches[1][$i]); $i++) {
+    $title = $matches[1][$i];
+    $filename = $matches[2][$i];
+    if (!is_file("uploads/$filename")) continue;
+    $upload = sql_single("SELECT id FROM upload WHERE note = ? AND filename = ?", [ $id, $filename ]);
+    if ($upload) sql_single("UPDATE upload SET title = ?, unlinked = NULL WHERE id = ?", [ $title, $upload ]);
+    else sql_single("INSERT INTO upload (note, filename, title, unlinked) VALUES (?, ?, ?, NULL)", [ $id, $filename, $title ]);
+  }
+}
+
 function update_note_meta($id, $note) {
   global $dbh;
 
@@ -880,6 +915,7 @@ function handle_uploads() {
     if ($file['error'] != 0) fatalerr('Error in file upload');
     $name = preg_replace('/[^a-zA-Z0-9.]+/', '-', $file['name']);
     if (!move_uploaded_file($file['tmp_name'], "uploads/$name")) fatalerr('Failed to save uploaded file');
+    sql_updateone("INSERT INTO upload (note, filename, title) VALUES (?, ?, ?)", [ $_POST['note'], $name, $file['name'] ]);
     $ret[] = [ 'name' => $file['name'], 'path' => "uploads/$name", 'type' => $file['type'] ];
   }
   send_and_exit([ 'note' => $_POST['note'], 'files' => $ret ]);

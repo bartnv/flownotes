@@ -5,6 +5,7 @@ let app = {
   mode: 'edit',
   activenote: null,
   snapshots: null,
+  uploads: null,
   notes: [],
   recent: 0,
   inactive: 0,
@@ -18,7 +19,7 @@ let app = {
   hidepanelright: true,
   lastpanelright: 'links',
   keys: [],
-  uploads: [],
+  uploadqueue: [],
   scroll: { recent: 0, search: 0, pinned: 0 },
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
@@ -315,11 +316,11 @@ $().ready(function() {
     $(this).removeClass('dragging-file');
   }).on('drop', function(evt) {
     $(this).removeClass('dragging-file');
-    if (app.uploads.length) {
+    if (app.uploadqueue.length) {
       $('#status').text('Please wait for the previous upload to finish').css('opacity', 1);
       return;
     }
-    for (let file of evt.originalEvent.dataTransfer.files) app.uploads.push(file);
+    for (let file of evt.originalEvent.dataTransfer.files) app.uploadqueue.push(file);
     doUpload();
   });
   $('#render').on('click', 'code', function (e) {
@@ -451,6 +452,18 @@ $().ready(function() {
   $('#input').on('mouseup', function() {
     if (app.prepended) app.prepended = null;
     let input = $(this);
+    if (app.linkupload) {
+      let content = input.val();
+      if (this.selectionStart != this.selectionEnd) { // We have text selected, use as linktext
+        var linkstr = '[' + content.substring(this.selectionStart, this.selectionEnd) + '](uploads/' + app.linkupload.filename + ')';
+      }
+      else var linkstr = '[' + app.linkupload.title + '](uploads/' + app.linkupload.filename + ')';
+      let pos = this.selectionStart + linkstr.length;
+      input.val(content.substring(0, this.selectionStart) + linkstr + content.substring(this.selectionEnd));
+      this.setSelectionRange(pos, pos);
+      input.trigger('input');
+      return;
+    }
     if (!app.linkid) {
       if (!app.changed) app.changed = Date.now();
       return;
@@ -477,6 +490,12 @@ $().ready(function() {
       $(window).off('mousemove');
       app.linkid = null;
     }
+    else if (app.linkupload) {
+      $('.note-selected').removeClass('note-selected');
+      $('body').removeClass('dragging');
+      $(window).off('mousemove');
+      app.linkupload = null;
+    }
   });
   $('#buttons-left').on('click', '.button-mode', function() {
     switchMode(this.id.split('-')[2]);
@@ -497,6 +516,9 @@ $().ready(function() {
         break;
       case 'toc':
         loadToc();
+        break;
+      case 'uploads':
+        loadUploads();
         break;
     }
     $(this).addClass('button-active').siblings('.button-mode').removeClass('button-active');
@@ -786,7 +808,7 @@ function cursorActivate(text, cursor) {
 
   if (res.substring(0, 1) == '#') window.location = res;
   else if (res.substring(0, 4) == 'http') window.open(res, '_blank', 'noopener');
-  else if (res.substring(0, 8) == 'uploads/') window.open('data.php?upload=' + res.substring(8));
+  else if (res.substring(0, 8) == 'uploads/') window.open('data.php?upload=' + res.substring(8), '_blank');
 }
 
 function tick() {
@@ -819,7 +841,10 @@ function idle() {
 
 function pushUpdate(beacon, retransmit) {
   let data = { req: 'update', activenote: app.activenote, notes: {}, lastupdate: app.lastupdate };
-  if (!app.hidepanelright && (app.lastpanelright == 'snaps')) data.snapshots = true;
+  if (!app.hidepanelright) {
+    if (app.lastpanelright == 'snaps') data.snapshots = true;
+    else if (app.lastpanelright == 'uploads') data.uploads = true;
+  }
   if ($('#label-search').hasClass('tab-active') && $('#search-input').val().length) data.term = $('#search-input').val();
   for (let i in app.notes) {
     if (app.notes[i].touched) {
@@ -926,6 +951,10 @@ function parseFromServer(data, textStatus, xhr) {
     app.snapshots = data.snapshots;
     updateSnapshots();
     if (window.location.hash.indexOf('@') > -1) $(window).trigger('hashchange');
+  }
+  if ((data.uploads) && (data.uploadsfrom == app.activenote)) {
+    app.uploads = data.uploads;
+    loadUploads();
   }
 
   let reload = false;
@@ -1129,6 +1158,9 @@ function updatePanels() {
       case 'toc':
         loadToc();
         break;
+      case 'uploads':
+        loadUploads();
+        break;
     }
   }
 }
@@ -1232,6 +1264,55 @@ function updateSnapshots() {
     div.append(str);
   }
 }
+function loadUploads() {
+  let div = $('#tab-right').empty()
+    .append('<div class="list-divider">Files linked to this note</div><div id="uploads-linked" class="scrolly"></div><div class="list-divider">Unlinked files</div><div id="uploads-unlinked" class="scrolly"></div>');
+  let linked = div.find('#uploads-linked');
+  if (!app.uploads) {
+    sendToServer({ req: 'upload', mode: 'list', activenote: app.activenote });
+    linked.append(app.loader);
+    return;
+  }
+
+  if (!app.uploads.linked?.length) linked.append('<div class="list-none">- none -</div>');
+  else {
+    for (let upload of app.uploads.linked) {
+      let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
+      str += '<span class="upload-title">' + upload.title + '</span><br>';
+      str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
+      str += '</div>';
+      linked.append(str);
+    }
+  }
+
+  let unlinked = div.find('#uploads-unlinked');
+  if (!app.uploads.unlinked?.length) unlinked.append('<div class="list-none">- none -</div>');
+  else {
+    for (let upload of app.uploads.unlinked) {
+      let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
+      str += '<span class="upload-title">' + upload.title + '</span><br>';
+      str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
+      str += '<span class="upload-modified">unlinked at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
+      str += '<div class="upload-action upload-delete" title="Delete"></div>';
+      str += '</div>';
+      unlinked.append(str);
+    }
+  }
+
+  $(linked).add(unlinked).on('click', '.upload-li', function(evt) {
+    let upload = $(evt.currentTarget);
+    window.open('data.php?upload=' + upload.data('filename'), '_blank');
+  });
+  $(linked).on('mousedown', function() { return false; });
+  $(unlinked).on('mousedown', '.upload-li', function (evt) {
+    let upload = $(evt.currentTarget).addClass('note-selected');
+    app.linkupload = upload.data();
+    $(window).one('mousemove', function(evt) {
+      $('body').addClass('dragging');
+    });
+    return false;
+  });
+}
 
 function findTitle(text) {
   let matches = text.substring(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'&()-]+[a-zA-Z\u00C0-\u024F0-9)])/mg);
@@ -1249,6 +1330,7 @@ function activateNote(id, nopost) {
   }
   app.activenote = id;
   app.snapshots = null;
+  app.uploads = null;
   $('.note-li').removeClass('note-active');
   $('a[href="#' + app.activenote + '"]').children().addClass('note-active');
   if (app.notes[id] && (app.notes[id].touched || (app.notes[id].intransit == 'full'))) $('#button-mode-edit').addClass('button-touched');
@@ -1256,7 +1338,10 @@ function activateNote(id, nopost) {
   $('#stats').hide();
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
-    if (!app.hidepanelright && (app.lastpanelright == 'snaps')) data.snapshots = true;
+    if (!app.hidepanelright) {
+      if (app.lastpanelright == 'snaps') data.snapshots = true;
+      else if (app.lastpanelright == 'uploads') data.uploads = true;
+    }
     if (app.notes[id] && (app.notes[id].content !== undefined)) {
       loadNote(app.activenote);
       updatePanels();
@@ -1691,7 +1776,7 @@ Element.prototype.customScrollIntoView = function() {
 }
 
 function doUpload() {
-  let data, xhr, file = app.uploads.shift();
+  let data, xhr, file = app.uploadqueue.shift();
   if (!file) return;
 
   data = new FormData();
@@ -1700,7 +1785,6 @@ function doUpload() {
   xhr = new XMLHttpRequest();
   xhr.open('POST', 'data.php');
   xhr.onload = function(evt) {
-    console.log(this, evt);
     if ((this.status == 200) && this.response.length) {
       let data = JSON.parse(this.response);
       let cursor = $('#input').getCursorPosition();
@@ -1714,8 +1798,9 @@ function doUpload() {
       app.notes[data.note].touched = true;
       $('.note-li[data-id=' + data.note + ']').addClass('note-touched');
       $('#button-mode-edit').addClass('button-touched');
+      if (!app.changed) app.changed = Date.now();
     }
-    if (app.uploads.length) doUpload();
+    if (app.uploadqueue.length) doUpload();
   }
   xhr.send(data);
 }
