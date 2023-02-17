@@ -784,16 +784,24 @@ function update_backlinks($id, $target, $title) {
   if (!sql_updateone("UPDATE note SET content = ?, changed = strftime('%s', 'now') WHERE id = $id", [ $content ])) fatalerr("Failed to update backlinks in note $id");
 }
 function update_uploads($id, $content) {
-  sql_single("UPDATE upload SET unlinked = strftime('%s', 'now') WHERE note = ?", [ $id ]);
-  if (!preg_match_all('/\[([^]]+)\]\(uploads\/([A-Za-z0-9.-]+)\)/', $content, $matches)) return;
+  sql_single("UPDATE upload SET unlinked = strftime('%s', 'now') WHERE note = ? AND unlinked IS NULL", [ $id ]);
+  preg_match_all('/\[([^]]+)\]\(uploads\/([A-Za-z0-9.-]+)\)/', $content, $matches);
   for ($i = 0; isset($matches[1][$i]); $i++) {
     $title = $matches[1][$i];
     $filename = $matches[2][$i];
     if (!is_file("uploads/$filename")) continue;
     $upload = sql_single("SELECT id FROM upload WHERE note = ? AND filename = ?", [ $id, $filename ]);
     if ($upload) sql_single("UPDATE upload SET title = ?, unlinked = NULL WHERE id = ?", [ $title, $upload ]);
-    else sql_single("INSERT INTO upload (note, filename, title, unlinked) VALUES (?, ?, ?, NULL)", [ $id, $filename, $title ]);
+    else sql_single("INSERT INTO upload (note, filename, title, modified, unlinked) VALUES (?, ?, ?, ?, NULL)", [ $id, $filename, $title, filemtime("uploads/$filename") ]);
   }
+  sql_foreach("SELECT id, filename FROM upload WHERE note = ? AND unlinked IS NOT NULL",
+    function($row) { // Delete this entry if the file is still linked elsewhere
+      if (sql_if("SELECT 1 FROM upload WHERE filename = ? AND unlinked IS NULL", [ $row['filename'] ])) {
+        sql_single("DELETE FROM upload WHERE id = ?", [ $row['id'] ]);
+      }
+    },
+    [ $id ]
+  );
 }
 
 function update_note_meta($id, $note) {
