@@ -1268,7 +1268,7 @@ function updateSnapshots() {
 }
 function loadUploads() {
   let div = $('#tab-right').empty()
-    .append('<div class="list-divider">Files linked to this note</div><div id="uploads-linked" class="scrolly"></div><div class="list-divider">Unlinked files</div><div id="uploads-unlinked" class="scrolly"></div>');
+    .append('<div class="list-divider">Files linked to this note</div><div id="uploads-linked" class="scrolly"></div><div class="list-divider mta">Unlinked files</div><div id="uploads-unlinked" class="scrolly"></div>');
   let linked = div.find('#uploads-linked');
   if (!app.uploads) {
     sendToServer({ req: 'upload', mode: 'list', activenote: app.activenote });
