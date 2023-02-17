@@ -630,8 +630,17 @@ $().ready(function() {
     location.hash = '#' + note.id;
   });
 
+  let instance = '-';
+  instance += location.pathname.split('/').slice(1, -1).join('-');
+  $('.sidepanel').addClass('notransition');
+  if (localStorage.getItem('flownotes' + instance + 'hidepanelleft') == 'true') togglePanelLeft('close');
+  if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') {
+    $('#button-' + localStorage.getItem('flownotes' + instance + 'lastpanelright')).click();
+  }
+
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 4000);
+  setTimeout(function() { $('.sidepanel').removeClass('notransition'); }, 500);
 });
 
 function init() {
@@ -891,15 +900,7 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.alert) alert(data.alert);
   if (data.log) console.log(data.log);
   if (data.logout) return logout();
-  if (!app.init) {
-    app.init = true;
-    let instance = '-';
-    instance += location.pathname.split('/').slice(1, -1).join('-');
-    if (localStorage.getItem('flownotes' + instance + 'hidepanelleft') == 'true') togglePanelLeft('close');
-    if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') {
-      $('#button-' + localStorage.getItem('flownotes' + instance + 'lastpanelright')).click();
-    }
-  }
+  if (!app.init) app.init = true;
   if (data.lastupdate) app.lastupdate = data.lastupdate;
   app.lastcomm = Date.now();
   if (app.offline) {
