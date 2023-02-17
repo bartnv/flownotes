@@ -461,6 +461,7 @@ $().ready(function() {
       let pos = this.selectionStart + linkstr.length;
       input.val(content.substring(0, this.selectionStart) + linkstr + content.substring(this.selectionEnd));
       this.setSelectionRange(pos, pos);
+      app.changed = Date.now()-60000; // Force a pushUpdate on the next tick
       input.trigger('input');
       return;
     }
