@@ -153,6 +153,10 @@ switch ($data['req']) {
     break;
   case 'idle':
     if (query_setting('autoprune', 0) && (date('i') == '13')) $ret['log'] = prune_snapshots();
+    if (date('i') == '22') {
+      $data['uploads'] = true;
+      check_uploads();
+    }
     sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
     break;
   case 'update':
@@ -581,7 +585,7 @@ function select_note_snapshots($id) {
 function select_note_uploads($id) {
   $uploads = [];
   $uploads['linked'] = sql_rows_collect("SELECT id, filename, title, modified FROM upload WHERE note = ? AND unlinked IS NULL", [ $id ]);
-  $uploads['unlinked'] = sql_rows_collect("SELECT id, filename, title, modified, unlinked FROM upload WHERE unlinked IS NOT NULL");
+  $uploads['unlinked'] = sql_rows_collect("SELECT id, note, filename, title, modified, unlinked FROM upload WHERE unlinked IS NOT NULL");
   return $uploads;
 }
 function add_snapshot($id, $locked = 0) {
@@ -652,6 +656,20 @@ function prune_snapshots() {
   );
   $count = sql_updatecount("DELETE FROM snapshot WHERE todelete = 1");
   return 'Snapshot prune took ' . round(microtime(true)-$now, 2) . 's and deleted ' . $count . ' snapshots';
+}
+function check_uploads() {
+  if ($dh = opendir('uploads')) {
+    while ($file = readdir($dh)) {
+      if (substr($file, 0, 1) == '.') continue;
+      if (!is_file("uploads/$file")) continue;
+      if (!is_readable("uploads/$file")) continue;
+      if (!sql_if("SELECT id FROM upload WHERE filename = ?", [ $file ])) {
+        sql_single("INSERT INTO upload (filename, title, modified) VALUES (?, ?, ?)", [ $file, $file, filemtime("uploads/$file") ]);
+        error_log("FlowNotes: detected untracked file $file in uploads directory; added to database");
+      }
+    }
+    closedir($dh);
+  }
 }
 
 function search_notes($term) {
@@ -800,8 +818,8 @@ function update_uploads($id, $content) {
     $title = $matches[1][$i];
     $filename = $matches[2][$i];
     if (!is_file("uploads/$filename")) continue;
-    $upload = sql_single("SELECT id FROM upload WHERE note = ? AND filename = ?", [ $id, $filename ]);
-    if ($upload) sql_single("UPDATE upload SET title = ?, unlinked = NULL WHERE id = ?", [ $title, $upload ]);
+    $upload = sql_single("SELECT id FROM upload WHERE (note = ? OR note IS NULL) AND filename = ?", [ $id, $filename ]);
+    if ($upload) sql_single("UPDATE upload SET note = ?, title = ?, unlinked = NULL WHERE id = ?", [ $id, $title, $upload ]);
     else sql_single("INSERT INTO upload (note, filename, title, modified, unlinked) VALUES (?, ?, ?, ?, NULL)", [ $id, $filename, $title, filemtime("uploads/$filename") ]);
   }
   sql_foreach("SELECT id, filename FROM upload WHERE note = ? AND unlinked IS NOT NULL",

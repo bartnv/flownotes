@@ -1294,7 +1294,7 @@ function loadUploads() {
       let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
       str += '<span class="upload-title">' + upload.title + '</span><br>';
       str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
-      str += '<span class="upload-modified">unlinked at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
+      str += '<span class="upload-modified">' + (upload.note?'unlinked':'discovered') + ' at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
       str += '<div class="upload-action upload-delete" title="Delete"></div>';
       str += '</div>';
       unlinked.append(str);
