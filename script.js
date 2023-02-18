@@ -1299,6 +1299,16 @@ function loadUploads() {
       str += '</div>';
       unlinked.append(str);
     }
+
+    $('#uploads-unlinked').on('click', '.upload-delete', function() {
+      let upload = $(this).parent();
+      if (confirm("Are you sure you want to permanently delete " + upload.data('title') + " (" + upload.data('filename') + ")?")) {
+        sendToServer({ req: 'upload', mode: 'del', id: upload.data('id'), activenote: app.activenote });
+        upload.find('.upload-modified,br').remove();
+        upload.append(app.loader);
+      }
+      return false;
+    });
   }
 
   $(linked).add(unlinked).on('click', '.upload-li', function(evt) {

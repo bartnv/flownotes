@@ -401,6 +401,16 @@ switch ($data['req']) {
       case 'list':
         $data['uploads'] = true;
         break;
+      case 'del':
+        $data['uploads'] = true;
+        $filename = sql_single("SELECT filename FROM upload WHERE id = ?", [ $data['id'] ]);
+        if (empty($filename)) fatalerr("Upload with id " . $data['id'] . " not found");
+        sql_single("DELETE FROM upload WHERE id = ? AND unlinked IS NOT NULL", [ $data['id'] ]);
+        if (!@unlink("uploads/$filename")) {
+          if (is_file("uploads/$filename")) fatalerr("Failed to delete uploaded file 'uploads/$filename'");
+          fatalerr("Uploaded file 'uploads/$filename' was already removed");
+        }
+        break;
     }
     break;
   case 'logout':
