@@ -999,10 +999,12 @@ function handle_uploads() {
   foreach ($_FILES as $file) {
     if (empty($file['name']) || empty($file['type'])) fatalerr('Invalid file upload');
     if ($file['error'] != 0) fatalerr('Error in file upload');
-    $name = preg_replace('/[^a-zA-Z0-9.]+/', '-', $file['name']);
-    if (!move_uploaded_file($file['tmp_name'], "uploads/$name")) fatalerr('Failed to save uploaded file');
-    sql_updateone("INSERT INTO upload (note, filename, title) VALUES (?, ?, ?)", [ $_POST['note'], $name, $file['name'] ]);
-    $ret[] = [ 'name' => $file['name'], 'path' => "uploads/$name", 'type' => $file['type'] ];
+    $title = preg_replace('/\.[A-Za-z0-9]{1,4}$/', '', $file['name']);
+    if (empty($title)) $title = $file['name'];
+    $filename = preg_replace('/[^a-zA-Z0-9.]+/', '-', $file['name']);
+    if (!move_uploaded_file($file['tmp_name'], "uploads/$filename")) fatalerr('Failed to save uploaded file');
+    sql_updateone("INSERT INTO upload (note, filename, title) VALUES (?, ?, ?)", [ $_POST['note'], $filename, $title ]);
+    $ret[] = [ 'name' => $title, 'path' => "uploads/$filename", 'type' => $file['type'] ];
   }
   send_and_exit([ 'note' => $_POST['note'], 'files' => $ret ]);
 }
