@@ -74,6 +74,7 @@ DIV#render { box-sizing: border-box; padding: 0 20px; overflow: auto; }
 .upload-li { position: relative; margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; color: rgb(240,240,240); background-color: #705350; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .upload-title { font-weight: bold; line-height: 1.4; }
 .upload-modified { font-size: 0.9em; white-space: nowrap; }
+.upload-modified A { text-decoration: underline !important; }
 .upload-action { position: absolute; right: 3px; width: 18px; height: 18px; }
 .upload-delete { top: 3px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 120 120"><path stroke="red" stroke-width="8" stroke-linecap="round" d="m14,14 92,92m0-92-92,92"/></svg>'); }
 .toc-li { margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #BD9BB1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

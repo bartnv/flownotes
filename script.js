@@ -1296,7 +1296,11 @@ function loadUploads() {
       str += '<span class="upload-title">' + upload.title + '</span><br>';
       if (upload.modified) str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
       else str += '<span class="upload-modified">⚠ file not found in uploads folder ⚠</span><br>'
-      str += '<span class="upload-modified">' + (upload.note?'unlinked':'discovered') + ' at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
+      if (upload.note) {
+        let a = '<a href="./#' + upload.note + '" title="' + app.notes[upload.note]?.title + '">#' + upload.note + '</a>';
+        str += '<span class="upload-modified">unlinked from ' + a + ' at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
+      }
+      else str += '<span class="upload-modified">discovered in uploads at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
       str += '<div class="upload-action upload-delete" title="Delete"></div>';
       str += '</div>';
       unlinked.append(str);
@@ -1314,6 +1318,7 @@ function loadUploads() {
   }
 
   $(linked).add(unlinked).on('click', '.upload-li', function(evt) {
+    if (evt.target.nodeName == 'A') return;
     let upload = $(evt.currentTarget);
     window.open('data.php?upload=' + upload.data('filename'), '_blank');
   });
@@ -1821,7 +1826,8 @@ function doUpload() {
       app.notes[data.note].touched = true;
       $('.note-li[data-id=' + data.note + ']').addClass('note-touched');
       $('#button-mode-edit').addClass('button-touched');
-      if (!app.changed) app.changed = Date.now();
+      $('#uploads-linked').append(app.loader);
+      app.changed = Date.now()-60000; // Force a pushUpdate on the next tick
     }
     if (app.uploadqueue.length) doUpload();
   }
