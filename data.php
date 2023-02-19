@@ -863,7 +863,7 @@ function update_backlinks($id, $target, $title) {
 }
 function update_uploads($id, $content) {
   sql_single("UPDATE upload SET unlinked = strftime('%s', 'now') WHERE note = ? AND unlinked IS NULL", [ $id ]);
-  preg_match_all('/\[([^]]+)\]\(uploads\/([A-Za-z0-9.-]+)\)/', $content, $matches);
+  preg_match_all('/\[([^]]+)\]\(uploads\/([A-Za-z0-9._-]+)\)/', $content, $matches);
   for ($i = 0; isset($matches[1][$i]); $i++) {
     $title = $matches[1][$i];
     $filename = $matches[2][$i];
@@ -1003,6 +1003,7 @@ function handle_uploads() {
     if (empty($title)) $title = $file['name'];
     $iter = 1;
     $base = preg_replace('/[^a-zA-Z0-9.]+/', '-', $file['name']);
+    if (substr($base, 0, 1) == '.') $base = '_' . substr($base, 1);
     $filename = $base . '-' . $iter;
     while (file_exists("uploads/$filename")) {
       $iter += 1;
