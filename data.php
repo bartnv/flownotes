@@ -153,9 +153,9 @@ switch ($data['req']) {
     break;
   case 'idle':
     if (query_setting('autoprune', 0) && (date('i') == '13')) $ret['log'] = prune_snapshots();
-    if (date('i') == '22') {
+    if (date('i') == '43') {
       $data['uploads'] = true;
-      check_uploads();
+      $ret['log'] = check_uploads();
     }
     sql_single("DELETE FROM auth_token WHERE expires < strftime('%s', 'now')");
     break;
@@ -257,6 +257,7 @@ switch ($data['req']) {
         store_setting('prunedays', $data['prunedays']);
         store_setting('pruneweeks', $data['pruneweeks']);
         store_setting('prunemonths', $data['prunemonths']);
+        store_setting('autodelete', $data['autodelete']);
         if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['shareappend'])) store_setting('shareappend', $data['shareappend']);
         if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['templatenotes'])) store_setting('templatenotes', $data['templatenotes']);
         send_and_exit([ 'settings' => 'stored' ]);
@@ -277,6 +278,8 @@ switch ($data['req']) {
         $settings['prunemonths'] = query_setting('prunemonths', 5);
         $settings['shareappend'] = query_setting('shareappend', '');
         $settings['templatenotes'] = query_setting('templatenotes', '');
+        $settings['autodelete'] = query_setting('autodelete', null);
+        $settings['uploadstats'] = get_uploads_stats();
         $settings['tokens'] = sql_rows_collect("SELECT id, device FROM auth_token WHERE expires > strftime('%s', 'now')");
         send_and_exit([ 'webauthn' => 'list', 'keys' => $ret, 'settings' => $settings ]);
       case 'share':
@@ -395,11 +398,13 @@ switch ($data['req']) {
       case 'get':
         $file = 'uploads/' . $data['file'];
         if (!is_file($file)) print "File not found";
-        else if (!is_readable($file)) print "Permission to read file denied";
-        header('Content-type: ' . mime_content_type($file));
-        header('Content-length: ' . filesize($file));
-        header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file) . ' GMT'));
-        readfile($file);
+        elseif (!is_readable($file)) print "Permission to read file denied";
+        else {
+          header('Content-type: ' . mime_content_type($file));
+          header('Content-length: ' . filesize($file));
+          header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file) . ' GMT'));
+          readfile($file);
+        }
         exit();
         break;
       case 'list':
@@ -658,6 +663,8 @@ function prune_snapshots() {
   return 'Snapshot prune took ' . round(microtime(true)-$now, 2) . 's and deleted ' . $count . ' snapshots';
 }
 function check_uploads() {
+  $found = 0;
+  $deleted = 0;
   if ($dh = opendir('uploads')) {
     while ($file = readdir($dh)) {
       if (substr($file, 0, 1) == '.') continue;
@@ -666,10 +673,53 @@ function check_uploads() {
       if (!sql_if("SELECT id FROM upload WHERE filename = ?", [ $file ])) {
         sql_single("INSERT INTO upload (filename, title, modified) VALUES (?, ?, ?)", [ $file, $file, filemtime("uploads/$file") ]);
         error_log("FlowNotes: detected untracked file $file in uploads directory; added to database");
+        $found += 1;
       }
     }
     closedir($dh);
+
+    sql_foreach("SELECT id, filename, modified FROM upload",
+      function($row) {
+        if (!is_file('uploads/' . $row['filename'])) {
+          sql_single("UPDATE upload SET modified = NULL WHERE id = ?", [ $row['id'] ]);
+          error_log("FlowNotes: uploaded file " . $row['filename'] . " no longer found in uploads dir");
+        }
+        elseif (!$row['modified']) {
+          sql_single("UPDATE upload SET modified = ? WHERE id = ?", [ filemtime('uploads/' . $row['filename']), $row['id'] ]);
+          error_log("FlowNotes: uploaded file " . $row['filename'] . " rediscovered in uploads dir");
+        }
+      }
+    );
+
+    if ($deleteafter = query_setting('autodelete', null)) {
+      sql_foreach("SELECT id, filename FROM upload WHERE unlinked < ?",
+        function($row) use (&$deleted, $deleteafter) {
+          if (!unlink('uploads/' . $row['filename'])) error_log("FlowNotes: failed to delete uploaded file " . $row['filename']);
+          else {
+            sql_single('DELETE FROM upload WHERE id = ?', [ $row['id'] ]);
+            error_log("FlowNotes: deleted uploaded file " . $row['filename'] . " which was unlinked for more than $deleteafter days");
+            $deleted += 1;
+          }
+        },
+        [ (time()-86400)*$deleteafter ]
+      );
+    }
   }
+  if ($found || $deleted) return "Uploads check deleted $deleted unlinked files" . ($found?" and found $found untracked ones":'');
+}
+function get_uploads_stats() {
+  $files = 0;
+  $bytes = 0;
+  if ($dh = opendir('uploads')) {
+    while ($file = readdir($dh)) {
+      if (substr($file, 0, 1) == '.') continue;
+      if (!is_file("uploads/$file")) continue;
+      $files += 1;
+      $bytes += filesize("uploads/$file");
+    }
+    closedir($dh);
+  }
+  return [ 'files' => $files, 'bytes' => $bytes ];
 }
 
 function search_notes($term) {

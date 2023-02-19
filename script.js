@@ -1281,7 +1281,8 @@ function loadUploads() {
     for (let upload of app.uploads.linked) {
       let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
       str += '<span class="upload-title">' + upload.title + '</span><br>';
-      str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
+      if (upload.modified) str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
+      else str += '<span class="upload-modified">⚠ file not found in uploads folder ⚠</span><br>'
       str += '</div>';
       linked.append(str);
     }
@@ -1293,7 +1294,8 @@ function loadUploads() {
     for (let upload of app.uploads.unlinked) {
       let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
       str += '<span class="upload-title">' + upload.title + '</span><br>';
-      str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
+      if (upload.modified) str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
+      else str += '<span class="upload-modified">⚠ file not found in uploads folder ⚠</span><br>'
       str += '<span class="upload-modified">' + (upload.note?'unlinked':'discovered') + ' at ' + new Date(upload.unlinked*1000).format('Y-m-d H:i') + '</span>';
       str += '<div class="upload-action upload-delete" title="Delete"></div>';
       str += '</div>';
@@ -1532,6 +1534,9 @@ function loadSettings() {
   body.append('<h2>Automatic snapshots</h2>');
   body.append('<p><input type="checkbox" id="autosnap"> When editing, auto-snapshot every <input id="snapafter" class="input-smallint" type="number" min="1"> hours</p>');
   body.append('<p><input type="checkbox" id="autoprune"> Prune automatic snapshots after <input id="pruneafter" class="input-smallint" type="number" min="1"> days, keeping<br>snapshots <input id="prunedays" class="input-smallint" type="number" min="0"> days, <input id="pruneweeks" class="input-smallint" type="number" min="0"> weeks and <input id="prunemonths" class="input-smallint" type="number" min="0"> months apart');
+  body.append('<h2>File uploads</h2>');
+  body.append('<p><input type="checkbox" id="autodelete"> Delete unlinked file uploads after <input id="deleteafter" class="input-smallint" type="number" min="1" value="30"> days</p>');
+  body.append('<p>Statistics: <span id="uploadstats">(loading)</span>');
   body.append('<h2>Share to FlowNotes</h2>');
   body.append('<p><span class="settings-label">Append-to note IDs:</span><input type="text" id="shareappend" placeholder="7,12,45" pattern="[0-9]+(, ?[0-9]+)*"></p>');
   body.append('<h2>New note templates</h2>');
@@ -1576,6 +1581,7 @@ function loadSettings() {
     data.prunedays = $('#prunedays').val();
     data.pruneweeks = $('#pruneweeks').val();
     data.prunemonths = $('#prunemonths').val();
+    data.autodelete = $('#autodelete').prop('checked')?$('#deleteafter').val():null;
     if ($('#shareappend').is(':invalid')) {
       div.find('#modal-error').show().text('Invalid input for "Append-to note IDs"');
       return;
@@ -1600,6 +1606,11 @@ function handleSettings(settings) {
   $('#prunedays').val(settings.prunedays);
   $('#pruneweeks').val(settings.pruneweeks);
   $('#prunemonths').val(settings.prunemonths);
+  if (settings.autodelete) {
+    $('#autodelete').prop('checked', true);
+    $('#deleteafter').val(settings.autodelete);
+  }
+  $('#uploadstats').text(settings.uploadstats.files + ' files, ' + Math.round(settings.uploadstats.bytes/1048576) + ' MB');
   $('#shareappend').val(settings.shareappend);
   $('#templatenotes').val(settings.templatenotes);
   let tokens = settings.tokens.reduce((r, s) => r.concat(s.device), []).join(', ') || 'none';
