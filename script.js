@@ -310,18 +310,25 @@ $().ready(function() {
       let input = $('#input')[0];
       cursorActivate(input.value, input.selectionStart);
     }
-  }).on('dragenter', function(evt) {
-    $(this).addClass('dragging-file');
-  }).on('dragleave', function(evt) {
-    $(this).removeClass('dragging-file');
-  }).on('drop', function(evt) {
-    $(this).removeClass('dragging-file');
-    if (app.uploadqueue.length) {
-      $('#status').text('Please wait for the previous upload to finish').css('opacity', 1);
-      return;
-    }
-    for (let file of evt.originalEvent.dataTransfer.files) app.uploadqueue.push(file);
-    doUpload();
+  });
+  $('#panel-main').on('dragenter', function(evt) {
+    let html = '<div id="upload"><h2>Upload files</h2><div id="upload-dropzone" droppable>';
+    html += '<p class="nointeraction">Drop files here to upload them to FlowNotes</p>';
+    html += '<div id="upload-progress" class="nointeraction"><table></table></div>';
+    html += '</div></div>';
+    showModal('upload', html, true);
+    $('#upload').on('drop', function(evt) {
+      evt.preventDefault();
+      if (app.uploadqueue.length) {
+        $('#status').text('Please wait for the previous upload to finish').css('opacity', 1);
+        return;
+      }
+      for (let file of evt.originalEvent.dataTransfer.files) app.uploadqueue.push(file);
+      doUpload();
+    });
+    $('#modal-overlay').one('dragleave', function(evt) {
+      hideModal();
+    });
   });
   $('#render').on('click', 'code', function (e) {
     if (!navigator.clipboard) return;
@@ -1310,8 +1317,7 @@ function loadUploads() {
       let upload = $(this).parent();
       if (confirm("Are you sure you want to permanently delete " + upload.data('title') + " (" + upload.data('filename') + ")?")) {
         sendToServer({ req: 'upload', mode: 'del', id: upload.data('id'), activenote: app.activenote });
-        upload.find('.upload-modified,br').remove();
-        upload.append(app.loader);
+        upload.remove();
       }
       return false;
     });
@@ -1806,12 +1812,27 @@ Element.prototype.customScrollIntoView = function() {
 function doUpload() {
   let data, xhr, file = app.uploadqueue.shift();
   if (!file) return;
+  let filename = file.name;
 
   data = new FormData();
   data.append('note', app.activenote);
   data.append('file', file);
   xhr = new XMLHttpRequest();
   xhr.open('POST', 'data.php');
+  xhr.upload.onprogress = function(evt) {
+    if (evt.lengthComputable) {
+      let table = $('#upload-progress TABLE');
+      let entry = null;
+      for (let row of table.children('tr')) {
+        if ($(row).children().first().text() == filename) {
+          entry = $(row);
+          break;
+        }
+      }
+      if (!entry) entry = $('<tr><td>' + filename + '</td><td></td></tr>').appendTo(table);
+      entry.children().eq(1).text(Math.round(evt.loaded / evt.total * 100) + '%');
+    }
+  };
   xhr.onload = function(evt) {
     if ((this.status == 200) && this.response.length) {
       let data = JSON.parse(this.response);
@@ -1830,6 +1851,7 @@ function doUpload() {
       app.changed = Date.now()-60000; // Force a pushUpdate on the next tick
     }
     if (app.uploadqueue.length) doUpload();
+    else hideModal();
   }
   xhr.send(data);
 }

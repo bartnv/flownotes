@@ -21,7 +21,7 @@ CODE.inline { background-color: rgb(251, 244, 208); white-space: pre; padding: 1
 A.link-note { text-decoration-style: dashed; text-decoration-thickness: from-font; }
 A.link-head { text-decoration-style: dotted; }
 TABLE { margin-top: 1em; margin-bottom: 1em; border-collapse: collapse; }
-TH, TD { border: solid #ccc 1px; padding: 0 3px; }
+#render TH, #render TD { border: solid #ccc 1px; padding: 0 3px; }
 H1 { padding-bottom: 5px; border-bottom: solid #ccc 1px; }
 H2 { display: table; margin-top: 1rem; margin-bottom: 0; padding-bottom: 3px; border-bottom: solid #ccc 1px; }
 H3 { display: table; margin-top: 0.5rem; margin-bottom: 0; padding-bottom: 3px; border-bottom: dotted #ccc 1px; font-size: 20px; }
@@ -38,7 +38,7 @@ DIV.sidepanel A { text-decoration: none; color: inherit; }
 DIV#panel-left { position: relative; display: flex; flex-direction: column; }
 DIV#panel-right { margin-right: -20rem; }
 DIV#panel-main { position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 252px; max-width: calc(100vw - 68px); }
-TEXTAREA#input.dragging-file { border: solid green 5px; }
+DIV#panel-main.dragging-file { border: solid green 5px; }
 DIV.panel-buttons { display: flex; flex-direction: column; background-color: rgb(40,40,40); }
 DIV.panel-buttons > DIV { cursor: pointer; padding: 5px; }
 #button-mode-edit { position: relative; }
@@ -108,6 +108,9 @@ P#modal-error { display: none; color: rgb(255,0,0); }
 .modal-button:hover { background-color: white; cursor: pointer; }
 .modal-button-small { background-color: rgb(204,204,204); border-radius: 5px; border: none; padding: 0.35em 0.6em; font-size: 0.9em; }
 .modal-button-small:hover { background-color: white; cursor: pointer; }
+#upload-dropzone { display: flex; flex-direction: column; height: 30rem; width: 30rem; margin-top: 1rem; margin-bottom: 7px; border: dashed grey 4px; padding: 1rem; align-items: center; justify-content: center; }
+#upload-progress table td { max-width: 25rem; overflow: hidden; text-overflow: ellipsis; }
+#upload-progress table td:first-child { padding-right: 1rem; }
 DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 5px; padding: 5px; background-color: black; color: white; transition: opacity 500ms; }
 .settings-label { display: inline-block; min-width: 10em; }
 #settings-save { margin-top: 1rem; }
