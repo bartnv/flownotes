@@ -13,7 +13,7 @@ if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
-if (query_setting('dbversion') < 11) upgrade_database();
+if (query_setting('dbversion') < 12) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -944,8 +944,10 @@ function upgrade_database() {
       sql_single('ALTER TABLE "note_new" RENAME TO "note"');
     case 10:
       sql_single('ALTER TABLE "auth_token" ADD COLUMN device text');
+    case 11:
+      sql_single("CREATE TABLE upload (id integer primary key, note integer, filename text not null, title text not null, modified integer default (strftime('%s', 'now')), unlinked integer default (strftime('%s', 'now')));");
   }
-  store_setting('dbversion', 11);
+  store_setting('dbversion', 12);
 }
 
 function handle_cli() {
