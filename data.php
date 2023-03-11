@@ -305,7 +305,7 @@ switch ($data['req']) {
         if (!is_numeric($data['idx'])) fatalerr('Invalid webauthn request');
         $keys = json_decode(query_setting('webauthnkeys', '[]', true));
         array_splice($keys, $data['idx'], 1);
-        store_setting('webauthnkeys', json_encode($keys));
+        store_setting('webauthnkeys', json_encode($keys, JSON_THROW_ON_ERROR));
         foreach ($keys as $key) {
           $ret[] = $key['name'] ?? dechex(crc32(implode('', $key->id)));
         }
@@ -805,7 +805,7 @@ function update_note($id, $note) {
 
   if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $note['mode'] ?? 'edit', $id ]))) {
     $processUser = posix_getpwuid(posix_geteuid());
-    error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
+    error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser, JSON_THROW_ON_ERROR) . ')');
     return [];
   }
 
@@ -907,7 +907,7 @@ function update_note_meta($id, $note) {
   }
   if (!($stmt->execute([ $pinned, $cursor, $note['mode'] ?? 'edit', $id ]))) {
     $processUser = posix_getpwuid(posix_geteuid());
-    error_log("FlowNotes: update_note_meta() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser) . ')');
+    error_log("FlowNotes: update_note_meta() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser, JSON_THROW_ON_ERROR) . ')');
     return 0;
   }
   return $pinned;
@@ -1156,12 +1156,13 @@ function sql_updatecount($query, $params = []) {
 
 function send_and_exit($data) {
   header('Content-type: application/json');
-  print json_encode($data);
+  print json_encode($data, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE);
+  if (json_last_error()) error_log('FlowNotes JSON encode error: ' . json_last_error_msg());
   exit();
 }
 function fatalerr($msg) {
   header('Content-type: application/json');
-  print json_encode([ 'error' => $msg ]);
+  print json_encode([ 'error' => $msg ], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);
   exit(1);
 }
 function dbg($var) {
