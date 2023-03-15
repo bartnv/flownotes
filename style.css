@@ -55,6 +55,7 @@ DIV#button-unpublish { display: inline-block; margin-left: 5px; width: 16px; hei
 INPUT#button-snap-restore,INPUT#button-snap-close { align-self: center; margin: 0.2rem 0; }
 TEXTAREA#input,DIV#render { width: 80%; height: 80%; background-color: white; overscroll-behavior: contain; }
 DIV#render { box-sizing: border-box; padding: 0 20px; overflow: auto; }
+DIV#render IMG { max-width: 100%; }
 .note-li { position: relative; margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #9ABCBD; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-active { background-color: #6BA2A5 !important; }
 .note-touched::after { border-radius: 5px; background-color: #F2A51B; content: ''; position: absolute; bottom: 5px; right: 5px; width: 10px; height: 10px; }

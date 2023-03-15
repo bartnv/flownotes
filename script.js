@@ -461,10 +461,12 @@ $().ready(function() {
     let input = $(this);
     if (app.linkupload) {
       let content = input.val();
+      let linkstr = '';
+      if (app.linkupload.filetype.startsWith('image/')) linkstr += '!';
       if (this.selectionStart != this.selectionEnd) { // We have text selected, use as linktext
-        var linkstr = '[' + content.substring(this.selectionStart, this.selectionEnd) + '](uploads/' + app.linkupload.filename + ')';
+        linkstr += '[' + content.substring(this.selectionStart, this.selectionEnd) + '](uploads/' + app.linkupload.filename + ')';
       }
-      else var linkstr = '[' + app.linkupload.title + '](uploads/' + app.linkupload.filename + ')';
+      else linkstr += '[' + app.linkupload.title + '](uploads/' + app.linkupload.filename + ')';
       let pos = this.selectionStart + linkstr.length;
       input.val(content.substring(0, this.selectionStart) + linkstr + content.substring(this.selectionEnd));
       this.setSelectionRange(pos, pos);
@@ -1841,6 +1843,7 @@ function doUpload() {
       let after = $('#input').val().substring(cursor.end);
       let links = '';
       for (let file of data.files) {
+        if (file.type.startsWith('image/')) links += '!';
         links += '[' + file.name + '](' + file.path + ')\n';
       }
       $('#input').val(before + links + after).setCursorPosition(cursor.start+links.length);
