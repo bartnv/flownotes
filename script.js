@@ -76,6 +76,13 @@ $().ready(function() {
       }
       return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
     },
+    image(href, title, text) {
+      if (!title) title = text;
+      if (href.match(/^uploads/)) {
+        return '<img src="data.php?upload=' + href.substring(8) + '" alt="' + text + '" title="' + title + '" onclick="lightbox(this)">';
+      }
+      return '<img src="' + href + '" alt="' + text + '" title="' + title + '">';
+    },
     code(code, info, escaped) {
       if (info) return '<pre data-info="' + info + '"><code>' + code + '</code></pre>';
       return '<pre><code>' + code + '</code></pre>';
@@ -1691,13 +1698,18 @@ function showCopied(e) {
   setTimeout(function() { copied.removeClass('notransition').css('opacity', 0); }, 1000);
 }
 
+function lightbox(el) {
+  let content = $('<div></div>');
+  content.append(el.cloneNode());
+  showModal('lightbox', content, 'anyclick');
+}
 function showModal(type, content, escapable) {
   $('#button-' + type).addClass('button-active');
   app.modal = type;
   let modal = $('#modal-overlay');
   modal.empty().append(content).css({ opacity: '1', pointerEvents: 'auto' });
   if (escapable) modal.on('click', function(evt) {
-    if (evt.target == this) hideModal();
+    if ((escapable == 'anyclick') || (evt.target == this)) hideModal();
   });
   else modal.off('click');
 }

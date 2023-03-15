@@ -99,6 +99,7 @@ DIV.mask { overflow: hidden; }
 .search-controls { margin: 5px 5px 0 5px; }
 DIV#modal-overlay { position: absolute; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: opacity 0.3s linear; z-index: 1005; }
 DIV#modal-overlay > DIV { display: flex; flex-direction: column; padding: 18px 25px; border-radius: 25px; box-sizing: border-box; max-height: 95%; max-width: 95%; background-color: rgba(50,50,50,1); color: white; }
+DIV#modal-overlay > DIV > IMG { margin: 7px 0; max-height: 90vh; }
 DIV#modal-overlay H1 { margin: 0; }
 DIV#modal-overlay H2 { margin-top: 1rem; }
 DIV#modal-overlay P { margin-bottom: 0.5rem; }
