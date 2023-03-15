@@ -589,8 +589,8 @@ function select_note_snapshots($id) {
 }
 function select_note_uploads($id) {
   $uploads = [];
-  $uploads['linked'] = sql_rows_collect("SELECT id, filename, title, modified FROM upload WHERE note = ? AND unlinked IS NULL", [ $id ]);
-  $uploads['unlinked'] = sql_rows_collect("SELECT id, note, filename, title, modified, unlinked FROM upload WHERE unlinked IS NOT NULL");
+  $uploads['linked'] = sql_rows_collect("SELECT id, filename, title, filetype, modified FROM upload WHERE note = ? AND unlinked IS NULL", [ $id ]);
+  $uploads['unlinked'] = sql_rows_collect("SELECT id, note, filename, title, filetype, modified, unlinked FROM upload WHERE unlinked IS NOT NULL");
   return $uploads;
 }
 function add_snapshot($id, $locked = 0) {
@@ -671,7 +671,7 @@ function check_uploads() {
       if (!is_file("uploads/$file")) continue;
       if (!is_readable("uploads/$file")) continue;
       if (!sql_if("SELECT id FROM upload WHERE filename = ?", [ $file ])) {
-        sql_single("INSERT INTO upload (filename, title, modified) VALUES (?, ?, ?)", [ $file, $file, filemtime("uploads/$file") ]);
+        sql_single("INSERT INTO upload (filename, title, filetype, modified) VALUES (?, ?, ?, ?)", [ $file, $file, mime_content_type("uploads/$file"), filemtime("uploads/$file") ]);
         error_log("FlowNotes: detected untracked file $file in uploads directory; added to database");
         $found += 1;
       }
@@ -945,7 +945,7 @@ function upgrade_database() {
     case 10:
       sql_single('ALTER TABLE "auth_token" ADD COLUMN device text');
     case 11:
-      sql_single("CREATE TABLE upload (id integer primary key, note integer, filename text not null, title text not null, modified integer default (strftime('%s', 'now')), unlinked integer default (strftime('%s', 'now')));");
+      sql_single("CREATE TABLE upload (id integer primary key, note integer, filename text not null, title text not null, filetype text, modified integer default (strftime('%s', 'now')), unlinked integer default (strftime('%s', 'now')));");
   }
   store_setting('dbversion', 12);
 }
@@ -1015,7 +1015,7 @@ function handle_uploads() {
       $filename = $base . '-' . $iter . ($suffix??'');
     } while (file_exists("uploads/$filename"));
     if (!move_uploaded_file($file['tmp_name'], "uploads/$filename")) fatalerr('Failed to save uploaded file');
-    sql_updateone("INSERT INTO upload (note, filename, title) VALUES (?, ?, ?)", [ $_POST['note'], $filename, $title ]);
+    sql_updateone("INSERT INTO upload (note, filename, title, filetype) VALUES (?, ?, ?, ?)", [ $_POST['note'], $filename, $title, $file['type'] ]);
     $ret[] = [ 'name' => $title, 'path' => "uploads/$filename", 'type' => $file['type'] ];
   }
   send_and_exit([ 'note' => $_POST['note'], 'files' => $ret ]);

@@ -1299,7 +1299,7 @@ function loadUploads() {
   if (!app.uploads.unlinked?.length) unlinked.append('<div class="list-none">- none -</div>');
   else {
     for (let upload of app.uploads.unlinked) {
-      let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
+      let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '" data-filetype="' + upload.filetype + '">';
       str += '<span class="upload-title">' + upload.title + '</span><br>';
       if (upload.modified) str += '<span class="upload-modified">saved at ' + new Date(upload.modified*1000).format('Y-m-d H:i') + '</span><br>';
       else str += '<span class="upload-modified">⚠ file not found in uploads folder ⚠</span><br>'
