@@ -701,7 +701,7 @@ function check_uploads() {
             $deleted += 1;
           }
         },
-        [ (time()-86400)*$deleteafter ]
+        [ time()-86400*$deleteafter ]
       );
     }
   }
