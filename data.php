@@ -1001,18 +1001,19 @@ function handle_uploads() {
   foreach ($_FILES as $file) {
     if (empty($file['name']) || empty($file['type'])) fatalerr('Invalid file upload');
     if ($file['error'] != 0) fatalerr('Error in file upload');
-    $title = preg_replace('/\.[A-Za-z0-9]{1,4}$/', '', $file['name']);
-    if (empty($title)) $title = $file['name'];
-    $iter = 1;
-    $base = preg_replace('/[^a-zA-Z0-9.]+/', '-', $file['name']);
-    if (substr($base, 0, 1) == '.') $base = '_' . substr($base, 1);
-    $filename = $base . '-' . $iter;
-    while (file_exists("uploads/$filename")) {
-      $iter += 1;
-      $pos = strrpos($base, '.');
-      if (!$pos) $filename = $base . '-' . $iter;
-      else $filename = substr($base, 0, $pos) . '-' . $iter . substr($base, $pos);
+    if (preg_match('/\.[A-Za-z0-9]{1,4}$/', $file['name'], $matches, PREG_OFFSET_CAPTURE)) {
+      $suffix = $matches[0][0];
+      $base = substr($file['name'], 0, $matches[0][1]);
     }
+    else $base = $file['name'];
+    $title = $file['name'];
+    $iter = 0;
+    $base = preg_replace('/[^a-zA-Z0-9.]+/', '-', $base);
+    if (substr($base, 0, 1) == '.') $base = '_' . substr($base, 1);
+    do {
+      $iter += 1;
+      $filename = $base . '-' . $iter . ($suffix??'');
+    } while (file_exists("uploads/$filename"));
     if (!move_uploaded_file($file['tmp_name'], "uploads/$filename")) fatalerr('Failed to save uploaded file');
     sql_updateone("INSERT INTO upload (note, filename, title) VALUES (?, ?, ?)", [ $_POST['note'], $filename, $title ]);
     $ret[] = [ 'name' => $title, 'path' => "uploads/$filename", 'type' => $file['type'] ];
