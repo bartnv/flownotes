@@ -51,6 +51,18 @@ $(document).on('keydown', function(evt) {
   }
 }).on('dragover', function(evt) {
   evt.preventDefault();
+}).on('paste', function(evt) {
+  let item = evt.originalEvent.clipboardData.items[0];
+  if (item?.type.startsWith('image/')) {
+    if (app.uploadqueue.length) {
+      $('#status').text('Please wait for the previous upload to finish').css('opacity', 1);
+      return;
+    }
+    let html = '<div id="upload"><h2>Upload files</h2><div id="upload-progress" class="nointeraction"><table></table></div></div>';
+    showModal('paste-upload', html, true);
+    app.uploadqueue.push(item.getAsFile());
+    doUpload();
+  }
 });
 
 $().ready(function() {
@@ -1077,7 +1089,7 @@ function offline(msg = 'Connection failed, switching to offline mode') {
       if (app.notes[i].touched || (app.notes[i].intransit == 'full')) count++;
     }
     if (count) $('#status').html('Offline mode (' + count + ' unsaved note' + (count==1?'':'s') + ')').css('opacity', 1);
-    else $('#status').html('Offline mode').css('opacity', 1);
+    // else $('#status').html('Offline mode').css('opacity', 1);
   }
   if (app.notes[app.activenote] && (app.notes[app.activenote].content === undefined)) {
     $('#input').val('');
@@ -1324,7 +1336,7 @@ function loadUploads() {
 
     $('#uploads-unlinked').on('click', '.upload-delete', function() {
       let upload = $(this).parent();
-      if (confirm("Are you sure you want to permanently delete " + upload.data('title') + " (" + upload.data('filename') + ")?")) {
+      if (confirm("Are you sure you want to permanently delete " + upload.data('title') + "?")) {
         sendToServer({ req: 'upload', mode: 'del', id: upload.data('id'), activenote: app.activenote });
         upload.remove();
       }
@@ -1862,7 +1874,7 @@ function doUpload() {
       app.notes[data.note].touched = true;
       $('.note-li[data-id=' + data.note + ']').addClass('note-touched');
       $('#button-mode-edit').addClass('button-touched');
-      $('#uploads-linked').append(app.loader);
+      $('#uploads-linked').append(app.loader).find('.list-none').remove();
       app.changed = Date.now()-60000; // Force a pushUpdate on the next tick
     }
     if (app.uploadqueue.length) doUpload();
