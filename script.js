@@ -633,6 +633,15 @@ $().ready(function() {
   $('#button-fullscreen').on('click', function() {
     $('#panel-main')[0].requestFullscreen();
   });
+  $('#button-popout').on('click', function() {
+    let proxy = window.open('./popout.html', '_blank', 'popup,height=800,width=600');
+    $(proxy).on('load', function() {
+      let content;
+      if (app.mode == 'edit') content = '<div id="input">' + $('#input').val().replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;') + '</div>';
+      else content = $('#render').clone();
+      $(proxy.document.documentElement).find('body').append(content);
+    });
+  });
   $('#button-export').on('click', loadExports);
   $('#button-help').on('click', loadHelp);
   $('#button-settings').on('click', loadSettings);
