@@ -1872,6 +1872,10 @@ function doUpload() {
   xhr.onload = function(evt) {
     if ((this.status == 200) && this.response.length) {
       let data = JSON.parse(this.response);
+      if (data.error) {
+        $('#upload-progress').append('<p>Error: ' + data.error + '</p>');
+        return;
+      }
       let cursor = $('#input').getCursorPosition();
       let before = $('#input').val().substring(0, cursor.start);
       let after = $('#input').val().substring(cursor.end);

@@ -1027,7 +1027,10 @@ function handle_uploads() {
       $iter += 1;
       $filename = $base . '-' . $iter . ($suffix??'');
     } while (file_exists("uploads/$filename"));
-    if (!move_uploaded_file($file['tmp_name'], "uploads/$filename")) fatalerr('Failed to save uploaded file');
+    if (!move_uploaded_file($file['tmp_name'], "uploads/$filename")) {
+      if (!is_writable('uploads')) fatalerr("uploads folder is not writable for user '" . posix_getpwuid(posix_geteuid())['name'] . "' with group '" . posix_getgrgid(posix_getegid())['name'] . "'");
+      fatalerr('failed to save uploaded file to uploads folder');
+    }
     sql_updateone("INSERT INTO upload (note, filename, title, filetype) VALUES (?, ?, ?, ?)", [ $_POST['note'], $filename, $title, $file['type'] ]);
     $ret[] = [ 'name' => $title, 'path' => "uploads/$filename", 'type' => $file['type'] ];
   }
