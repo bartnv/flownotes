@@ -140,8 +140,11 @@ switch ($data['req']) {
     $ret['password'] = !empty($password);
     if (!empty($data['term'])) {
       $results = search_notes($data['term']);
-      $ret['notes'] = $results + $ret['notes'];
-      $ret['searchresults'] = array_keys($results);
+      if (is_string($results)) $ret['searchresults']['error'] = $results;
+      else {
+        $ret['notes'] = $results + $ret['notes'];
+        $ret['searchresults'] = array_keys($results);
+      }
     }
     $ret['lastupdate'] = time();
     break;
@@ -176,8 +179,11 @@ switch ($data['req']) {
     }
     if (!empty($data['term'])) {
       $results = search_notes($data['term']);
-      $ret['notes'] = $results + $ret['notes'];
-      $ret['searchresults'] = array_keys($results);
+      if (is_string($results)) $ret['searchresults']['error'] = $results;
+      else {
+        $ret['notes'] = $results + $ret['notes'];
+        $ret['searchresults'] = array_keys($results);
+      }
     }
     break;
   case 'activate':
@@ -190,8 +196,12 @@ switch ($data['req']) {
   case 'search':
     if (empty($data['term'])) fatalerr('No term passed in req search');
     $ret['search'] = true;
-    $ret['notes'] = search_notes($data['term']);
-    $ret['searchresults'] = array_keys($ret['notes']);
+    $results = search_notes($data['term']);
+    if (is_string($results)) $ret['searchresults']['error'] = $results;
+    else {
+      $ret['notes'] = $results;
+      $ret['searchresults'] = array_keys($ret['notes']);
+    }
     break;
   case 'add':
     if (query_setting('templatenotes', false) && !isset($data['addlink']) && !isset($data['template'])) {
@@ -215,6 +225,7 @@ switch ($data['req']) {
     $last = sql_single("SELECT substr(content, -1) FROM note WHERE id = ?", [ $data['id'] ]);
     if ($last != "\n") $data['content'] = "\n" . $data['content'];
     if (!sql_updateone("UPDATE note SET content = content || ?, changed = strftime('%s', 'now'), modified = strftime('%s', 'now') WHERE id = ?", [ $data['content'], $data['id'] ])) fatalerr('Failed to append content to note ' . $data['id']);
+    if (!sql_updateone("UPDATE fts SET content = content || ?", [ $data['content'] ])) error_log('FlowNotes: failed to update fts table for note ' . $data['id']);
     $title = sql_single("SELECT title FROM note WHERE id = ?", [ $data['id'] ]);
     $ret['append'] = [];
     $ret['append']['id'] = $data['id'];
@@ -482,15 +493,11 @@ function add_note($content) {
   store_setting('lastupdate', time());
   if (!empty($content)) $title = find_title($content);
   else $title = null;
-  if (!($stmt = $dbh->prepare("INSERT INTO note (title, content) VALUES (?, ?)"))) {
-    error_log("add_note() query prepare failed: " . $dbh->errorInfo()[2]);
-    return null;
+  $id = sql_insert_id("INSERT INTO note (title, content) VALUES (?, ?)", [ $title, $content ]);
+  if (!empty($content)) {
+    if (!sql_updateone("INSERT INTO fts (rowid, content) VALUES (?, ?)", [ $id, $content ])) error_log('FlowNotes: failed to insert note ' . $data['id'] . ' in fts table');
   }
-  if (!($stmt->execute([ $title, $content ]))) {
-    error_log("add_note() query execute failed: " . $stmt->errorInfo()[2]);
-    return [];
-  }
-  return $dbh->lastInsertId();
+  return $id;
 }
 function select_note($id) {
   global $dbh;
@@ -727,29 +734,31 @@ function search_notes($term) {
 
   if (preg_match("/^#([0-9]+)$/", $term, $matches)) { // Note id search
     $id = (int)$matches[1];
-    return [ $id => select_note($id) ];
+    return [ $id => select_note($id) + [ 'hits' => '1' ] ];
   }
   elseif (substr($term, 0, 1) == '/') { // Regex search
     $dbh->sqliteCreateFunction('regexp', function($pattern, $data) {
-      return (preg_match("/$pattern/i", $data));
+      return preg_match_all("/$pattern/i", $data);
     });
-    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content REGEXP ?"))) {
-      error_log("search_notes() prepare failed: " . $dbh->errorInfo()[2]);
-      return [];
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, regexp(?, content) AS hits FROM note WHERE content REGEXP ?"))) {
+      error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
+      return 'SQL error';
     }
-    if (!($stmt->execute([ substr($term, 1) ]))) {
-      error_log("search_notes() execute failed: " . $stmt->errorInfo()[2]);
-      return [];
+    $pattern = str_replace('/', '', $term);
+    if (!($stmt->execute([ $pattern, $pattern ]))) {
+      error_log("FlowNotes: search_notes() execute failed: " . $stmt->errorInfo()[2]);
+      return 'SQL error';
     }
   }
   else {
-    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted FROM note WHERE content LIKE ?"))) {
-      error_log("search_notes() prepare failed: " . $dbh->errorInfo()[2]);
-      return [];
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, (length(highlight(fts, 0, '!', '!'))-length(fts.content))/2 AS hits FROM fts JOIN note ON fts.rowid = note.id WHERE fts.content MATCH ? ORDER BY 5 DESC, 2 DESC"))) {
+      error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
+      return 'SQL error';
     }
-    if (!($stmt->execute([ '%' . preg_replace('/[^a-z0-9]/', '%', strtolower($term)) . '%' ]))) {
-      error_log("search_notes() execute failed: " . $stmt->errorInfo()[2]);
-      return [];
+    if (!($stmt->execute([ $term ]))) {
+      if (!($stmt->execute([ '"' . str_replace('"', '""', $term) . '"' ]))) {
+        return $stmt->errorInfo()[2];
+      }
     }
   }
 
@@ -808,6 +817,7 @@ function update_note($id, $note) {
     error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser, JSON_THROW_ON_ERROR) . ')');
     return [];
   }
+  if (!sql_updateone("UPDATE fts SET content = ? WHERE rowid = ?", [ $note['content'], $id ])) error_log('FlowNotes: failed to update fts table for note ' . $data['id']);
 
   update_links($id, $note['content']);
   if (!($stmt = $dbh->query("SELECT note.modified, note.pinned, group_concat(flink.target) AS flinks, group_concat(blink.source) AS blinks FROM note LEFT JOIN link AS flink ON flink.source = note.id LEFT JOIN link AS blink ON blink.target = note.id WHERE note.id = $id"))) {
@@ -946,8 +956,11 @@ function upgrade_database() {
       sql_single('ALTER TABLE "auth_token" ADD COLUMN device text');
     case 11:
       sql_single("CREATE TABLE upload (id integer primary key, note integer, filename text not null, title text not null, filetype text, modified integer default (strftime('%s', 'now')), unlinked integer default (strftime('%s', 'now')));");
+    case 12:
+      sql_single("CREATE VIRTUAL TABLE fts USING fts5(content, content='note', content_rowid='id', tokenize='trigram')");
+      sql_single("INSERT INTO fts(fts) VALUES('rebuild')");
   }
-  store_setting('dbversion', 12);
+  store_setting('dbversion', 13);
 }
 
 function handle_cli() {

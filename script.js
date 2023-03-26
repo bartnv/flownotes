@@ -1032,6 +1032,7 @@ function parseFromServer(data, textStatus, xhr) {
         app.notes[i].published = data.notes[i].published;
         if (i == app.activenote) updateLink(app.notes[i]);
       }
+      if (data.notes[i].hits) app.notes[i].hits = data.notes[i].hits;
       if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
     }
     if (data.recent) app.recent = data.recent;
@@ -1224,7 +1225,7 @@ function updateRecent() {
 function updateSearch() {
   let items = app.searchresults;
   if (!items) return;
-  items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
+  // items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
   let results = "";
   for (let i in items) {
     let note = app.notes[items[i]];
@@ -1233,7 +1234,7 @@ function updateSearch() {
     if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
-    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span></div></a>';
+    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span><span class="note-hits">' + note.hits + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
 }
@@ -1424,6 +1425,10 @@ function activateTab(name) {
 }
 
 function listSearchResults(items, first) {
+  if (items.error) {
+    $('#search-results').empty().append('<div style="margin: 5px">Search error: ' + items.error + '</div>');
+    return;
+  }
   app.searchresults = items;
   updateSearch();
   if (first && (items.length == 1)) {
