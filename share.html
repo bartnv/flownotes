@@ -4,21 +4,19 @@
 <meta charset="utf8">
 <title>MMVI FlowNotes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<link rel="stylesheet" type="text/css" href="style.css?v3.3">
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" type="text/css" href="style.css?v4.0">
+<script src="//cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js" crossorigin="anonymous"></script>
 <script>
-var app = {
-  content: ''
-};
 $().ready(function() {
   let url = new URL(window.location);
-  if (url.searchParams.get('title')) app.content += url.searchParams.get('title') + '\n';
-  if (url.searchParams.get('url')) app.content += url.searchParams.get('url') + '\n';
-  if (url.searchParams.get('text')) app.content += url.searchParams.get('text');
-  $('#content').val(app.content);
+  let content = '';
+  if (url.searchParams.get('title')) content += url.searchParams.get('title') + '\n';
+  if (url.searchParams.get('url')) content += url.searchParams.get('url') + '\n';
+  if (url.searchParams.get('text')) content += url.searchParams.get('text');
+  $('#content').val(content);
   $('#content').height($('#content').prop('scrollHeight'));
   $('#save-new').on('click', function() {
-    sendToServer({ req: 'add', content: app.content });
+    sendToServer({ req: 'add', content: $('#content').val() });
   });
   $('#modal-body').on('click', '.append-to', function() {
     let content = $('#content').val();
