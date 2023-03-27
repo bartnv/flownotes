@@ -841,7 +841,7 @@ function cursorActivate(text, cursor) {
   if (line.charAt(cursor) == ' ') cursor -= 1;
   start = line.lastIndexOf('[', cursor);
   end = line.indexOf(')', cursor);
-  if ((start != -1) && (end != -1)) {
+  if ((start != -1) && (end != -1)) { // Cursor is within a Markdown link
     let mid = line.indexOf('](');
     if (mid == -1) return;
     res = line.substring(mid+2, end);
@@ -851,6 +851,8 @@ function cursorActivate(text, cursor) {
     end = line.indexOf(' ', cursor);
     if (end == -1) end = line.length;
     res = line.substring(start+1, end);
+    if (res.startsWith('(')) res = res.substring(1);
+    if (res.endsWith(')')) res = res.substring(0, res.length-1);
   }
 
   if (res.substring(0, 1) == '#') window.location = res;
