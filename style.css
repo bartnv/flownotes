@@ -63,7 +63,7 @@ DIV#render IMG { max-width: 100%; }
 .note-deleted { text-decoration: line-through; }
 .note-title { font-weight: bold; line-height: 1.4; }
 .note-modified { font-size: 0.9em; }
-.note-hits { position: absolute; right: 6px; bottom: 6px; color: blue; font-size: 0.9em; }
+.note-hits { position: absolute; top: 3px; right: 5px; color: blue; font-size: 0.9em; }
 .list-divider { padding: 0.5rem; background-color: rgb(150,150,150); }
 .list-none { padding: 0.5rem; font-style: italic; }
 .snap-li { position: relative; margin: 4px; padding: 5px 8px; border: solid transparent 1px; border-radius: 5px; background-color: #BDB586; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
