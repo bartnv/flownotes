@@ -353,12 +353,11 @@ switch ($data['req']) {
         $note = select_note($data['note']);
         header('Content-type: text/html');
         header('Content-disposition: attachment; filename="' . $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html"');
-        $head = file_get_contents('html-header.html');
-        print str_replace('#title#', $note['title'], $head);
+        print str_replace('#title#', $note['title'], file_get_contents('html-header.html'));
         $pd = new Flowdown('download');
         $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
         print $pd->text($note['content']);
-        readfile('html-footer.html');
+        print str_replace('#modified#', date('Y-m-d H:i T', $note['modified']), file_get_contents('html-footer.html'));
         exit(0);
       case 'gettxtall':
         streamToZip();
