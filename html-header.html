@@ -5,7 +5,7 @@
 <title>#title#</title>
 <style>
 HTML { font-size: 16px; font-family: sans-serif; }
-BODY { display: flex; justify-content: center; margin: 0; background-color: grey; }
+BODY { display: flex; flex-direction: column; align-items: center; margin: 0; background-color: grey; }
 MAIN { padding: 0 20px; max-width: 50rem; background-color: white; }
 PRE { position: relative; background-color: rgb(251, 244, 208); padding: 5px 5px; border: solid #ddcb8e 1px; overflow: auto; max-height: 85%; }
 PRE[data-info]::after { content: attr(data-info); position: absolute; top: 0; right: 0; padding: 5px; background-color: rgba(255, 255, 255, 0.7); border-left: solid #ddcb8e 1px; border-bottom: solid #ddcb8e 1px; }
@@ -21,6 +21,7 @@ H4::first-letter { padding-bottom: 3px; border-bottom: solid #ccc 1px; }
 H5 { margin-top: 0.5rem; margin-bottom: 0; font-size: 16px; }
 H5::first-letter { padding-bottom: 3px; border-bottom: dotted #ccc 1px; }
 P { margin-top: 0.5rem; }
+DIV.last-modified { margin: 0.5rem 0; width: calc(50rem + 40px); text-align: right; color: black; }
 BLOCKQUOTE { margin-left: 3px; padding-left: 15px; border-left: solid #ccc 2px; margin-right: 20px; }
 @media (max-width: 1024px) {
   HTML { font-size: 14px; }

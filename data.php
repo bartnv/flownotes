@@ -1189,14 +1189,15 @@ function dbg($var) {
 function publish($note, $file, $type) {
   if (!($fh = fopen($file, 'w'))) return "Failed to create file; is the exports folder '" . query_setting('publicdir', 'public') . "' writable?";
   if ($type == 'html') {
-    $head = file_get_contents('html-header.html');
-    if (!fwrite($fh, str_replace('#title#', $note['title'], $head))) return 'Failed to write export file';
+    $head = str_replace('#title#', $note['title'], file_get_contents('html-header.html'));
+    if (!fwrite($fh, $head)) return 'Failed to write export file';
   }
   $pd = new Flowdown('publish');
   $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
   if (!fwrite($fh, $pd->text($note['content']))) return 'Failed to write export file';
   if ($type == 'html') {
-    if (!fwrite($fh, file_get_contents('html-footer.html'))) return 'Failed to write export file';
+    $foot = str_replace('#modified#', date('Y-m-d H:i T'), file_get_contents('html-footer.html'));
+    if (!fwrite($fh, $foot)) return 'Failed to write export file';
   }
   return 'OK';
 }
