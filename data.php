@@ -360,11 +360,21 @@ switch ($data['req']) {
         print str_replace('#modified#', date('Y-m-d H:i T', $note['modified']), file_get_contents('html-footer.html'));
         exit(0);
       case 'gettxtall':
-        streamToZip();
+        textToZip();
         exit(0);
       case 'gethtmlall':
-        streamToZip(true);
+        htmlToZip();
         exit(0);
+      case 'getuploads':
+        uploadsToZip();
+        exit(0);
+      case 'getdatabase':
+        header('Content-type: application/vnd.sqlite3');
+        header('Content-disposition: attachment; filename="FlowNotes database ' . date('Y-m-d') . '.sqlite3"');
+        header('Content-length: ' . filesize('db/notes.sq3'));
+        header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime('db/notes.sq3') . ' GMT'));
+        readfile('db/notes.sq3');
+      exit(0);
       case 'pubhtmlone':
         if (empty($data['note']) || !is_numeric($data['note'])) fatalerr('Invalid pubhtmlone request');
         if (sql_if('SELECT 1 FROM publish WHERE note = ?', [ $data['note'] ])) fatalerr('Note #' . $data['note'] . ' is already published');
@@ -1201,96 +1211,125 @@ function publish($note, $file, $type) {
   return 'OK';
 }
 
-function streamToZip($html = false) { // Adapted from the ZipExtension class from PhpMyAdmin - GPL 2+ license
+function textToZip() {
   header('Content-type: application/zip');
-  header('Content-disposition: attachment; filename="FlowNotes ' . date('Y-m-d') . '.zip"');
-  $datasec = []; // Array to store compressed data
-  $ctrl_dir = []; // Central directory
-  $old_offset = 0; // Last offset position
-  $eof_ctrl_dir = "\x50\x4b\x05\x06\x00\x00\x00\x00"; // End of central directory record
-
-  if ($html) {
-    $pd = new Flowdown('download');
-    $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
-    $head = file_get_contents('html-header.html');
-    $foot = file_get_contents('html-footer.html');
-  }
+  header('Content-disposition: attachment; filename="FlowNotes text ' . date('Y-m-d') . '.zip"');
+  $zipdata = [];
 
   $stmt = sql_rows('SELECT id, title, content, modified FROM note WHERE deleted = 0 ORDER BY id');
-
   while ($note = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    if ($html) {
-      $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html';
-      $content = str_replace('#title#', $note['title'], $head);
-      $content .= $pd->text($note['content']);
-      $content .= $foot;
-    }
-    else {
-      $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.txt';
-      $content = $note['content'];
-    }
-    $timearray = getdate($note['modified']);
-    $time = (($timearray['year'] - 1980) << 25)
-      | ($timearray['mon'] << 21)
-      | ($timearray['mday'] << 16)
-      | ($timearray['hours'] << 11)
-      | ($timearray['minutes'] << 5)
-      | ($timearray['seconds'] >> 1);
-
-    $hexdtime = pack('V', $time);
-    $unc_len = strlen($content);
-    $crc = crc32($content);
-    $zdata = gzcompress($content);
-    $zdata = substr(substr($zdata, 0, strlen($zdata) - 4), 2); // fix crc bug
-    $c_len = strlen($zdata);
-    $fr = "\x50\x4b\x03\x04"
-      . "\x14\x00"        // ver needed to extract
-      . "\x00\x08"        // gen purpose bit flag
-      . "\x08\x00"        // compression method
-      . $hexdtime         // last mod time and date
-      // "local file header" segment
-      . pack('V', $crc)              // crc32
-      . pack('V', $c_len)            // compressed filesize
-      . pack('V', $unc_len)          // uncompressed filesize
-      . pack('v', strlen($filename)) // length of filename
-      . pack('v', 0)                 // extra field length
-      . $filename
-      // "file data" segment
-      . $zdata;
-    print $fr;
-
-    // now add to central directory record
-    $cdrec = "\x50\x4b\x01\x02"
-      . "\x00\x00"                    // version made by
-      . "\x14\x00"                    // version needed to extract
-      . "\x00\x08"                    // gen purpose bit flag
-      . "\x08\x00"                    // compression method
-      . $hexdtime                     // last mod time & date
-      . pack('V', $crc)               // crc32
-      . pack('V', $c_len)             // compressed filesize
-      . pack('V', $unc_len)           // uncompressed filesize
-      . pack('v', strlen($filename))  // length of filename
-      . pack('v', 0)                  // extra field length
-      . pack('v', 0)                  // file comment length
-      . pack('v', 0)                  // disk number start
-      . pack('v', 0)                  // internal file attributes
-      . pack('V', 32)                 // external file attributes
-                                      // - 'archive' bit set
-      . pack('V', $old_offset)        // relative offset of local header
-      . $filename;                    // filename
-    $old_offset += strlen($fr);
-    // optional extra field, file comment goes here
-    // save to central directory
-    $ctrl_dir[] = $cdrec;
+    $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.txt';
+    addToZip($zipdata, $filename, $note['content'], $note['modified']);
   }
+  finishZip($zipdata);
+}
 
-  /* Build string to return */
-  $temp_ctrldir = implode('', $ctrl_dir);
-  print $temp_ctrldir .
-    $eof_ctrl_dir .
-    pack('v', count($ctrl_dir)) . //total #of entries "on this disk"
-    pack('v', count($ctrl_dir)) . //total #of entries overall
-    pack('V', strlen($temp_ctrldir)) . //size of central dir
-    pack('V', $old_offset) . //offset to start of central dir
-    "\x00\x00";                         //.zip file comment length
+function htmlToZip() {
+  header('Content-type: application/zip');
+  header('Content-disposition: attachment; filename="FlowNotes html ' . date('Y-m-d') . '.zip"');
+  $zipdata = [];
+
+  $pd = new Flowdown('download');
+  $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
+  $head = file_get_contents('html-header.html');
+  $foot = file_get_contents('html-footer.html');
+
+  $stmt = sql_rows('SELECT id, title, content, modified FROM note WHERE deleted = 0 ORDER BY id');
+  while ($note = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html';
+    $content = str_replace('#title#', $note['title'], $head);
+    $content .= $pd->text($note['content']);
+    $content .= str_replace('#modified#', date('Y-m-d H:i T', $note['modified']), $foot);
+    addToZip($zipdata, $filename, $content, $note['modified']);
+  }
+  finishZip($zipdata);
+}
+
+function uploadsToZip() {
+  $dh = opendir('uploads');
+  if (!$dh) fatalerr('Failed to open uploads folder');
+
+  header('Content-type: application/zip');
+  header('Content-disposition: attachment; filename="FlowNotes uploads ' . date('Y-m-d') . '.zip"');
+  $zipdata = [];
+
+  while ($file = readdir($dh)) {
+    if (substr($file, 0, 1) == '.') continue;
+    if (!is_file("uploads/$file")) continue;
+    if (!is_readable("uploads/$file")) continue;
+    addToZip($zipdata, $file, file_get_contents("uploads/$file"), filemtime("uploads/$file"));
+  }
+  finishZip($zipdata);
+}
+
+// ZIP helper functions - adapted from the ZipExtension class from PhpMyAdmin - GPL 2+ license
+function addToZip(&$zip, $filename, $content, $timestamp) {
+  if (!isset($zip['datasec'])) $zip['datasec'] = []; // Array to store compressed data
+  if (!isset($zip['ctrldir'])) $zip['ctrldir'] = []; // Central directory
+  if (!isset($zip['offset'])) $zip['offset'] = 0;    // Last offset position
+
+  $timearray = getdate($timestamp);
+  $time = (($timearray['year'] - 1980) << 25)
+    | ($timearray['mon'] << 21)
+    | ($timearray['mday'] << 16)
+    | ($timearray['hours'] << 11)
+    | ($timearray['minutes'] << 5)
+    | ($timearray['seconds'] >> 1);
+
+  $hexdtime = pack('V', $time);
+  $unc_len = strlen($content);
+  $crc = crc32($content);
+  $zdata = gzcompress($content);
+  $zdata = substr(substr($zdata, 0, strlen($zdata) - 4), 2); // fix crc bug
+  $c_len = strlen($zdata);
+  $fr = "\x50\x4b\x03\x04"
+    . "\x14\x00"        // ver needed to extract
+    . "\x00\x08"        // gen purpose bit flag
+    . "\x08\x00"        // compression method
+    . $hexdtime         // last mod time and date
+    // "local file header" segment
+    . pack('V', $crc)              // crc32
+    . pack('V', $c_len)            // compressed filesize
+    . pack('V', $unc_len)          // uncompressed filesize
+    . pack('v', strlen($filename)) // length of filename
+    . pack('v', 0)                 // extra field length
+    . $filename
+    // "file data" segment
+    . $zdata;
+  print $fr;
+
+  // now add to central directory record
+  $cdrec = "\x50\x4b\x01\x02"
+    . "\x00\x00"                    // version made by
+    . "\x14\x00"                    // version needed to extract
+    . "\x00\x08"                    // gen purpose bit flag
+    . "\x08\x00"                    // compression method
+    . $hexdtime                     // last mod time & date
+    . pack('V', $crc)               // crc32
+    . pack('V', $c_len)             // compressed filesize
+    . pack('V', $unc_len)           // uncompressed filesize
+    . pack('v', strlen($filename))  // length of filename
+    . pack('v', 0)                  // extra field length
+    . pack('v', 0)                  // file comment length
+    . pack('v', 0)                  // disk number start
+    . pack('v', 0)                  // internal file attributes
+    . pack('V', 32)                 // external file attributes
+                                    // - 'archive' bit set
+    . pack('V', $zip['offset'])     // relative offset of local header
+    . $filename;                    // filename
+  $zip['offset'] += strlen($fr);
+  // optional extra field, file comment goes here
+  // save to central directory
+  $zip['ctrldir'][] = $cdrec;
+}
+
+function finishZip(&$zip) {
+  $temp_ctrldir = implode('', $zip['ctrldir']);
+  print $temp_ctrldir;
+  print "\x50\x4b\x05\x06\x00\x00\x00\x00"; // end of central directory record
+  print pack('v', count($zip['ctrldir'])); // total #of entries "on this disk"
+  print pack('v', count($zip['ctrldir'])); // total #of entries overall
+  print pack('V', strlen($temp_ctrldir));   // size of central dir
+  print pack('V', $zip['offset']);          // offset to start of central dir
+  print "\x00\x00";                         // .zip file comment length
 }

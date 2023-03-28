@@ -1443,13 +1443,17 @@ function loadExports() {
   let div = $('<div><h1>Export functions</h1><div id="modal-body"></div></div>');
   let body = div.find('#modal-body');
   body.append('<p><input type="button" id="export-get-html-one" class="modal-button-small" value="Download current note as HTML"></p>');
-  body.append('<p><input type="button" id="export-get-txt-all" class="modal-button-small" value="Download all notes as plain text"></p>');
-  body.append('<p><input type="button" id="export-get-html-all" class="modal-button-small" value="Download all notes as HTML"></p>');
+  body.append('<p><input type="button" id="export-get-txt-all" class="modal-button-small" value="Download all notes as plain text (ZIP)"></p>');
+  body.append('<p><input type="button" id="export-get-html-all" class="modal-button-small" value="Download all notes as HTML (ZIP)"></p>');
+  body.append('<p><input type="button" id="export-get-uploads" class="modal-button-small" value="Download all uploaded files (ZIP)"></p>');
+  body.append('<p><input type="button" id="export-get-database" class="modal-button-small" value="Download FlowNotes database (SQLite)"></p>');
   body.append('<p><input type="button" id="export-pub-html-one" class="modal-button-small" value="Publish current note as HTML"></p>');
   body.append('<p><input type="button" id="export-pub-frag-one" class="modal-button-small" value="Publish current note as HTML fragment"></p>');
   body.find('#export-get-html-one').on('click', function() { window.location = 'data.php?export=htmlone&note=' + app.activenote; });
   body.find('#export-get-txt-all').on('click', function() { window.location = 'data.php?export=txtall'; });
   body.find('#export-get-html-all').on('click', function() { window.location = 'data.php?export=htmlall'; });
+  body.find('#export-get-uploads').on('click', function() { window.location = 'data.php?export=uploads'; });
+  body.find('#export-get-database').on('click', function() { window.location = 'data.php?export=database'; });
   body.find('#export-pub-html-one').on('click', function() {
     sendToServer({ req: 'export', mode: 'pubhtmlone', note: app.activenote });
     hideModal();
