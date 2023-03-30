@@ -759,6 +759,17 @@ function search_notes($term) {
       return 'SQL error';
     }
   }
+  elseif (substr($term, 0, 1) == '+') { // Upload search
+    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE filename LIKE ? OR upload.title LIKE ? GROUP BY note.id"))) {
+      error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
+      return 'SQL error';
+    }
+    $pattern = '%' . substr($term, 1) . '%';
+    if (!($stmt->execute([ $pattern, $pattern ]))) {
+      error_log("FlowNotes: search_notes() execute failed: " . $stmt->errorInfo()[2]);
+      return 'SQL error';
+    }
+  }
   else {
     if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, (length(highlight(fts, 0, '!', '!'))-length(fts.content))/2 AS hits FROM fts JOIN note ON fts.rowid = note.id WHERE fts.content MATCH ? ORDER BY 5 DESC, 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
