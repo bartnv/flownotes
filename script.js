@@ -1201,7 +1201,7 @@ function updatePanels() {
         loadToc();
         break;
       case 'uploads':
-        loadUploads();
+        updateUploads();
         break;
     }
   }
@@ -1310,6 +1310,37 @@ function loadUploads() {
   let div = $('#tab-right').empty()
     .append('<div class="list-divider">Files linked to this note</div><div id="uploads-linked" class="scrolly"></div><div class="list-divider mta">Unlinked files</div><div id="uploads-unlinked" class="scrolly"></div>');
   let linked = div.find('#uploads-linked');
+  let unlinked = div.find('#uploads-unlinked');
+
+  $(linked).add(unlinked).on('click', '.upload-li', function(evt) {
+    if (evt.target.nodeName == 'A') return;
+    let upload = $(evt.currentTarget);
+    window.open('data.php?upload=' + upload.data('filename'), '_blank');
+  });
+  $(unlinked).on('click', '.upload-delete', function() {
+    let upload = $(this).parent();
+    if (confirm("Are you sure you want to permanently delete " + upload.data('title') + "?")) {
+      sendToServer({ req: 'upload', mode: 'del', id: upload.data('id'), activenote: app.activenote });
+      upload.remove();
+    }
+    return false;
+  });
+  $(linked).on('mousedown', function() { return false; });
+  $(unlinked).on('mousedown', '.upload-li', function (evt) {
+    let upload = $(evt.currentTarget).addClass('note-selected');
+    app.linkupload = upload.data();
+    $(window).one('mousemove', function(evt) {
+      $('body').addClass('dragging');
+    });
+    return false;
+  });
+  if (app.uploads) updateUploads();
+  else if (app.init) sendToServer({ req: 'upload', mode: 'list', activenote: app.activenote });
+}
+
+function updateUploads() {
+  let linked = $('#uploads-linked').empty();
+  let unlinked = $('#uploads-unlinked').empty();
   if (!app.uploads) return;
 
   if (!app.uploads.linked?.length) linked.append('<div class="list-none">- none -</div>');
@@ -1324,7 +1355,6 @@ function loadUploads() {
     }
   }
 
-  let unlinked = div.find('#uploads-unlinked');
   if (!app.uploads.unlinked?.length) unlinked.append('<div class="list-none">- none -</div>');
   else {
     for (let upload of app.uploads.unlinked) {
@@ -1341,31 +1371,7 @@ function loadUploads() {
       str += '</div>';
       unlinked.append(str);
     }
-
-    $('#uploads-unlinked').on('click', '.upload-delete', function() {
-      let upload = $(this).parent();
-      if (confirm("Are you sure you want to permanently delete " + upload.data('title') + "?")) {
-        sendToServer({ req: 'upload', mode: 'del', id: upload.data('id'), activenote: app.activenote });
-        upload.remove();
-      }
-      return false;
-    });
   }
-
-  $(linked).add(unlinked).on('click', '.upload-li', function(evt) {
-    if (evt.target.nodeName == 'A') return;
-    let upload = $(evt.currentTarget);
-    window.open('data.php?upload=' + upload.data('filename'), '_blank');
-  });
-  $(linked).on('mousedown', function() { return false; });
-  $(unlinked).on('mousedown', '.upload-li', function (evt) {
-    let upload = $(evt.currentTarget).addClass('note-selected');
-    app.linkupload = upload.data();
-    $(window).one('mousemove', function(evt) {
-      $('body').addClass('dragging');
-    });
-    return false;
-  });
 }
 
 function findTitle(text) {
