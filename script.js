@@ -1262,7 +1262,7 @@ function updatePinned() {
 function updateLinks() {
   let note = app.notes[app.activenote];
   if (!note) return;
-  let str = '<div class="list-divider">Links to this note</div><div>';
+  let str = '<div class="list-divider">Links to this note</div><div id="links-to">';
   if (note.blinks) {
     for (let blink of note.blinks) {
       let classes = 'note-li';
@@ -1273,7 +1273,7 @@ function updateLinks() {
     }
   }
   else str += '<div class="list-none">- none -</div>';
-  str += '</div><div class="list-divider">Links from this note</div><div>';
+  str += '</div><div class="list-divider">Links from this note</div><div id="links-from">';
   if (note.flinks) {
     for (let flink of note.flinks) {
       let classes = 'note-li';
@@ -1796,10 +1796,20 @@ function clear() {
   $('#tab-recent').empty();
   $('#tab-pinned').empty();
   $('#search-results').empty();
+  $('#links-to,#links-from').empty();
+  $('#snapshots').empty();
+  $('#toc').empty();
+  $('#uploads-linked,#uploads-unlinked').empty();
+  $('#stats').empty().hide();
+  $('#snap').empty().hide();
+  $('#link').empty().hide();
+  $('#button-settings').removeClass('button-active');
   $('#scrolled').hide();
   $('.loader').detach();
+  history.pushState(null, document.title, window.location.pathname);
 }
 function logout() {
+  app.init = false;
   clear();
   showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
