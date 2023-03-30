@@ -433,11 +433,11 @@ switch ($data['req']) {
       case 'del':
         $data['uploads'] = true;
         $filename = sql_single("SELECT filename FROM upload WHERE id = ?", [ $data['id'] ]);
-        if (empty($filename)) fatalerr("Upload with id " . $data['id'] . " not found");
+        if (empty($filename)) fatalerr("FlowNotes: upload with id " . $data['id'] . " not found");
         sql_single("DELETE FROM upload WHERE id = ? AND unlinked IS NOT NULL", [ $data['id'] ]);
-        if (!@unlink("uploads/$filename")) {
-          if (is_file("uploads/$filename")) fatalerr("Failed to delete uploaded file 'uploads/$filename'");
-          fatalerr("Uploaded file 'uploads/$filename' was already removed");
+        if (!unlink("uploads/$filename")) {
+          if (is_file("uploads/$filename")) fatalerr("FlowNotes: failed to delete uploaded file 'uploads/$filename'");
+          fatalerr("FlowNotes: uploaded file 'uploads/$filename' was already removed");
         }
         break;
     }
@@ -887,7 +887,7 @@ function update_uploads($id, $content) {
     $title = $matches[1][$i];
     $filename = $matches[2][$i];
     if (!is_file("uploads/$filename")) continue;
-    $upload = sql_single("SELECT id FROM upload WHERE (note = ? OR note IS NULL) AND filename = ?", [ $id, $filename ]);
+    $upload = sql_single("SELECT id FROM upload WHERE filename = ? AND unlinked IS NOT NULL", [ $filename ]);
     if ($upload) sql_single("UPDATE upload SET note = ?, title = ?, unlinked = NULL WHERE id = ?", [ $id, $title, $upload ]);
     else sql_single("INSERT INTO upload (note, filename, title, modified, unlinked) VALUES (?, ?, ?, ?, NULL)", [ $id, $filename, $title, filemtime("uploads/$filename") ]);
   }
