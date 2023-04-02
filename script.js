@@ -996,12 +996,12 @@ function parseFromServer(data, textStatus, xhr) {
 
   if ((data.snapshots) && (data.snapshotsfrom == app.activenote)) {
     app.snapshots = data.snapshots;
-    updateSnapshots();
+    if (app.hidepanelright == false && app.lastpanelright == 'snaps') updateSnapshots();
     if (window.location.hash.indexOf('@') > -1) $(window).trigger('hashchange');
   }
   if ((data.uploads) && (data.uploadsfrom == app.activenote)) {
     app.uploads = data.uploads;
-    loadUploads();
+    if (app.hidepanelright == false && app.lastpanelright == 'uploads') updateUploads();
   }
 
   let reload = false;
