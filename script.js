@@ -123,8 +123,6 @@ $().ready(function() {
     extensions: [ password ]
   });
 
-  init();
-
   $('#input').on('keydown', function(e) {
     if (!e.key.startsWith('F')) {
       e.stopPropagation();
@@ -675,14 +673,16 @@ $().ready(function() {
   if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') {
     $('#button-' + localStorage.getItem('flownotes' + instance + 'lastpanelright')).click();
   }
+  setTimeout(function() { $('.sidepanel').removeClass('notransition'); }, 500);
+
+  init();
 
   console.log('Event handlers initialized; starting interval timer');
   setInterval(tick, 4000);
-  setTimeout(function() { $('.sidepanel').removeClass('notransition'); }, 500);
 });
 
-function init() {
-  let data = { req: 'init' };
+function init(data = {}) {
+  data.req = 'init';
   if (location.hash.match(/^#[^:]+:[0-9]+$/)) {
     let split = location.hash.indexOf(':');
     activateTab('search');
@@ -712,7 +712,12 @@ function init() {
     }
     $('#tab-recent').append(app.loader);
   }
+  if (!app.hidepanelright) {
+    if (app.lastpanelright == 'snaps') data.snapshots = true;
+    else if (app.lastpanelright == 'uploads') data.uploads = true;
+  }
   sendToServer(data);
+  $('#status').html('Loading...').css('opacity', 1);
 }
 
 function togglePanelLeft(force) {
@@ -863,7 +868,8 @@ function cursorActivate(text, cursor) {
 function tick() {
   app.inactive++;
   if (!app.init) {
-    if (app.inactive%15 == 0) init();
+    return;
+    // if (app.inactive%15 == 0) init();
   }
   else if (app.changed && ((app.inactive > 1) || (Date.now()-app.changed > 60000))) {
     app.changed = 0;
@@ -940,7 +946,6 @@ function parseFromServer(data, textStatus, xhr) {
   if (data.alert) alert(data.alert);
   if (data.log) console.log(data.log);
   if (data.logout) return logout();
-  if (!app.init) app.init = true;
   if (data.lastupdate) app.lastupdate = data.lastupdate;
   app.lastcomm = Date.now();
   if (app.offline) {
@@ -980,6 +985,7 @@ function parseFromServer(data, textStatus, xhr) {
   }
 
   if (app.returntoshare) window.history.go(-1);
+  if (!app.init) app.init = true;
 
   if (data.modalerror) {
     let error = $('#modal-error');
@@ -1712,7 +1718,7 @@ function loadSnapshots() {
     })
     .append(app.loader);
   if (app.snapshots) updateSnapshots();
-  else sendToServer({ req: 'snapshot', mode: 'list', activenote: app.activenote });
+  else if (app.init) sendToServer({ req: 'snapshot', mode: 'list', activenote: app.activenote });
 }
 function loadToc() {
   let div = $('#tab-right').empty()
@@ -1769,19 +1775,16 @@ function login(error, challenge) {
   showModal('password', content, false);
   if (error) modal.find('#modal-error').html(error);
   modal.find('#login-pw').on('click', function() {
-    let data = { req: 'init', password: modal.find('#password').val() };
+    let data = { password: modal.find('#password').val() };
     if (modal.find('#remember')[0].checked) data.remember = true;
-    if (location.hash.match(/^#[0-9]+$/)) data.activenote = location.hash.substring(1);
-    sendToServer(data);
+    init(data);
     modal.empty();
     app.modal = null;
-    $('#status').html('Loading...').css('opacity', 1);
-    $('#tab-recent').prepend(app.loader);
   });
   modal.find('#login-u2f').on('click', function() {
     webauthnAuthenticate(challenge, function(success, info) {
       if (success) {
-        sendToServer({ req: 'init', response: info });
+        init({ response: info });
         $('#modal-error').empty();
       }
       else $('#modal-error').html(info);
@@ -1811,6 +1814,12 @@ function clear() {
 function logout() {
   app.init = false;
   clear();
+  let instance = '-';
+  instance += location.pathname.split('/').slice(1, -1).join('-');
+  localStorage.setItem('flownotes' + instance + 'activenote', app.activenote);
+  localStorage.setItem('flownotes' + instance + 'hidepanelleft', app.hidepanelleft);
+  localStorage.setItem('flownotes' + instance + 'hidepanelright', app.hidepanelright);
+  localStorage.setItem('flownotes' + instance + 'lastpanelright', app.lastpanelright);
   showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
 
