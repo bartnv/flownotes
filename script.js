@@ -218,31 +218,30 @@ $().ready(function() {
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition(true);
-      let start1 = content.lastIndexOf("\n", cursor.start-1);
-      if (start1 == -1) return false;
-      else if (start1 == 0) start1 = 1; // Empty first line
-      let end1 = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1));
-      if (end1 == -1) {
-        end1 = content.length;
-        if (end1-start1 == 1) return false;
+      let startsel = content.lastIndexOf("\n", cursor.start-1)+1; // Start selection right after the last newline (or at 0 in case indexOf() returns -1)
+      if (startsel == 0) return false; // Already at the first line
+      let endsel = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1))+1;
+      if (endsel == 0) { // No newline after the selection
+        content += "\n";
+        endsel = content.length;
       }
-      let start2 = content.lastIndexOf("\n", start1-1);
-      if (start2 == -1) start2 = 0;
-      let newcontent = content.substring(0, start2) + content.substring(start1, end1) + content.substring(start2, start1) + content.substring(end1);
-      $('#input').val(newcontent).setCursorPosition(start2+cursor.start-start1, start2+cursor.end-start1).trigger('input');
+      let endpre = content.lastIndexOf("\n", startsel-2)+1;
+      if ((endpre == 1) && (startsel == 1)) endpre = 0; // Empty first line
+      let newcontent = content.substring(0, endpre) + content.substring(startsel, endsel) + content.substring(endpre, startsel) + content.substring(endsel);
+      $('#input').val(newcontent).setCursorPosition(endpre+cursor.start-startsel, endpre+cursor.end-startsel).trigger('input');
       return false;
     }
     else if (e.ctrlKey && (e.key == 'ArrowDown')) {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition(true);
-      let start1 = content.lastIndexOf("\n", cursor.start-1);
-      if (start1 == -1) start1 = 0;
-      let end1 = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1));
-      if (end1 == -1) return false;
-      let end2 = content.indexOf("\n", end1+1);
-      if (end2 == -1) end2 = content.length;
-      let newcontent = content.substring(0, start1) + content.substring(end1, end2) + content.substring(start1, end1) + content.substring(end2);
-      $('#input').val(newcontent).setCursorPosition(start1+end2-end1+cursor.start-start1, start1+end2-end1+cursor.end-start1).trigger('input');
+      let startsel = content.lastIndexOf("\n", cursor.start-1)+1;
+      let endsel = content.indexOf("\n", cursor.end-(cursor.start==cursor.end?0:1))+1;
+      if (endsel == 0) return false; // Already at the last line
+      let startpost = content.indexOf("\n", endsel)+1;
+      if (startpost == 0) startpost = content.length;
+      if (endsel == startpost) return false; // Already at the last line
+      let newcontent = content.substring(0, startsel) + content.substring(endsel, startpost) + content.substring(startsel, endsel) + content.substring(startpost);
+      $('#input').val(newcontent).setCursorPosition(startsel+startpost-endsel+cursor.start-startsel, startsel+startpost-endsel+cursor.end-startsel).trigger('input');
       return false;
     }
     else if (e.ctrlKey && (e.key == '>')) {
