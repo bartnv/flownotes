@@ -888,10 +888,9 @@ function tick() {
     }
     pushUpdate();
   }
-  else if (app.inactive%15 == 0) idle();
-}
-function idle() {
-  sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
+  else if (app.inactive%15 == 0) {
+    sendToServer({ req: 'idle', lastupdate: app.lastupdate, activenote: app.activenote });
+  }
 }
 
 function pushUpdate(beacon, retransmit) {
@@ -1004,7 +1003,6 @@ function parseFromServer(data, textStatus, xhr) {
     if (app.hidepanelright == false && app.lastpanelright == 'uploads') updateUploads();
   }
 
-  let reload = false;
   if (data.notes) {
     for (let i in data.notes) {
       if (!app.notes[i]) app.notes[i] = { id: i };
@@ -1028,28 +1026,28 @@ function parseFromServer(data, textStatus, xhr) {
       else app.notes[i].deleted = false;
       if (data.notes[i].flinks !== undefined) app.notes[i].flinks = data.notes[i].flinks;
       if (data.notes[i].blinks !== undefined) app.notes[i].blinks = data.notes[i].blinks;
-      if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
-        app.notes[i].content = data.notes[i].content;
-        if ((i == app.activenote) && !app.notes[app.activenote].touched) reload = true;
-      }
       if (data.notes[i].cursor) {
         let pos = data.notes[i].cursor.split(',');
         app.notes[i].cursor = { start: pos[0], end: pos[1] };
       }
       if (data.notes[i].published !== undefined) {
         app.notes[i].published = data.notes[i].published;
-        if (i == app.activenote) updatePublish(app.notes[i]);
+        if (app.notes[i].published && (i == app.activenote)) updatePublish(app.notes[i]);
       }
       if (data.notes[i].hits) app.notes[i].hits = data.notes[i].hits;
       if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
+
+      if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
+        app.notes[i].content = data.notes[i].content;
+        if ((i == app.activenote) && !app.notes[app.activenote].touched && !app.snap) {
+          loadNote(app.activenote);
+          if ($('#stats').is(':visible')) updateStats();
+        }
+      }
     }
     if (data.recent) app.recent = data.recent;
+    updatePanels();
   }
-  if (reload && !app.snap) {
-    loadNote(app.activenote);
-    if ($('#stats').is(':visible')) updateStats();
-  }
-  updatePanels();
 
   if (data.searchresults) listSearchResults(data.searchresults, data.search);
   if (app.notes[app.activenote]) {
