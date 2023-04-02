@@ -1592,7 +1592,7 @@ function loadSettings() {
   if (app.password) body.append('<p><span class="settings-label">Current password:</span><input type="password" class="input-password" name="old" autocomplete="current-password"></p>');
   body.append('<p><span class="settings-label">New password:</span><input type="password" class="input-password" name="new1" autocomplete="new-password"></p>');
   body.append('<p><span class="settings-label">Repeat new:</span><input type="password" class="input-password" name="new2" autocomplete="new-password"></p>');
-  body.append('<h2>U2F keys</h2>');
+  body.append('<h2>Security keys</h2>');
   body.append('<ul id="list-u2f">Loading...</ul>');
   body.append('<p><input type="button" id="register-u2f" class="modal-button-small" value="Register new U2F key"></p>');
   body.append('<h2>Automatic snapshots</h2>');
@@ -1617,6 +1617,7 @@ function loadSettings() {
   });
   body.find('#token-list').attr('title', 'This function also invalidates all "Remember this device" tokens.');
   body.find('#register-u2f').on('click', function() {
+    if (!app.password) return alert('Security keys can only be used with a password set. Please add a password first.');
     sendToServer({ req: 'webauthn', mode: 'prepare' });
   });
   div.find('#settings-save').on('click', function() {
