@@ -767,7 +767,7 @@ function search_notes($term) {
     }
   }
   elseif (substr($term, 0, 1) == '+') { // Upload search
-    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE filename LIKE ? OR upload.title LIKE ? GROUP BY note.id ORDER BY 2 DESC"))) {
+    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE (filename LIKE ? OR upload.title LIKE ?) AND unlinked IS NULL GROUP BY note.id ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
