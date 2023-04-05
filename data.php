@@ -181,8 +181,11 @@ switch ($data['req']) {
       $results = search_notes($data['term']);
       if (is_string($results)) $ret['searchresults']['error'] = $results;
       else {
-        $ret['notes'] = $results + $ret['notes'];
-        $ret['searchresults'] = array_keys($results);
+        $ret['searchresults'] = [];
+        foreach ($results as $result) {
+          $ret['searchresults'][] = [ (int)$result['id'], (int)$result['hits'] ];
+          if (!isset($ret['notes'][$result['id']])) $ret['notes'][$result['id']] = array_splice($result, 1, -1); // Chop off the id and the hit count
+        }
       }
     }
     break;
@@ -199,9 +202,13 @@ switch ($data['req']) {
     $results = search_notes($data['term']);
     if (is_string($results)) $ret['searchresults']['error'] = $results;
     else {
-      $ret['notes'] = $results;
-      $ret['searchresults'] = array_keys($ret['notes']);
-    }
+      $ret['notes'] = [];
+      $ret['searchresults'] = [];
+      foreach ($results as $result) {
+        $ret['searchresults'][] = [ (int)$result['id'], (int)$result['hits'] ];
+        $ret['notes'][$result['id']] = array_splice($result, 1, -1); // Chop off the id and the hit count
+      }
+  }
     break;
   case 'add':
     if (query_setting('templatenotes', false) && !isset($data['addlink']) && !isset($data['template'])) {
@@ -743,13 +750,13 @@ function search_notes($term) {
 
   if (preg_match("/^#([0-9]+)$/", $term, $matches)) { // Note id search
     $id = (int)$matches[1];
-    return [ $id => select_note($id) + [ 'hits' => '1' ] ];
+    return [ select_note($id) + [ 'hits' => '1' ] ];
   }
   elseif (substr($term, 0, 1) == '/') { // Regex search
     $dbh->sqliteCreateFunction('regexp', function($pattern, $data) {
       return preg_match_all("/$pattern/i", $data);
     });
-    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, regexp(?, content) AS hits FROM note WHERE content REGEXP ?"))) {
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, regexp(?, content) AS hits FROM note WHERE content REGEXP ? ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
@@ -760,7 +767,7 @@ function search_notes($term) {
     }
   }
   elseif (substr($term, 0, 1) == '+') { // Upload search
-    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE filename LIKE ? OR upload.title LIKE ? GROUP BY note.id"))) {
+    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE filename LIKE ? OR upload.title LIKE ? GROUP BY note.id ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
@@ -771,7 +778,7 @@ function search_notes($term) {
     }
   }
   else {
-    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, (length(highlight(fts, 0, '!', '!'))-length(fts.content))/2 AS hits FROM fts JOIN note ON fts.rowid = note.id WHERE fts.content MATCH ? ORDER BY 5 DESC, 2 DESC"))) {
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, (length(highlight(fts, 0, '!', '!'))-length(fts.content))/2 AS hits FROM fts JOIN note ON fts.rowid = note.id WHERE fts.content MATCH ? ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
@@ -782,11 +789,7 @@ function search_notes($term) {
     }
   }
 
-  $notes = [];
-  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $notes[$row['id']] = array_slice($row, 1);
-  }
-  return $notes;
+  return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function update_note($id, $note) {

@@ -1033,7 +1033,6 @@ function parseFromServer(data, textStatus, xhr) {
         app.notes[i].published = data.notes[i].published;
         if (app.notes[i].published && (i == app.activenote)) updatePublish(app.notes[i]);
       }
-      if (data.notes[i].hits) app.notes[i].hits = data.notes[i].hits;
       if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
 
       if ((data.notes[i].content !== undefined) && (app.notes[i].content !== data.notes[i].content)) {
@@ -1230,16 +1229,17 @@ function updateRecent() {
 function updateSearch() {
   let items = app.searchresults;
   if (!items) return;
-  // items.sort(function(a, b) { return app.notes[b].modified - app.notes[a].modified; });
+  items.sort(function(a, b) { return b[1] - a[1] });
   let results = "";
-  for (let i in items) {
-    let note = app.notes[items[i]];
+  for (let i of items) { // i is an array of [ id, hits ]
+    if (!i[1]) continue; // FTS can sometimes result hits of 0
+    let note = app.notes[i[0]];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
     if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
-    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span><span class="note-hits">' + note.hits + '</span></div></a>';
+    results += '<span class="note-modified">saved at ' + new Date(note.modified*1000).format('Y-m-d H:i') + '</span><span class="note-hits">' + i[1] + '</span></div></a>';
   }
   $('#search-results').empty().html(results);
 }
