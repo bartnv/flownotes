@@ -1443,7 +1443,7 @@ function listSearchResults(items, first) {
   app.searchresults = items;
   updateSearch();
   if (first && (items.length == 1)) {
-    location.hash = '#' + app.notes[items[0]].id;
+    location.hash = '#' + items[0][0];
     setTimeout("$('#search-input').focus();", 100);
   }
 }
