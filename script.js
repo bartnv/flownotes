@@ -795,7 +795,7 @@ function loadNote(id) {
   if (app.mode == 'edit') $('#input').blur().focus();
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
-  if (app.notes[id].published) updatePublish(app.notes[id]);
+  updatePublish(app.notes[id]);
   $('#snap').hide();
 }
 function loadSnap(snap) {
@@ -1031,7 +1031,7 @@ function parseFromServer(data, textStatus, xhr) {
       }
       if (data.notes[i].published !== undefined) {
         app.notes[i].published = data.notes[i].published;
-        if (app.notes[i].published && (i == app.activenote)) updatePublish(app.notes[i]);
+        if (i == app.activenote) updatePublish(app.notes[i]);
       }
       if (!app.notes[i].mode) app.notes[i].mode = data.notes[i].mode;
 
@@ -1112,7 +1112,7 @@ function offline(msg = 'Connection failed, switching to offline mode') {
 }
 
 function updatePublish(note) {
-  if (note.published[0] && note.published[0].file) {
+  if (note.published && note.published[0] && note.published[0].file) {
     let location = new URL(window.location);
     let link = location.origin + location.pathname + note.published[0].file;
     let html = 'Published as ';
