@@ -443,8 +443,9 @@ switch ($data['req']) {
         $filename = sql_single("SELECT filename FROM upload WHERE id = ?", [ $data['id'] ]);
         if (empty($filename)) fatalerr("FlowNotes: upload with id " . $data['id'] . " not found");
         sql_single("DELETE FROM upload WHERE id = ? AND unlinked IS NOT NULL", [ $data['id'] ]);
-        if (!unlink("uploads/$filename")) {
-          if (is_file("uploads/$filename")) fatalerr("FlowNotes: failed to delete uploaded file 'uploads/$filename'");
+        $file = 'uploads/' . $filename;
+        if (!unlink($file)) {
+          if (is_file($file)) fatalerr("FlowNotes: failed to delete uploaded file 'uploads/$filename'");
           fatalerr("FlowNotes: uploaded file 'uploads/$filename' was already removed");
         }
         break;
