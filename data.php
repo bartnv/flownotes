@@ -411,8 +411,9 @@ switch ($data['req']) {
         if (empty($data['type'])) fatalerr('Invalid delone request');
         $note = select_note($data['note']);
         if (empty($note['published'])) fatalerr('Note #' . $data['note'] . ' is not published');
-        if (!file_exists($note['published'][0]['file'])) $ret['log'] = "File '" . $note['published'][0]['file'] . "' doesn't exist; removing published status";
-        elseif (!unlink($note['published'][0]['file'])) fatalerr('Failed to delete file ' . $note['published'][0]['file']);
+        $file = $note['published'][0]['file'];
+        if (!file_exists($file)) $ret['log'] = "File '$file' doesn't exist; removing published status";
+        elseif (!unlink($file)) fatalerr("Failed to delete file '$file'");
         if (!sql_updateone("DELETE FROM publish WHERE note = ? AND type = ?", [ $data['note'], $data['type'] ])) fatalerr('Failed to delete publish entry');
         sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
         $note['published'] = null;
