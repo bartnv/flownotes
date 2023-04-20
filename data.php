@@ -690,13 +690,14 @@ function prune_snapshots() {
 function check_uploads() {
   $found = 0;
   $deleted = 0;
-  if ($dh = opendir('uploads')) {
+  $dir = 'uploads';
+  if ($dh = opendir($dir)) {
     while ($file = readdir($dh)) {
       if (substr($file, 0, 1) == '.') continue;
-      if (!is_file("uploads/$file")) continue;
-      if (!is_readable("uploads/$file")) continue;
+      if (!is_file("$dir/$file")) continue;
+      if (!is_readable("$dir/$file")) continue;
       if (!sql_if("SELECT id FROM upload WHERE filename = ?", [ $file ])) {
-        sql_single("INSERT INTO upload (filename, title, filetype, modified) VALUES (?, ?, ?, ?)", [ $file, $file, mime_content_type("uploads/$file"), filemtime("uploads/$file") ]);
+        sql_single("INSERT INTO upload (filename, title, filetype, modified) VALUES (?, ?, ?, ?)", [ $file, $file, mime_content_type("$dir/$file"), filemtime("$dir/$file") ]);
         error_log("FlowNotes: detected untracked file $file in uploads directory; added to database");
         $found += 1;
       }
@@ -705,12 +706,12 @@ function check_uploads() {
 
     sql_foreach("SELECT id, filename, modified FROM upload",
       function($row) {
-        if (!is_file('uploads/' . $row['filename'])) {
+        if (!is_file('$dir/' . $row['filename'])) {
           sql_single("UPDATE upload SET modified = NULL WHERE id = ?", [ $row['id'] ]);
           error_log("FlowNotes: uploaded file " . $row['filename'] . " no longer found in uploads dir");
         }
         elseif (!$row['modified']) {
-          sql_single("UPDATE upload SET modified = ? WHERE id = ?", [ filemtime('uploads/' . $row['filename']), $row['id'] ]);
+          sql_single("UPDATE upload SET modified = ? WHERE id = ?", [ filemtime('$dir/' . $row['filename']), $row['id'] ]);
           error_log("FlowNotes: uploaded file " . $row['filename'] . " rediscovered in uploads dir");
         }
       }
@@ -719,7 +720,7 @@ function check_uploads() {
     if ($deleteafter = query_setting('autodelete', null)) {
       sql_foreach("SELECT id, filename FROM upload WHERE unlinked < ?",
         function($row) use (&$deleted, $deleteafter) {
-          if (!unlink('uploads/' . $row['filename'])) error_log("FlowNotes: failed to delete uploaded file " . $row['filename']);
+          if (!unlink('$dir/' . $row['filename'])) error_log("FlowNotes: failed to delete uploaded file " . $row['filename']);
           else {
             sql_single('DELETE FROM upload WHERE id = ?', [ $row['id'] ]);
             error_log("FlowNotes: deleted uploaded file " . $row['filename'] . " which was unlinked for more than $deleteafter days");
@@ -735,12 +736,13 @@ function check_uploads() {
 function get_uploads_stats() {
   $files = 0;
   $bytes = 0;
-  if ($dh = opendir('uploads')) {
+  $dir = 'uploads';
+  if ($dh = opendir($dir)) {
     while ($file = readdir($dh)) {
       if (substr($file, 0, 1) == '.') continue;
-      if (!is_file("uploads/$file")) continue;
+      if (!is_file("$dir/$file")) continue;
       $files += 1;
-      $bytes += filesize("uploads/$file");
+      $bytes += filesize("$dir/$file");
     }
     closedir($dh);
   }
@@ -902,10 +904,11 @@ function update_uploads($id, $content) {
   for ($i = 0; isset($matches[1][$i]); $i++) {
     $title = $matches[1][$i];
     $filename = $matches[2][$i];
-    if (!is_file("uploads/$filename")) continue;
+    $dir = 'uploads';
+    if (!is_file("$dir/$filename")) continue;
     $upload = sql_single("SELECT id FROM upload WHERE filename = ? AND unlinked IS NOT NULL", [ $filename ]);
     if ($upload) sql_single("UPDATE upload SET note = ?, title = ?, unlinked = NULL WHERE id = ?", [ $id, $title, $upload ]);
-    else sql_single("INSERT INTO upload (note, filename, title, modified, unlinked) VALUES (?, ?, ?, ?, NULL)", [ $id, $filename, $title, filemtime("uploads/$filename") ]);
+    else sql_single("INSERT INTO upload (note, filename, title, modified, unlinked) VALUES (?, ?, ?, ?, NULL)", [ $id, $filename, $title, filemtime("$dir/$filename") ]);
   }
   sql_foreach("SELECT id, filename FROM upload WHERE note = ? AND unlinked IS NOT NULL",
     function($row) { // Delete this entry if the file is still linked elsewhere
@@ -1036,6 +1039,7 @@ function handle_cli() {
 function handle_uploads() {
   $ret = [];
   if (empty($_POST['note']) || !is_numeric($_POST['note'])) fatalerr('Invalid note id in file upload');
+  $dir = 'uploads';
   foreach ($_FILES as $file) {
     if (empty($file['name']) || empty($file['type'])) fatalerr('Invalid file upload');
     if ($file['error'] != 0) fatalerr('Error in file upload');
@@ -1051,9 +1055,9 @@ function handle_uploads() {
     do {
       $iter += 1;
       $filename = $base . '-' . $iter . ($suffix??'');
-    } while (file_exists("uploads/$filename"));
-    if (!move_uploaded_file($file['tmp_name'], "uploads/$filename")) {
-      if (!is_writable('uploads')) fatalerr("uploads folder is not writable for user '" . posix_getpwuid(posix_geteuid())['name'] . "' with group '" . posix_getgrgid(posix_getegid())['name'] . "'");
+    } while (file_exists("$dir/$filename"));
+    if (!move_uploaded_file($file['tmp_name'], "$dir/$filename")) {
+      if (!is_writable($dir)) fatalerr("uploads folder is not writable for user '" . posix_getpwuid(posix_geteuid())['name'] . "' with group '" . posix_getgrgid(posix_getegid())['name'] . "'");
       fatalerr('failed to save uploaded file to uploads folder');
     }
     sql_updateone("INSERT INTO upload (note, filename, title, filetype) VALUES (?, ?, ?, ?)", [ $_POST['note'], $filename, $title, $file['type'] ]);
@@ -1262,7 +1266,8 @@ function htmlToZip() {
 }
 
 function uploadsToZip() {
-  $dh = opendir('uploads');
+  $dir = 'uploads';
+  $dh = opendir($dir);
   if (!$dh) fatalerr('Failed to open uploads folder');
 
   header('Content-type: application/zip');
@@ -1271,9 +1276,9 @@ function uploadsToZip() {
 
   while ($file = readdir($dh)) {
     if (substr($file, 0, 1) == '.') continue;
-    if (!is_file("uploads/$file")) continue;
-    if (!is_readable("uploads/$file")) continue;
-    addToZip($zipdata, $file, file_get_contents("uploads/$file"), filemtime("uploads/$file"));
+    if (!is_file("$dir/$file")) continue;
+    if (!is_readable("$dir/$file")) continue;
+    addToZip($zipdata, $file, file_get_contents("$dir/$file"), filemtime("$dir/$file"));
   }
   finishZip($zipdata);
 }
