@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@4.2.12/lib/marked.umd.min.js" crossorigin="anonymous"></script>
-<script type="text/javascript" src="script.js?v4.1" defer></script>
-<link rel="stylesheet" type="text/css" href="style.css?v4.1">
+<script type="text/javascript" src="script.js" defer></script>
+<link rel="stylesheet" type="text/css" href="style.css">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="manifest" href="manifest.json">
 </head>
@@ -93,6 +93,10 @@
           <input id="button-snap-close" class="modal-button-small" type="button" value="Close">
         </div>
       </div>
+      <div id="update" style="display: none;">
+        <div>A new version of FlowNotes is available</div>
+        <div><input id="button-update-now" class="modal-button-small" type="button" value="Update now"></div>
+      </div>
     </div>
     <div id="buttons-right" class="panel-buttons">
       <div id="button-panel-right-hide" title="Show right panel">
@@ -126,7 +130,30 @@
   <div id="copied" class="nointeraction">copied</div>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.register('sw.js').then(sw => {
+        if (sw.installing) console.log('Service worker is installing');
+        if (sw.active) console.log('Service worker is active');
+        if (sw.waiting) {
+          console.log('Updated service worker is waiting');
+          window.newsw = sw.waiting;
+          document.getElementById('update').style = '';
+        }
+        sw.addEventListener('updatefound', () => {
+          console.log('Updated service worker is available');
+          window.newsw = sw.installing;
+          newsw.addEventListener('statechange', () => {
+            console.log('Updated service worker has state: ' + newsw.state);
+            if (newsw.state == 'installed') document.getElementById('update').style = '';
+          });
+        });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('New service worker is now controlling this tab');
+        if (!app.changed) window.location.reload();
+      });
+      document.getElementById('button-update-now').addEventListener('click', () => {
+        newsw.postMessage({ action: 'skipWaiting' });
+      });
     }
   </script>
 </body>

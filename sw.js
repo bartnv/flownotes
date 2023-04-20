@@ -3,8 +3,9 @@ let version = 'v4.1';
 self.addEventListener('install', evt => {
   console.log('Service worker ' + version + ' is being installed');
   evt.waitUntil(
-    caches.open(version).then(cache => {
+    caches.open('flownotes-' + version).then(cache => {
       return cache.addAll([
+        './index.html?' + version,
         './script.js?' + version,
         './style.css?' + version,
         './share.html?' + version
@@ -17,7 +18,7 @@ self.addEventListener('activate', evt => {
   evt.waitUntil(
     caches.keys().then(keylist => {
       return Promise.all(keylist.map(key => {
-        if (key != version) return caches.delete(key);
+        if (key.startsWith('flownotes-') && (key != version)) return caches.delete(key);
       }));
     })
   );
@@ -38,6 +39,11 @@ self.addEventListener('fetch', evt => {
     evt.respondWith(
       tryCache(evt.request).catch(() => tryNetwork(evt.request, 60000))
     );
+  }
+});
+self.addEventListener('message', evt => {
+  if (evt.data.action == 'skipWaiting') {
+    self.skipWaiting();
   }
 });
 
