@@ -705,13 +705,13 @@ function check_uploads() {
     closedir($dh);
 
     sql_foreach("SELECT id, filename, modified FROM upload",
-      function($row) {
-        if (!is_file('$dir/' . $row['filename'])) {
+      function($row) use ($dir) {
+        if (!is_file("$dir/" . $row['filename'])) {
           sql_single("UPDATE upload SET modified = NULL WHERE id = ?", [ $row['id'] ]);
           error_log("FlowNotes: uploaded file " . $row['filename'] . " no longer found in uploads dir");
         }
         elseif (!$row['modified']) {
-          sql_single("UPDATE upload SET modified = ? WHERE id = ?", [ filemtime('$dir/' . $row['filename']), $row['id'] ]);
+          sql_single("UPDATE upload SET modified = ? WHERE id = ?", [ filemtime("$dir/" . $row['filename']), $row['id'] ]);
           error_log("FlowNotes: uploaded file " . $row['filename'] . " rediscovered in uploads dir");
         }
       }
@@ -720,7 +720,7 @@ function check_uploads() {
     if ($deleteafter = query_setting('autodelete', null)) {
       sql_foreach("SELECT id, filename FROM upload WHERE unlinked < ?",
         function($row) use (&$deleted, $deleteafter) {
-          if (!unlink('$dir/' . $row['filename'])) error_log("FlowNotes: failed to delete uploaded file " . $row['filename']);
+          if (!unlink("$dir/" . $row['filename'])) error_log("FlowNotes: failed to delete uploaded file " . $row['filename']);
           else {
             sql_single('DELETE FROM upload WHERE id = ?', [ $row['id'] ]);
             error_log("FlowNotes: deleted uploaded file " . $row['filename'] . " which was unlinked for more than $deleteafter days");
