@@ -391,6 +391,7 @@ switch ($data['req']) {
         if ($res != 'OK') fatalerr($res);
         if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'html', $filename ])) fatalerr('Failed to create publish entry');
         sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
+        update_published_uploads();
         $note['published'] = [ [ 'type' => 'html', 'file' => $filename ] ];
         $ret['notes'][$note['id']] = $note;
         break;
@@ -403,6 +404,7 @@ switch ($data['req']) {
         if ($res != 'OK') fatalerr($res);
         if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'frag', $filename ])) fatalerr('Failed to create publish entry');
         sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
+        update_published_uploads();
         $note['published'] = [ [ 'type' => 'frag', 'file' => $filename ] ];
         $ret['notes'][$note['id']] = $note;
         break;
@@ -416,6 +418,7 @@ switch ($data['req']) {
         elseif (!unlink($file)) fatalerr("Failed to delete file '$file'");
         if (!sql_updateone("DELETE FROM publish WHERE note = ? AND type = ?", [ $data['note'], $data['type'] ])) fatalerr('Failed to delete publish entry');
         sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
+        update_published_uploads();
         $note['published'] = null;
         $ret['notes'][$note['id']] = $note;
         break;
@@ -871,6 +874,7 @@ function update_note($id, $note) {
     require_once('Flowdown.php');
     publish($note, $pub['file'], $pub['type']);
   }
+  if ($res) update_published_uploads();
 
   store_setting('lastupdate', time());
   return $rows;
@@ -1229,6 +1233,24 @@ function publish($note, $file, $type) {
     if (!fwrite($fh, $foot)) return 'Failed to write export file';
   }
   return 'OK';
+}
+
+function update_published_uploads() {
+  $files = sql_column("SELECT filename FROM upload JOIN publish ON upload.note = publish.note");
+  $dir = query_setting('publicdir', 'public') . '/uploads';
+  if (!$dh = opendir($dir)) return;
+  while ($file = readdir($dh)) {
+    if (substr($file, 0, 1) == '.') continue;
+    if (!is_link("$dir/$file")) continue;
+    if (!is_writable("$dir/$file")) continue;
+    $key = array_search($file, $files);
+    if ($key !== false) unset($files[$key]); // Link is present as it should be
+    else unlink("$dir/$file"); // Link needs to be removed
+  }
+  $cwd = getcwd();
+  chdir($dir);
+  foreach ($files as $file) symlink("../../uploads/$file", "$file"); // Link added
+  chdir($cwd);
 }
 
 function textToZip() {
