@@ -1802,7 +1802,7 @@ function clear() {
   $('#toc').empty();
   $('#uploads-linked,#uploads-unlinked').empty();
   $('#stats').empty().hide();
-  $('#snap').empty().hide();
+  $('#snap').hide().find('#snapdate').empty();
   $('#link').empty().hide();
   $('#button-settings').removeClass('button-active');
   $('#scrolled').hide();
