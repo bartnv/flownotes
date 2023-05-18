@@ -181,7 +181,7 @@ $().ready(function() {
       return false;
     }
     else if (e.ctrlKey && (e.key == 'Enter')) {
-      app.addlink = true;
+      app.addnote = 'link';
       sendToServer({ req: 'add', addlink: 'true', lastupdate: app.lastupdate });
       $('#status').html('Loading...').css('opacity', 1);
     }
@@ -200,7 +200,7 @@ $().ready(function() {
       $('#input')
         .val(content.substring(0, cursor.start) + content.substring(cursor.end))
         .setCursorPosition(cursor.start);
-      app.addlink = true;
+      app.addnote = 'link';
       sendToServer({ req: 'add', addlink: 'true', content: text, lastupdate: app.lastupdate });
       $('#status').html('Loading...').css('opacity', 1);
       return false;
@@ -385,6 +385,10 @@ $().ready(function() {
     if (location.hash.match(/^#[0-9]+$/)) {
       let id = parseInt(location.hash.substring(1), 10);
       if (id != app.activenote) activateNote(id);
+      if (app.addnote) {
+        app.addnote = null;
+        if (app.mode == 'edit') $('#input').focus();
+      }
       if (app.snap) {
         app.snap = null;
         loadNote(id);
@@ -595,6 +599,7 @@ $().ready(function() {
     }
   });
   $('#button-note-add').on('click', function() {
+    app.addnote = 'new';
     sendToServer({ req: 'add', lastupdate: app.lastupdate });
     $('#tab-recent').prepend(app.loader);
   });
@@ -792,7 +797,6 @@ function loadNote(id) {
   }
   $('#input').val(app.notes[id].content).attr('readonly', false);
   if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end);
-  if (app.mode == 'edit') $('#input').blur().focus();
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
   updatePublish(app.notes[id]);
@@ -1061,7 +1065,7 @@ function parseFromServer(data, textStatus, xhr) {
   }
 
   if (data.switchnote) { // App launched without note id in location hash OR new note created
-    if (app.addlink) { // New note created with ctrl+enter or shift+enter
+    if (app.addnote == 'link') { // New note created with ctrl+enter or shift+enter
       let input = $('#input')[0];
       let start = input.selectionStart;
       let end = input.selectionEnd;
@@ -1082,7 +1086,6 @@ function parseFromServer(data, textStatus, xhr) {
       app.notes[app.activenote].content = input.value;
       app.notes[app.activenote].cursor = { start: input.selectionStart, end: input.selectionEnd };
       app.notes[app.activenote].touched = true;
-      app.addlink = false;
       pushUpdate();
     }
     location.hash = '#'+data.switchnote;
@@ -1483,6 +1486,7 @@ function loadTemplates(templates) {
     body.append('<p><input type="button" id="template-' + template[0] + '" class="modal-button-small" value="' + template[1] + '"></p>');
   }
   body.on('click', '.modal-button-small', function() {
+    app.addnote = 'template';
     sendToServer({ req: 'add', template: this.id.split('-')[1], lastupdate: app.lastupdate });
     hideModal();
   });
