@@ -881,6 +881,10 @@ function tick() {
       note.content = $('#input').val();
       note.cursor = $('#input').getCursorPosition();
       note.title = findTitle(app.notes[app.activenote].content);
+      if (($('#label-recent').hasClass('tab-active')) && ($('#tab-recent').prop('scrollTop') != 0) &&
+          ($('#tab-recent .note-li[data-id="' + app.activenote + '"]').parent().index() != 0)) {
+        $('#scrolled').click(); // Scroll updated note into view
+      }
     }
     else {
       let cursor = $('#input').getCursorPosition();
