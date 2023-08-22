@@ -1,4 +1,4 @@
-let version = 'v4.1';
+let version = 'v4.2';
 
 self.addEventListener('install', evt => {
   console.log('Service worker ' + version + ' is being installed');
@@ -8,7 +8,8 @@ self.addEventListener('install', evt => {
         './index.html?' + version,
         './script.js?' + version,
         './style.css?' + version,
-        './share.html?' + version
+        './share.html?' + version,
+        './popout.html?' + version
       ]);
     })
   );
