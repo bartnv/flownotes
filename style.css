@@ -1,14 +1,14 @@
 @font-face {
-    font-family: 'LatoWeb'; font-style: normal; font-weight: normal;
+    font-family: 'Lato'; font-style: normal; font-weight: normal;
     src: url('fonts/Lato-Regular.woff2') format('woff2'), url('fonts/Lato-Regular.woff') format('woff');
 }
 @font-face {
-    font-family: 'LatoWeb'; font-style: normal; font-weight: bold;
+    font-family: 'Lato'; font-style: normal; font-weight: bold;
     src: url('fonts/Lato-Bold.woff2') format('woff2'), url('fonts/Lato-Bold.woff') format('woff');
 }
 BODY {
   width: 100vw; height: 100vh; margin: 0;
-  background-color: grey; font-family: 'Lato', 'LatoWeb', sans-serif;
+  background-color: grey; font-family: 'Lato', sans-serif;
 }
 BODY.dragging { cursor: alias; }
 BODY.dragging .note-li { cursor: grabbing; }
