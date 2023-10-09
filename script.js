@@ -20,7 +20,6 @@ let app = {
   lastpanelright: 'links',
   keys: [],
   uploadqueue: [],
-  scroll: { recent: 0, search: 0, pinned: 0 },
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
 
@@ -383,6 +382,11 @@ $().ready(function() {
   });
   $(window).on('hashchange', function(e) {
     if (location.hash.match(/^#[0-9]+$/)) {
+      if ($('#compare').is(':visible')) {
+        $('#compare').hide();
+        if (app.mode == 'edit') $('#input').show();
+        else $('#render').show();
+      }
       let id = parseInt(location.hash.substring(1), 10);
       if (id != app.activenote) activateNote(id);
       if (app.addnote) {
@@ -647,7 +651,25 @@ $().ready(function() {
   $('#button-export').on('click', loadExports);
   $('#button-help').on('click', loadHelp);
   $('#button-settings').on('click', loadSettings);
+  $('#button-snap-compare').on('click', function() {
+    let snapshot = null;
+    for (let snap of app.snapshots) {
+      if (snap.modified == app.snap) {
+        snapshot = snap;
+        break;
+      }
+    }
+    if (!snapshot) return console.error('Snapshot ' + app.snap + ' not found');
+    let content = '<div>' + diffString(escape(snapshot.content), escape(app.notes[app.activenote].content)) + '</div>';
+    $('#compare-from').html('<h1>Snapshot</h1>' + content);
+    $('#compare-to').html('<h1>Current</h1>' + content);
+    $('#input,#render,#stats,#link').hide();
+    $('#compare').show();
+  });
   $('#button-snap-close').on('click', function() {
+    $('#compare').hide();
+    if (app.mode == 'edit') $('#input').show();
+    else $('#render').show();
     location.hash = '#' + app.activenote;
   });
   $('#button-snap-restore').on('click', function() {
@@ -667,6 +689,9 @@ $().ready(function() {
     note.touched = true;
     note.content = snapshot.content;
     note.title = snapshot.title;
+    $('#compare').hide();
+    if (app.mode == 'edit') $('#input').show();
+    else $('#render').show();
     location.hash = '#' + note.id;
   });
 
@@ -2036,3 +2061,114 @@ function webauthnAuthenticate(key, cb){
 
 // date.format library (https://github.com/jacwright/date.format) by Jacob Wright and others - MIT license
 (function(){Date.shortMonths=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],Date.longMonths=["January","February","March","April","May","June","July","August","September","October","November","December"],Date.shortDays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],Date.longDays=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];var t={d:function(){return(this.getDate()<10?"0":"")+this.getDate()},D:function(){return Date.shortDays[this.getDay()]},j:function(){return this.getDate()},l:function(){return Date.longDays[this.getDay()]},N:function(){return 0==this.getDay()?7:this.getDay()},S:function(){return this.getDate()%10==1&&11!=this.getDate()?"st":this.getDate()%10==2&&12!=this.getDate()?"nd":this.getDate()%10==3&&13!=this.getDate()?"rd":"th"},w:function(){return this.getDay()},z:function(){var t=new Date(this.getFullYear(),0,1);return Math.ceil((this-t)/864e5)},W:function(){var t=new Date(this.valueOf()),e=(this.getDay()+6)%7;t.setDate(t.getDate()-e+3);var n=t.valueOf();return t.setMonth(0,1),4!==t.getDay()&&t.setMonth(0,1+(4-t.getDay()+7)%7),1+Math.ceil((n-t)/6048e5)},F:function(){return Date.longMonths[this.getMonth()]},m:function(){return(this.getMonth()<9?"0":"")+(this.getMonth()+1)},M:function(){return Date.shortMonths[this.getMonth()]},n:function(){return this.getMonth()+1},t:function(){var t=this.getFullYear(),e=this.getMonth()+1;return 12===e&&(t=t++,e=0),new Date(t,e,0).getDate()},L:function(){var t=this.getFullYear();return t%400==0||t%100!=0&&t%4==0},o:function(){var t=new Date(this.valueOf());return t.setDate(t.getDate()-(this.getDay()+6)%7+3),t.getFullYear()},Y:function(){return this.getFullYear()},y:function(){return(""+this.getFullYear()).substring(2)},a:function(){return this.getHours()<12?"am":"pm"},A:function(){return this.getHours()<12?"AM":"PM"},B:function(){return Math.floor(1e3*((this.getUTCHours()+1)%24+this.getUTCMinutes()/60+this.getUTCSeconds()/3600)/24)},g:function(){return this.getHours()%12||12},G:function(){return this.getHours()},h:function(){return((this.getHours()%12||12)<10?"0":"")+(this.getHours()%12||12)},H:function(){return(this.getHours()<10?"0":"")+this.getHours()},i:function(){return(this.getMinutes()<10?"0":"")+this.getMinutes()},s:function(){return(this.getSeconds()<10?"0":"")+this.getSeconds()},u:function(){var t=this.getMilliseconds();return(10>t?"00":100>t?"0":"")+t},e:function(){return/\((.*)\)/.exec((new Date).toString())[1]},I:function(){for(var t=null,e=0;12>e;++e){var n=new Date(this.getFullYear(),e,1),i=n.getTimezoneOffset();if(null===t)t=i;else{if(t>i){t=i;break}if(i>t)break}}return this.getTimezoneOffset()==t|0},O:function(){return(-this.getTimezoneOffset()<0?"-":"+")+(Math.abs(this.getTimezoneOffset()/60)<10?"0":"")+Math.floor(Math.abs(this.getTimezoneOffset()/60))+(0==Math.abs(this.getTimezoneOffset()%60)?"00":(Math.abs(this.getTimezoneOffset()%60)<10?"0":"")+Math.abs(this.getTimezoneOffset()%60))},P:function(){return(-this.getTimezoneOffset()<0?"-":"+")+(Math.abs(this.getTimezoneOffset()/60)<10?"0":"")+Math.floor(Math.abs(this.getTimezoneOffset()/60))+":"+(0==Math.abs(this.getTimezoneOffset()%60)?"00":(Math.abs(this.getTimezoneOffset()%60)<10?"0":"")+Math.abs(this.getTimezoneOffset()%60))},T:function(){return this.toTimeString().replace(/^.+ \(?([^\)]+)\)?$/,"$1")},Z:function(){return 60*-this.getTimezoneOffset()},c:function(){return this.format("Y-m-d\\TH:i:sP")},r:function(){return this.toString()},U:function(){return this.getTime()/1e3}};Date.prototype.format=function(e){var n=this;return e.replace(/(\\?)(.)/g,function(e,i,r){return""===i&&t[r]?t[r].call(n):r})}}).call(this);
+
+/*
+ * Javascript Diff Algorithm
+ *  By John Resig (http://ejohn.org/)
+ *  Modified by Chu Alan "sprite"
+ *
+ * Released under the MIT license.
+ *
+ * More Info:
+ *  http://ejohn.org/projects/javascript-diff-algorithm/
+ */
+
+function escape(s) {
+  var n = s;
+  n = n.replace(/&/g, "&amp;");
+  n = n.replace(/</g, "&lt;");
+  n = n.replace(/>/g, "&gt;");
+  n = n.replace(/"/g, "&quot;");
+
+  return n;
+}
+
+function diffString( o, n ) {
+o = o.replace(/\s+$/, '');
+n = n.replace(/\s+$/, '');
+
+var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
+var str = "";
+
+var oSpace = o.match(/\s+/g);
+if (oSpace == null) {
+  oSpace = ["\n"];
+} else {
+  oSpace.push("\n");
+}
+var nSpace = n.match(/\s+/g);
+if (nSpace == null) {
+  nSpace = ["\n"];
+} else {
+  nSpace.push("\n");
+}
+
+if (out.n.length == 0) {
+    for (var i = 0; i < out.o.length; i++) {
+      str += '<del>' + escape(out.o[i]) + oSpace[i] + "</del>";
+    }
+} else {
+  if (out.n[0].text == null) {
+    for (n = 0; n < out.o.length && out.o[n].text == null; n++) {
+      str += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
+    }
+  }
+
+  for ( var i = 0; i < out.n.length; i++ ) {
+    if (out.n[i].text == null) {
+      str += '<ins>' + escape(out.n[i]) + nSpace[i] + "</ins>";
+    } else {
+      var pre = "";
+
+      for (n = out.n[i].row + 1; n < out.o.length && out.o[n].text == null; n++ ) {
+        pre += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
+      }
+      str += out.n[i].text + nSpace[i] + pre;
+    }
+  }
+}
+
+return str;
+}
+
+function diff( o, n ) {
+var ns = {};
+var os = {};
+
+for ( var i = 0; i < n.length; i++ ) {
+  if ( ns[ n[i] ] == null )
+    ns[ n[i] ] = { rows: new Array(), o: null };
+  ns[ n[i] ].rows.push( i );
+}
+
+for ( var i = 0; i < o.length; i++ ) {
+  if ( os[ o[i] ] == null )
+    os[ o[i] ] = { rows: new Array(), n: null };
+  os[ o[i] ].rows.push( i );
+}
+
+for ( var i in ns ) {
+  if ( ns[i].rows.length == 1 && typeof(os[i]) != "undefined" && os[i].rows.length == 1 ) {
+    n[ ns[i].rows[0] ] = { text: n[ ns[i].rows[0] ], row: os[i].rows[0] };
+    o[ os[i].rows[0] ] = { text: o[ os[i].rows[0] ], row: ns[i].rows[0] };
+  }
+}
+
+for ( var i = 0; i < n.length - 1; i++ ) {
+  if ( n[i].text != null && n[i+1].text == null && n[i].row + 1 < o.length && o[ n[i].row + 1 ].text == null && 
+       n[i+1] == o[ n[i].row + 1 ] ) {
+    n[i+1] = { text: n[i+1], row: n[i].row + 1 };
+    o[n[i].row+1] = { text: o[n[i].row+1], row: i + 1 };
+  }
+}
+
+for ( var i = n.length - 1; i > 0; i-- ) {
+  if ( n[i].text != null && n[i-1].text == null && n[i].row > 0 && o[ n[i].row - 1 ].text == null && 
+       n[i-1] == o[ n[i].row - 1 ] ) {
+    n[i-1] = { text: n[i-1], row: n[i].row - 1 };
+    o[n[i].row-1] = { text: o[n[i].row-1], row: i - 1 };
+  }
+}
+
+return { o: o, n: n };
+}

@@ -81,6 +81,10 @@
     <div id="panel-main">
       <textarea id="input" autocomplete="off" spellcheck="false"></textarea>
       <div id="render" style="display: none;"></div>
+      <div id="compare" style="display: none;">
+        <div id="compare-from"></div>
+        <div id="compare-to"></div>
+      </div>
       <div id="stats" style="display: none;"></div>
       <div id="link" style="display: none;"></div>
       <div id="snap" style="display: none;">
@@ -89,6 +93,7 @@
           <div id="snapdate"></div>
         </div>
         <div>
+          <input id="button-snap-compare" class="modal-button-small" type="button" value="Compare">
           <input id="button-snap-restore" class="modal-button-small" type="button" value="Restore">
           <input id="button-snap-close" class="modal-button-small" type="button" value="Close">
         </div>
