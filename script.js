@@ -838,10 +838,13 @@ function loadSnap(snap) {
 
 function render(content) {
   let el = $('#render');
+  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) { // 2-step replace to avoid <input> being mangled, while having a correct offset
+    return '[' + sub + '][' + offset + ']';
+  });
   content = content.replace(/&/g, '&amp;');
   content = content.replace(/</g, '&lt;');
-  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) {
-    return '<input type="checkbox"' + (sub == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + offset + ')"></input>';
+  content = content.replace(/\[( |x)\]\[(\d+)\]/g, function(match, sub1, sub2, offset) {
+    return '<input type="checkbox"' + (sub1 == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + sub2 + ')"></input>';
   });
   marked.use({ headerPrefix: app.activenote + '_' });
   el.html(marked.parse(content));
