@@ -265,7 +265,7 @@ $().ready(function() {
         let start = content.lastIndexOf("\n", cursor.start-1);
         if (content.substring(start+1, start+3) == '> ') {
           let newcontent = content.substring(0, start+1) + content.substring(start+3);
-          $('#input').val(newcontent).setCursorPosition(cursor.start-2).trigger('input');
+          $('#input').val(newcontent).setCursorPosition(Math.max(cursor.start-2, start+1)).trigger('input');
         }
       }
       else {
