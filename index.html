@@ -141,14 +141,14 @@
         if (sw.waiting) {
           console.log('Updated service worker is waiting');
           window.newsw = sw.waiting;
-          document.getElementById('update').style = '';
+          if (navigator.serviceWorker.controller) document.getElementById('update').style = '';
         }
         sw.addEventListener('updatefound', () => {
           console.log('Updated service worker is available');
           window.newsw = sw.installing;
           newsw.addEventListener('statechange', () => {
             console.log('Updated service worker has state: ' + newsw.state);
-            if (newsw.state == 'installed') document.getElementById('update').style = '';
+            if (newsw.state == 'installed' && navigator.serviceWorker.controller) document.getElementById('update').style = '';
           });
         });
       });
