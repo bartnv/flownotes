@@ -1801,7 +1801,7 @@ function hideModal() {
 
 function login(error, challenge) {
   let modal = $('#modal-overlay');
-  let content = '<div><h2>Login with password</h2><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password"></p>'
+  let content = '<div><h2>Login with password</h2><p>Please enter your password</p><form><p><input type="password" id="password" class="input-password" autocomplete="current-password"></p>'
   content += '<p><input type="checkbox" id="remember"> Remember for this device</p>';
   content += '<p><input type="submit" id="login-pw" class="modal-button" value="Submit"></p></form><p id="modal-error"></p>';
   if (challenge) content += '<h2>Login with U2F key</h2><p><input type="button" id="login-u2f" class="modal-button" value="Activate key"></p>';
