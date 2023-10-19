@@ -106,7 +106,7 @@ $().ready(function() {
     name: 'password',
     level: 'inline',
     start(src) { let match = src.match(/\*`/); return match?match.index:undefined; },
-    tokenizer(src, tokens) {
+    tokenizer(src) {
       let rule = /^\*`([^`]+)`/;
       let match = rule.exec(src);
       if (match) return { type: 'password', raw: match[0], pass: match[1] }
@@ -117,7 +117,6 @@ $().ready(function() {
   };
   marked.use({
     breaks: true,
-    smartypants: true,
     renderer: renderer,
     extensions: [ password ]
   });
@@ -406,17 +405,17 @@ $().ready(function() {
       if (id != app.activenote) activateNote(id);
       if (app.mode != 'edit') return;
       if (!app.slugtoraw) return;
-      let raw = app.slugtoraw[match[2]];
+      let raw = app.slugtoraw[match[1] + '_' + match[2]];
       if (!raw) return;
       let input = $('#input');
       let idx = input.val().indexOf(raw);
       if (idx == -1) return;
-      let end = idx+raw.length-1;
+      let end = idx+raw.length;
       let fulltext = input.val();
       input.val(fulltext.substring(0, end));
       let scrollheight = input[0].scrollHeight;
       input.val(fulltext);
-      input.setCursorPosition(idx, idx+raw.length-1).focus();
+      input.setCursorPosition(idx, idx+raw.length).focus();
       if (scrollheight > input[0].clientHeight) scrollheight -= input[0].clientHeight/2;
       else scrollheight = 0;
       input[0].scrollTop = scrollheight;
@@ -516,7 +515,6 @@ $().ready(function() {
     if (app.linkid) {
       let dropid = evt.target.dataset.id || evt.target.parentElement.dataset.id;
       if (dropid && (app.linkid != dropid) && $(evt.target).parents('#tab-pinned').length) {
-        console.log('Pinned ' + app.notes[app.linkid].pinned + ' should become ' + (app.notes[dropid].pinned+1));
         sendToServer({ req: 'pindrag', id: app.linkid, pinned: app.notes[dropid].pinned+1 });
       }
       $('.note-li[data-id="' + app.linkid + '"]').removeClass('note-selected');
@@ -808,8 +806,6 @@ function unpinNote(id) {
   if (id == app.activenote) $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
 }
 function loadNote(id) {
-  if (app.notes[id].mode && (app.mode != app.notes[id].mode)) switchMode(app.notes[id].mode);
-  if (app.mode == 'view') render(app.notes[id].content);
   if (app.notes[id].pinned) $('#button-note-pin').addClass('button-active').attr('title', 'Unpin note');
   else $('#button-note-pin').removeClass('button-active').attr('title', 'Pin note');
   if (app.notes[id].deleted) {
@@ -822,6 +818,8 @@ function loadNote(id) {
   }
   $('#input').val(app.notes[id].content).attr('readonly', false);
   if (app.notes[id].cursor) $('#input').setCursorPosition(app.notes[id].cursor.start, app.notes[id].cursor.end);
+  render(app.notes[id].content);
+  if (app.notes[id].mode && (app.mode != app.notes[id].mode)) switchMode(app.notes[id].mode);
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
   updatePublish(app.notes[id]);
@@ -838,7 +836,7 @@ function loadSnap(snap) {
 
 function render(content) {
   let el = $('#render');
-  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) { // 2-step replace to avoid <input> being mangled, while having a correct offset
+  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) { // 2-step replace to avoid <input> being mangled, while recording a correct offset
     return '[' + sub + '][' + offset + ']';
   });
   content = content.replace(/&/g, '&amp;');
@@ -846,7 +844,8 @@ function render(content) {
   content = content.replace(/\[( |x)\]\[(\d+)\]/g, function(match, sub1, sub2, offset) {
     return '<input type="checkbox"' + (sub1 == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + sub2 + ')"></input>';
   });
-  marked.use({ headerPrefix: app.activenote + '_' });
+  // marked.use({ headerPrefix: app.activenote + '_' });
+  marked.use(markedGfmHeadingId.gfmHeadingId({ prefix: app.activenote + '_' }));
   el.html(marked.parse(content));
   return el;
 }
@@ -909,6 +908,7 @@ function tick() {
       note.content = $('#input').val();
       note.cursor = $('#input').getCursorPosition();
       note.title = findTitle(app.notes[app.activenote].content);
+      render(note.content);
       if (($('#label-recent').hasClass('tab-active')) && ($('#tab-recent').prop('scrollTop') != 0) &&
           ($('#tab-recent .note-li[data-id="' + app.activenote + '"]').parent().index() != 0)) {
         $('#scrolled').click(); // Scroll updated note into view
@@ -1198,25 +1198,26 @@ function deleteWebauthn(idx) {
 }
 
 function switchMode(newmode) {
-  let pct = null;
+  let pct = NaN;
   app.prev = app.mode;
   app.mode = newmode;
   if (app.notes[app.activenote]) {
     if (!app.changed) app.changed = Date.now();
     app.notes[app.activenote].mode = newmode;
     app.notes[app.activenote].metatouched = true;
+    if (app.notes[app.activenote].touched) render($('#input').val());
   }
   if (app.mode == 'edit') {
     if (app.prev == 'view') pct = $('#render').getScrolledPct();
+    $('#render').hide();
     $('#input').show().focus();
-    $('#render').hide().empty();
-    if (pct !== null) $('#input').setScrolledPct(pct);
+    if (!isNaN(pct)) $('#input').setScrolledPct(pct);
   }
   else if (app.mode == 'view') {
     if (app.prev == 'edit') pct = $('#input').getScrolledPct();
     $('#input,#stats').hide();
-    render($('#input').val()).show();
-    if (pct !== null) $('#render').setScrolledPct(pct);
+    $('#render').show();
+    if (!isNaN(pct)) $('#render').setScrolledPct(pct);
   }
   $('#button-mode-' + app.mode).addClass('button-active').siblings('.button-mode').removeClass('button-active');
 }
@@ -1758,15 +1759,12 @@ function loadToc() {
   let div = $('#tab-right').empty()
     .append('<div class="list-divider">Headings</div><div id="toc" class="scrolly"></div>');
   div = div.find('#toc');
-  let tokens = marked.lexer($('#input').val()).filter(x => x.type == 'heading');
-  let slugger = new marked.Slugger();
   app.slugtoraw = {};
-  for (let tok of tokens) {
-    let slug = slugger.slug(tok.text);
-    app.slugtoraw[slug] = tok.raw;
-    let li = $('<a href="#' + app.activenote + '_' + slug + '"><div class="toc-li">' + tok.text + '</div></a>');
-    if (tok.depth > 1) li.children().first().css('margin-left', ((tok.depth-1)*2) + 'rem');
+  for (let head of markedGfmHeadingId.getHeadingList()) {
+    let li = $('<a href="#' + head.id + '"><div class="toc-li">' + head.text + '</div></a>');
+    if (head.level > 1) li.children().first().css('margin-left', ((head.level-1)*2) + 'rem');
     div.append(li);
+    app.slugtoraw[head.id] = head.text;
   }
 }
 
