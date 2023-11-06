@@ -363,7 +363,8 @@ switch ($data['req']) {
         print str_replace('#title#', $note['title'], file_get_contents('html-header.html'));
         $pd = new Flowdown('download');
         $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
-        print $pd->text($note['content']);
+        $content = preg_replace('/^---\n(.*?)\n---/s', '', $note['content']); // Remove Frontmatter
+        print $pd->text($content);
         print str_replace('#modified#', date('Y-m-d H:i T', $note['modified']), file_get_contents('html-footer.html'));
         exit(0);
       case 'gettxtall':
@@ -1227,7 +1228,8 @@ function publish($note, $file, $type) {
   }
   $pd = new Flowdown('publish');
   $pd->setBreaksEnabled(true)->setMarkupEscaped(true);
-  if (!fwrite($fh, $pd->text($note['content']))) return 'Failed to write export file';
+  $content = preg_replace('/^---\n(.*?)\n---/s', '', $note['content']); // Remove Frontmatter
+  if (!fwrite($fh, $pd->text($content))) return 'Failed to write export file';
   if ($type == 'html') {
     $foot = str_replace('#modified#', date('Y-m-d H:i T'), file_get_contents('html-footer.html'));
     if (!fwrite($fh, $foot)) return 'Failed to write export file';
@@ -1279,10 +1281,11 @@ function htmlToZip() {
   $stmt = sql_rows('SELECT id, title, content, modified FROM note WHERE deleted = 0 ORDER BY id');
   while ($note = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $filename = $note['id'] . ' - ' . str_replace('/', '-', $note['title']) . '.html';
-    $content = str_replace('#title#', $note['title'], $head);
-    $content .= $pd->text($note['content']);
-    $content .= str_replace('#modified#', date('Y-m-d H:i T', $note['modified']), $foot);
-    addToZip($zipdata, $filename, $content, $note['modified']);
+    $html = str_replace('#title#', $note['title'], $head);
+    $content = preg_replace('/^---\n(.*?)\n---/s', '', $note['content']); // Remove Frontmatter
+    $html .= $pd->text($content);
+    $html .= str_replace('#modified#', date('Y-m-d H:i T', $note['modified']), $foot);
+    addToZip($zipdata, $filename, $html, $note['modified']);
   }
   finishZip($zipdata);
 }

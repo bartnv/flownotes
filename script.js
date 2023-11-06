@@ -836,6 +836,7 @@ function loadSnap(snap) {
 
 function render(content) {
   let el = $('#render');
+  content = content.replace(/^---\n(.*?)\n---/s, ''); // Remove Frontmatter
   content = content.replace(/\[( |x)\]/g, function(match, sub, offset) { // 2-step replace to avoid <input> being mangled, while recording a correct offset
     return '[' + sub + '][' + offset + ']';
   });
@@ -1414,7 +1415,17 @@ function updateUploads() {
 }
 
 function findTitle(text) {
-  let matches = text.substring(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'&()-]+[a-zA-Z\u00C0-\u024F0-9)])/mg);
+  let matches;
+  if (matches = text.match(/^---\n(.*?)\n---/s)) { // Note has Frontmatter
+    text = text.substring(matches[0].length);
+    try {
+      let fm = jsyaml.load(matches[1]);
+      if (fm.title) return fm.title;
+    } catch (e) {
+      console.log('Failed to parse Frontmatter as YAML:', e.reason);
+    }
+  }
+  matches = text.substring(0, 100).match(/([a-zA-Z\u00C0-\u024F0-9][a-zA-Z\u00C0-\u024F0-9 .\/\\'&()-]+[a-zA-Z\u00C0-\u024F0-9)])/mg);
   if (matches) {
     if (((matches[0] == 'http') || (matches[0] == 'https')) && matches[1]) return matches[1];
     return matches[0];
