@@ -801,7 +801,7 @@ function search_notes($term) {
 
 function update_note($id, $note) {
   global $dbh;
-  if ($note['pinned']) {
+  if (isset($note['pinned']) && $note['pinned']) {
     if ($note['pinned'] === true) {
       if (!($res = $dbh->query("SELECT MAX(pinned)+1 FROM note"))) {
         error_log("update_note() pinned select failed: " . $dbh->errorInfo()[2]);
