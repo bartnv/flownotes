@@ -433,7 +433,7 @@ switch ($data['req']) {
         else {
           header('Content-type: ' . mime_content_type($file));
           header('Content-length: ' . filesize($file));
-          header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file) . ' GMT'));
+          header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime($file)) . ' GMT');
           readfile($file);
         }
         exit();
