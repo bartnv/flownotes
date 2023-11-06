@@ -1,25 +1,24 @@
-let version = 'v4.2';
+let version = 'v4.2.1';
 
 self.addEventListener('install', evt => {
   console.log('Service worker ' + version + ' is being installed');
-  evt.waitUntil(
-    caches.open('flownotes-' + version).then(cache => {
-      return cache.addAll([
-        './index.html?' + version,
-        './script.js?' + version,
-        './style.css?' + version,
-        './share.html?' + version,
-        './popout.html?' + version
-      ]);
-    })
-  );
+  evt.waitUntil(caches.open('flownotes-' + version).then(cache => {
+    let files = [
+      './index.html',
+      './script.js',
+      './style.css',
+      './share.html',
+      './popout.html'
+    ];
+    return cache.addAll(files.map((file) => new Request(file, { cache: 'reload' })));
+  }))
 });
 self.addEventListener('activate', evt => {
   console.log('Service worker ' + version + ' is being activated');
   evt.waitUntil(
     caches.keys().then(keylist => {
       return Promise.all(keylist.map(key => {
-        if (key.startsWith('flownotes-') && (key != version)) return caches.delete(key);
+        if (key.startsWith('flownotes-') && (key != 'flownotes-' + version)) return caches.delete(key);
       }));
     })
   );
@@ -33,7 +32,7 @@ self.addEventListener('fetch', evt => {
   }
   else if (evt.request.cache && ((evt.request.cache == 'no-cache') || (evt.request.cache == 'reload'))) {
     evt.respondWith(
-      tryNetwork(evt.request, 10000).catch(() => tryCache(evt.request))
+      tryNetwork(evt.request, 60000, { cache: 'reload' }).catch(() => tryCache(evt.request))
     );
   }
   else {
@@ -48,19 +47,19 @@ self.addEventListener('message', evt => {
   }
 });
 
-function tryNetwork(request, timeout) {
+function tryNetwork(request, timeout, options = {}) {
   return new Promise((fulfill, reject) => {
     let id = setTimeout(reject, timeout);
-    fetch(request).then(response => {
+    fetch(request, options).then(response => {
       clearTimeout(id);
       fulfill(response.clone());
-      if (response.status == 200) caches.open(version).then(cache => cache.put(request, response));
+      if (response.status == 200) caches.open('flownotes-' + version).then(cache => cache.put(request, response));
       else console.log(`Request for ${request.url} failed with status ${response.status} (${response.statusText})`);
     }, reject);
   });
 }
 function tryCache(request, options = {}) {
-  return caches.open(version).then(
+  return caches.open('flownotes-' + version).then(
     cache => cache.match(request, options).then(
       matching => matching || Promise.reject('no-match')
     )
