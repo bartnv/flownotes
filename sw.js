@@ -1,17 +1,8 @@
-let version = 'v4.2.1';
+let version = 'v4.2.2';
 
 self.addEventListener('install', evt => {
   console.log('Service worker ' + version + ' is being installed');
-  evt.waitUntil(caches.open('flownotes-' + version).then(cache => {
-    let files = [
-      './index.html',
-      './script.js',
-      './style.css',
-      './share.html',
-      './popout.html'
-    ];
-    return cache.addAll(files.map((file) => new Request(file, { cache: 'reload' })));
-  }))
+  evt.waitUntil(preload());
 });
 self.addEventListener('activate', evt => {
   console.log('Service worker ' + version + ' is being activated');
@@ -45,8 +36,23 @@ self.addEventListener('message', evt => {
   if (evt.data.action == 'skipWaiting') {
     self.skipWaiting();
   }
+  else if (evt.data.action == 'refresh') {
+    preload().then(evt.source.postMessage({ action: 'reload' }));
+  }
 });
 
+async function preload() {
+  return caches.open('flownotes-' + version).then(cache => {
+    let files = [
+      './',
+      './script.js',
+      './style.css',
+      './share.html',
+      './popout.html'
+    ];
+    return cache.addAll(files.map((file) => new Request(file, { cache: 'reload' })));
+  });
+}
 function tryNetwork(request, timeout, options = {}) {
   return new Promise((fulfill, reject) => {
     let id = setTimeout(reject, timeout);

@@ -158,10 +158,20 @@
         console.log('New service worker is now controlling this tab');
         if (!app.changed) window.location.reload();
       });
+      navigator.serviceWorker.addEventListener('message', (evt) => {
+        console.log('Received message from service worker:', evt.data);
+        if (evt.data.action == 'reload') window.location.reload();
+      });
       document.getElementById('button-update-now').addEventListener('click', () => {
         newsw.postMessage({ action: 'skipWaiting' });
       });
     }
+    document.addEventListener('keydown', (evt) => {
+      if ((evt.key == 'F5') && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ action: 'refresh' });
+        evt.preventDefault();
+      }
+    });
   </script>
 </body>
 </html>
