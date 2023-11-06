@@ -390,7 +390,7 @@ switch ($data['req']) {
         $res = publish($note, $filename, 'html');
         if ($res != 'OK') fatalerr($res);
         if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'html', $filename ])) fatalerr('Failed to create publish entry');
-        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
+        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?", [ $data['note'] ]);
         update_published_uploads();
         $note['published'] = [ [ 'type' => 'html', 'file' => $filename ] ];
         $ret['notes'][$note['id']] = $note;
@@ -403,7 +403,7 @@ switch ($data['req']) {
         $res = publish($note, $filename, 'frag');
         if ($res != 'OK') fatalerr($res);
         if (!sql_updateone("INSERT INTO publish (note, type, file) VALUES (?, ?, ?)", [ $data['note'], 'frag', $filename ])) fatalerr('Failed to create publish entry');
-        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
+        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?", [ $data['note'] ]);
         update_published_uploads();
         $note['published'] = [ [ 'type' => 'frag', 'file' => $filename ] ];
         $ret['notes'][$note['id']] = $note;
@@ -417,7 +417,7 @@ switch ($data['req']) {
         if (!file_exists($file)) $ret['log'] = "File '$file' doesn't exist; removing published status";
         elseif (!unlink($file)) fatalerr("Failed to delete file '$file'");
         if (!sql_updateone("DELETE FROM publish WHERE note = ? AND type = ?", [ $data['note'], $data['type'] ])) fatalerr('Failed to delete publish entry');
-        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?" [ $data['note'] ]);
+        sql_updateone("UPDATE note SET changed = strftime('%s', 'now') WHERE id = ?", [ $data['note'] ]);
         update_published_uploads();
         $note['published'] = null;
         $ret['notes'][$note['id']] = $note;
