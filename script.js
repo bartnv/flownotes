@@ -692,6 +692,16 @@ $().ready(function() {
     else $('#render').show();
     location.hash = '#' + note.id;
   });
+  $('#tags').on('click', 'div', function(evt) {
+    activateTab('search');
+    $('#search-input').val(evt.currentTarget.innerHTML);
+    $('#search-button').click();
+  });
+  $('#render').on('click', '.tag', function(evt) {
+    activateTab('search');
+    $('#search-input').val(evt.currentTarget.innerHTML);
+    $('#search-button').click();
+  });
 
   let instance = '-';
   instance += location.pathname.split('/').slice(1, -1).join('-');
@@ -823,6 +833,8 @@ function loadNote(id) {
   let active = $('#tab-recent .note-active')[0];
   if (active && !active.isInView()) active.customScrollIntoView();
   updatePublish(app.notes[id]);
+  if (app.notes[id].tags) showTags(app.notes[id].tags);
+  else $('#tags').hide();
   $('#snap').hide();
 }
 function loadSnap(snap) {
@@ -842,6 +854,7 @@ function render(content) {
   });
   content = content.replace(/&/g, '&amp;');
   content = content.replace(/</g, '&lt;');
+  content = content.replace(/(?<=(^|\s))#[a-zA-Z][a-zA-Z0-9]+(?=(\s|$))/g, '<span class="tag">$&</span>');
   content = content.replace(/\[( |x)\]\[(\d+)\]/g, function(match, sub1, sub2, offset) {
     return '<input type="checkbox"' + (sub1 == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + sub2 + ')"></input>';
   });
@@ -909,6 +922,8 @@ function tick() {
       note.content = $('#input').val();
       note.cursor = $('#input').getCursorPosition();
       note.title = findTitle(app.notes[app.activenote].content);
+      note.tags = findTags(app.notes[app.activenote].content);
+      if (note.tags) showTags(note.tags);
       render(note.content);
       if (($('#label-recent').hasClass('tab-active')) && ($('#tab-recent').prop('scrollTop') != 0) &&
           ($('#tab-recent .note-li[data-id="' + app.activenote + '"]').parent().index() != 0)) {
@@ -1043,6 +1058,7 @@ function parseFromServer(data, textStatus, xhr) {
     for (let i in data.notes) {
       if (!app.notes[i]) app.notes[i] = { id: i };
       if (data.notes[i].title) app.notes[i].title = data.notes[i].title;
+      if (data.notes[i].tags) app.notes[i].tags = data.notes[i].tags;
       else if (!app.notes[i].title) app.notes[i].title = '{no title}';
       if (data.notes[i].modified) {
         app.notes[i].modified = data.notes[i].modified;
@@ -1270,7 +1286,8 @@ function updateSearch() {
   items.sort(function(a, b) { return b[1] - a[1] });
   let results = "";
   for (let i of items) { // i is an array of [ id, hits ]
-    if (!i[1]) continue; // FTS can sometimes result hits of 0
+    if (i[1] === 0) continue; // FTS can sometimes result hits of 0
+    if (i[1] === -1) i[1] = ''; // -1 is returned when the number of hits is irrelevant
     let note = app.notes[i[0]];
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
@@ -1446,10 +1463,40 @@ function findTitle(text) {
   return '{no title}';
 }
 
+function findTags(text) {
+  let tags = [];
+  let matches;
+  if (matches = text.match(/^---\n(.*?)\n---/s)) { // Note has Frontmatter
+    text = text.substring(matches[0].length);
+    try {
+      let fm = jsyaml.load(matches[1]);
+      if (Array.isArray(fm.tags)) {
+        for (let tag of fm.tags) {
+          if (typeof tag === 'string') tags.push(tag);
+        }
+      }
+    } catch (e) {
+      console.log('Failed to parse Frontmatter as YAML:', e.reason);
+    }
+  }
+  matches = text.match(/(?<=(^|\s)#)[a-zA-Z][a-zA-Z0-9]+(?=(\s|$))/g);
+  if (matches) tags = tags.concat(matches);
+  return tags;
+}
+
+function showTags(tags) {
+  let str = '';
+  for (let tag of tags) {
+    str += '<div>#' + tag + '</div>';
+  }
+  $('#tags').html(str).show();
+}
+
 function activateNote(id, nopost) {
   if (app.notes[app.activenote] && app.notes[app.activenote].touched) {
     app.notes[app.activenote].content = $('#input').val();
     app.notes[app.activenote].title = findTitle(app.notes[app.activenote].content);
+    app.notes[app.activenote].tags = findTags(app.notes[app.activenote].content);
   }
   app.activenote = id;
   app.snapshots = null;

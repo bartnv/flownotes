@@ -137,6 +137,13 @@ DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 
 #tour-bubble.bottom-left::before { bottom: 0; left: 0; border-width: 1rem 0 0 1rem; border-color: transparent orange; }
 #tour-bubble INPUT { margin: 0 1rem 1rem 0; }
 .tour-anchor { position: relative; }
+
+#tags { position: absolute; top: calc(90% + 0.7rem); width: 80%; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+#tags > DIV, #render .tag { border: solid rgb(85, 85, 85) 1px; border-radius: 0.18rem; padding: 0 0.18rem; background-color: rgb(180, 180, 180); cursor: pointer; }
+#tags > DIV:hover { background-color: rgb(200, 200, 200); }
+#render .tag { background-color: rgb(213, 213, 213); padding: 0.12rem 0.18rem; }
+#render .tag:hover { background-color: rgb(230, 230, 230); }
+
 .scrolly { overflow-y: scroll; scrollbar-width: none; touch-action: pan-y; }
 .scrolly::-webkit-scrollbar { display: none; }
 .mta { margin-top: auto; }
@@ -145,8 +152,6 @@ DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
             user-select: none;
   outline: none;
 }
@@ -224,7 +229,7 @@ DEL { background-color: rgba(255, 0, 0, 0.3); }
   DIV#panels { width: auto; min-width: 100vw; }
 }
 @media (max-width: 400px) {
-  TEXTAREA#input,DIV#render { width: 90%; }
+  TEXTAREA#input,DIV#render,#tags { width: 90%; }
 }
 @media print {
   #panel-left,#panel-buttons,#panel-right { display: none; }

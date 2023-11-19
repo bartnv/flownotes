@@ -14,7 +14,7 @@ if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile .
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
 $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
-if (query_setting('dbversion') < 13) upgrade_database();
+if (query_setting('dbversion') < 14) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -536,6 +536,7 @@ function select_note($id) {
   if (empty($row['id'])) return [];
   if ($row['flinks']) $row['flinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['flinks']))));
   if ($row['blinks']) $row['blinks'] = array_map('select_note_meta', array_values(array_unique(explode(',', $row['blinks']))));
+  $row['tags'] = json_decode($row['tags']);
   $row['published'] = sql_rows_collect('SELECT type, file FROM publish WHERE note = ?', [ $id ]);
   return $row;
 }
@@ -555,7 +556,7 @@ function select_note_meta($id) {
 }
 function select_recent_notes($count, $offset = 0) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title FROM note WHERE deleted = 0 ORDER BY modified DESC LIMIT $count OFFSET $offset"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, tags FROM note WHERE deleted = 0 ORDER BY modified DESC LIMIT $count OFFSET $offset"))) {
     error_log("select_recent_notes() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -565,13 +566,14 @@ function select_recent_notes($count, $offset = 0) {
   }
   $notes = [];
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $row['tags'] = json_decode($row['tags']);
     $notes[$row['id']] = array_slice($row, 1);
   }
   return $notes;
 }
 function select_pinned_notes($count) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned, deleted FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, tags, pinned, deleted FROM note WHERE pinned > 0 ORDER BY pinned DESC LIMIT $count"))) {
     error_log("select_pinned_notes() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -581,13 +583,14 @@ function select_pinned_notes($count) {
   }
   $notes = [];
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $row['tags'] = json_decode($row['tags']);
     $notes[$row['id']] = array_slice($row, 1);
   }
   return $notes;
 }
 function select_notes_since($lastupdate) {
   global $dbh;
-  if (!($stmt = $dbh->prepare("SELECT id, modified, title, pinned, deleted FROM note WHERE modified > ?"))) {
+  if (!($stmt = $dbh->prepare("SELECT id, modified, title, tags, pinned, deleted FROM note WHERE modified > ?"))) {
     error_log("select_notes_since() prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -597,7 +600,10 @@ function select_notes_since($lastupdate) {
   }
   $notes = [];
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    if (empty($notes[$row['id']])) $notes[$row['id']] = array_slice($row, 1);
+    if (empty($notes[$row['id']])) {
+      $row['tags'] = json_decode($row['tags']);
+      $notes[$row['id']] = array_slice($row, 1);
+    }
   }
   return $notes;
 }
@@ -759,13 +765,23 @@ function search_notes($term) {
 
   if (preg_match("/^#([0-9]+)$/", $term, $matches)) { // Note id search
     $id = (int)$matches[1];
-    return [ select_note($id) + [ 'hits' => '1' ] ];
+    return [ select_note($id) + [ 'hits' => '-1' ] ];
+  }
+  elseif (substr($term, 0, 1) == '#') { // Hashtag search
+    if (!($stmt = $dbh->prepare("SELECT note.id, modified, title, tags, deleted, -1 AS hits FROM note, json_each(tags) WHERE json_each.value = ? ORDER BY 2 DESC"))) {
+      error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
+      return 'SQL error';
+    }
+    if (!($stmt->execute([ substr($term, 1) ]))) {
+      error_log("FlowNotes: search_notes() execute failed: " . $stmt->errorInfo()[2]);
+      return 'SQL error';
+    }
   }
   elseif (substr($term, 0, 1) == '/') { // Regex search
     $dbh->sqliteCreateFunction('regexp', function($pattern, $data) {
       return preg_match_all("/$pattern/i", $data);
     });
-    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, regexp(?, content) AS hits FROM note WHERE content REGEXP ? ORDER BY 2 DESC"))) {
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, tags, deleted, regexp(?, content) AS hits FROM note WHERE content REGEXP ? ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
@@ -776,7 +792,7 @@ function search_notes($term) {
     }
   }
   elseif (substr($term, 0, 1) == '+') { // Upload search
-    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE (filename LIKE ? OR upload.title LIKE ?) AND unlinked IS NULL GROUP BY note.id ORDER BY 2 DESC"))) {
+    if (!($stmt = $dbh->prepare("SELECT note.id, note.modified, note.title, tags, deleted, count(*) AS hits FROM upload JOIN note ON upload.note = note.id WHERE (filename LIKE ? OR upload.title LIKE ?) AND unlinked IS NULL GROUP BY note.id ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
@@ -787,7 +803,7 @@ function search_notes($term) {
     }
   }
   else {
-    if (!($stmt = $dbh->prepare("SELECT id, modified, title, deleted, (length(highlight(fts, 0, '!', '!'))-length(fts.content))/2 AS hits FROM fts JOIN note ON fts.rowid = note.id WHERE fts.content MATCH ? ORDER BY 2 DESC"))) {
+    if (!($stmt = $dbh->prepare("SELECT id, modified, title, tags, deleted, (length(highlight(fts, 0, '!', '!'))-length(fts.content))/2 AS hits FROM fts JOIN note ON fts.rowid = note.id WHERE fts.content MATCH ? ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
@@ -798,7 +814,12 @@ function search_notes($term) {
     }
   }
 
-  return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $res = [];
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $row['tags'] = json_decode($row['tags']);
+    $res[] = $row;
+  }
+  return $res;
 }
 
 function update_note($id, $note) {
@@ -814,6 +835,8 @@ function update_note($id, $note) {
     else $pinned = $note['pinned'];
   }
   else $pinned = 0;
+  if (isset($note['tags']) && is_array($note['tags'])) $tags = json_encode($note['tags']);
+  else $tags = '[]';
 
   $GLOBALS['extra_ids'] = [];
   if (!sql_if("SELECT 1 FROM note WHERE id = ? AND title = ?", [ $id, $note['title'] ])) { // Note changed title
@@ -835,7 +858,7 @@ function update_note($id, $note) {
       }
     }
   }
-  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, changed = strftime('%s', 'now'), modified = strftime('%s', 'now'), pinned = ?, cursor = ?, mode = ? WHERE id = ?"))) {
+  if (!($stmt = $dbh->prepare("UPDATE note SET content = ?, title = ?, changed = strftime('%s', 'now'), modified = strftime('%s', 'now'), pinned = ?, cursor = ?, mode = ?, tags = ? WHERE id = ?"))) {
     error_log("update_note() update prepare failed: " . $dbh->errorInfo()[2]);
     return [];
   }
@@ -844,7 +867,7 @@ function update_note($id, $note) {
   elseif (is_array($note['cursor'])) $cursor = implode(',', $note['cursor']);
   else $cursor = $note['cursor'];
 
-  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $note['mode'] ?? 'edit', $id ]))) {
+  if (!($stmt->execute([ $note['content'], $note['title'], $pinned, $cursor, $note['mode'] ?? 'edit', $tags, $id ]))) {
     $processUser = posix_getpwuid(posix_geteuid());
     error_log("update_note() update execute failed: " . $stmt->errorInfo()[2] . ' (userid: ' . json_encode($processUser, JSON_THROW_ON_ERROR) . ')');
     return [];
@@ -993,8 +1016,10 @@ function upgrade_database() {
     case 12:
       sql_single("CREATE VIRTUAL TABLE fts USING fts5(content, content='note', content_rowid='id', tokenize='trigram')");
       sql_single("INSERT INTO fts(fts) VALUES('rebuild')");
+    case 13:
+      sql_single("ALTER TABLE note ADD COLUMN tags text default '[]'");
   }
-  store_setting('dbversion', 13);
+  store_setting('dbversion', 14);
 }
 
 function handle_cli() {
