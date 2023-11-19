@@ -13,6 +13,7 @@ if (!is_writable(dirname($dbfile))) fatalerr('Database directory ' . __DIR__ . '
 if (!file_exists($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " doesn't exist");
 if (!is_writable($dbfile)) fatalerr('Database file ' . __DIR__ . '/' . $dbfile . " is not writable for user " . posix_getpwuid(posix_geteuid())['name'] . ' with group ' . posix_getgrgid(posix_getegid())['name']);
 $dbh = new PDO('sqlite:' . $dbfile);
+$dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 if (query_setting('dbversion') < 13) upgrade_database();
 
 if (php_sapi_name() == 'cli') handle_cli(); // Doesn't return
