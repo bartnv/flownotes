@@ -2209,7 +2209,7 @@ dayjs.extend(dayjs_plugin_calendar);
 dayjs.extend(dayjs_plugin_updateLocale);
 dayjs.updateLocale('en', {
   calendar: {
-    sameDay: '[today]',
+    sameDay: '[today] HH:mm',
     lastDay: '[yesterday]',
     lastWeek: '[last] dddd',
     sameElse: function() { return this.fromNow(); }
