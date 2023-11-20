@@ -137,6 +137,7 @@ switch ($data['req']) {
     $ret['notes'] = select_recent_notes(25);
     $ret['notes'] = select_pinned_notes(25) + $ret['notes'];
     $ret['notes'][$activenote] = select_note($activenote);
+    $ret['tagicons'] = json_decode(query_setting('tagicons', '{}'));
     $ret['recent'] = 25;
     $ret['password'] = !empty($password);
     if (!empty($data['term'])) {
@@ -279,6 +280,7 @@ switch ($data['req']) {
         store_setting('autodelete', $data['autodelete']);
         if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['shareappend'])) store_setting('shareappend', $data['shareappend']);
         if (preg_match('/^(\d+(, ?\d+)*|)$/', $data['templatenotes'])) store_setting('templatenotes', $data['templatenotes']);
+        if (is_array($data['tagicons'])) store_setting('tagicons', json_encode($data['tagicons'], JSON_UNESCAPED_UNICODE));
         send_and_exit([ 'settings' => 'stored' ]);
         break;
       case 'get':

@@ -20,6 +20,7 @@ let app = {
   lastpanelright: 'links',
   keys: [],
   uploadqueue: [],
+  tagicons: {},
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
 
@@ -33,8 +34,9 @@ $(document).on('keydown', function(evt) {
     return false;
   }
   else if (evt.key == 'Escape') {
-    if (app.modal && (app.modal != 'password')) hideModal();
-    if (app.tour) {
+    if ($('emoji-picker').length) { $('emoji-picker').remove(); }
+    else if (app.modal && (app.modal != 'password')) hideModal();
+    else if (app.tour) {
       app.tourdiv.remove();
       delete app.tour;
       delete app.tourdiv;
@@ -1042,7 +1044,6 @@ function parseFromServer(data, textStatus, xhr) {
     if (error.length) error.html(data.modalerror);
     else showModal('error', '<div><p id="modal-error">' + data.modalerror + '</p></div>', true);
   }
-  if (data.settings == 'stored') hideModal();
 
   if ((data.snapshots) && (data.snapshotsfrom == app.activenote)) {
     app.snapshots = data.snapshots;
@@ -1053,6 +1054,7 @@ function parseFromServer(data, textStatus, xhr) {
     app.uploads = data.uploads;
     if (app.hidepanelright == false && app.lastpanelright == 'uploads') updateUploads();
   }
+  if (data.tagicons) app.tagicons = data.tagicons;
 
   if (data.notes) {
     for (let i in data.notes) {
@@ -1273,9 +1275,12 @@ function updateRecent() {
     let extraclass = '';
     if (note.id == app.activenote) extraclass = ' note-active';
     if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
-    str += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
+    str += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><div class="note-title">' + note.title + '</div>';
     let modified = dayjs.unix(note.modified);
-    str += '<span class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</span></div></a>';
+    str += '<div class="note-details">';
+    str += '<div class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</div>';
+    str += '<div class="note-icons">' + tagsToIcons(note.tags) + '</div>';
+    str += '</div></div></a>';
     if (++count >= app.recent) break;
   }
   $('#tab-recent').html(str);
@@ -1293,9 +1298,13 @@ function updateSearch() {
     if (note.id == app.activenote) extraclass = ' note-active';
     if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
-    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><span class="note-title">' + note.title + '</span><br>';
+    results += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '"><div class="note-title">' + note.title + '</div>';
     let modified = dayjs.unix(note.modified);
-    results += '<span class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</span><span class="note-hits">' + i[1] + '</span></div></a>';
+    results += '<div class="note-details">';
+    results += '<div class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</div>';
+    results += '<div class="note-hits">' + i[1] + '</div>';
+    results += '<div class="note-icons">' + tagsToIcons(note.tags) + '</div>';
+    results += '</div></div></a>';
   }
   $('#search-results').empty().html(results);
 }
@@ -1312,10 +1321,13 @@ function updatePinned() {
     if (note.touched || (note.intransit == 'full')) extraclass += ' note-touched';
     if (note.deleted) extraclass += ' note-deleted';
     pinned += '<a href="#' + note.id + '"><div class="note-li' + extraclass + '" data-id="' + note.id + '">';
-    pinned += '<span class="note-title">' + note.title + '</span><br>';
+    pinned += '<div class="note-title">' + note.title + '</div>';
     pinned += '<div class="button-unpin" onclick="unpinNote(' + note.id + '); return false;" title="Unpin"></div>';
     let modified = dayjs.unix(note.modified);
-    pinned += '<span class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</span></div></a>';
+    pinned += '<div class="note-details">';
+    pinned += '<div class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</div>';
+    pinned += '<div class="note-icons">' + tagsToIcons(note.tags) + '</div>';
+    pinned += '</div></div></a>';
   }
   $('#tab-pinned').empty().html(pinned);
 }
@@ -1328,9 +1340,12 @@ function updateLinks() {
       let classes = 'note-li';
       if (blink.deleted == 1) classes += ' note-deleted';
       str += '<a href="#' + blink.id + '"><div class="' + classes + '" data-id="' + blink.id + '">';
-      str += '<span class="note-title">' + blink.title + '</span><br>';
+      str += '<div class="note-title">' + blink.title + '</div>';
       let modified = dayjs.unix(blink.modified);
-      str += '<span class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</span></div></a>';
+      str += '<div class="note-details">';
+      str += '<div class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</div>';
+      // str += '<div class="note-icons">' + tagsToIcons(blink.tags) + '</div>';
+      str += '</div></div></a>';
     }
   }
   else str += '<div class="list-none">- none -</div>';
@@ -1340,9 +1355,12 @@ function updateLinks() {
       let classes = 'note-li';
       if (flink.deleted == 1) classes += ' note-deleted';
       str += '<a href="#' + flink.id + '"><div class="' + classes + '" data-id="' + flink.id + '">';
-      str += '<span class="note-title">' + flink.title + '</span><br>';
+      str += '<div class="note-title">' + flink.title + '</div>';
       let modified = dayjs.unix(flink.modified);
-      str += '<span class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</span></div></a>';
+      str += '<div class="note-details">';
+      str += '<div class="note-modified" title="Note saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">edited ' + modified.calendar() + '</div>';
+      // str += '<div class="note-icons">' + tagsToIcons(flink.tags) + '</div>';
+      str += '</div></div></a>';
     }
   }
   else str += '<div class="list-none">- none -</div>';
@@ -1358,11 +1376,11 @@ function updateSnapshots() {
   }
   for (let snap of app.snapshots) {
     let str = '<div class="snap-li" data-id="' + snap.id + '" data-modified="' + snap.modified + '">';
-    str += '<span class="snap-title">' + snap.title + '</span><br>';
+    str += '<div class="note-title">' + snap.title + '</div>';
     let modified = dayjs.unix(snap.modified);
-    str += '<span class="snap-modified" title="Snapshot saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">saved ' + modified.calendar() + '</span><br>';
+    str += '<div class="snap-modified" title="Snapshot saved at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">saved ' + modified.calendar() + '</div>';
     let matches = snap.content.match(/\W\w/g);
-    str += '<span class="snap-stats">chars: ' + snap.content.length + ' / words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(snap.content)?0:1)) + '</span>';
+    str += '<div class="snap-stats">chars: ' + snap.content.length + ' / words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(snap.content)?0:1)) + '</div>';
     if (snap.locked == 1) str += '<div class="snap-action snap-unlock" title="Unlock"></div>';
     else str += '<div class="snap-action snap-lock" title="Lock"></div><div class="snap-action snap-delete" title="Delete"></div>';
     str += '</div>';
@@ -1410,12 +1428,12 @@ function updateUploads() {
   else {
     for (let upload of app.uploads.linked) {
       let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '">';
-      str += '<span class="upload-title">' + upload.title + '</span><br>';
+      str += '<div class="note-title">' + upload.title + '</div>';
       if (upload.modified) {
         let modified = dayjs.unix(upload.modified);
-        str += '<span class="upload-modified" title="File uploaded at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">uploaded ' + modified.calendar() + '</span><br>';
+        str += '<div class="upload-modified" title="File uploaded at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">uploaded ' + modified.calendar() + '</div>';
       }
-      else str += '<span class="upload-modified">⚠ file not found in uploads folder ⚠</span><br>'
+      else str += '<div class="upload-modified">⚠ file not found in uploads folder ⚠</div>'
       str += '</div>';
       linked.append(str);
     }
@@ -1425,18 +1443,18 @@ function updateUploads() {
   else {
     for (let upload of app.uploads.unlinked) {
       let str = '<div class="upload-li" data-id="' + upload.id + '" data-title="' + upload.title + '" data-filename="' + upload.filename + '" data-filetype="' + upload.filetype + '">';
-      str += '<span class="upload-title">' + upload.title + '</span><br>';
+      str += '<div class="note-title">' + upload.title + '</div>';
       if (upload.modified) {
         let modified = dayjs.unix(upload.modified);
-        str += '<span class="upload-modified" title="File uploaded at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">uploaded ' + modified.calendar() + '</span><br>';
+        str += '<div class="upload-modified" title="File uploaded at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">uploaded ' + modified.calendar() + '</div>';
       }
-      else str += '<span class="upload-modified">⚠ file not found in uploads folder ⚠</span><br>'
+      else str += '<div class="upload-modified">⚠ file not found in uploads folder ⚠</div>'
       let modified = dayjs.unix(upload.unlinked);
       if (upload.note) {
         let a = '<a href="./#' + upload.note + '" title="' + app.notes[upload.note]?.title + '">#' + upload.note + '</a>';
-        str += '<span class="upload-modified" title="File unlinked at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">unlinked from ' + a + ' ' + modified.calendar() + '</span>';
+        str += '<div class="upload-modified" title="File unlinked at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">unlinked from ' + a + ' ' + modified.calendar() + '</div>';
       }
-      else str += '<span class="upload-modified" title="File discovered at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">discovered in uploads ' + modified.calendar() + '</span>';
+      else str += '<div class="upload-modified" title="File discovered at ' + modified.format('YYYY-MM-DD HH:mm:ss') + '">discovered in uploads ' + modified.calendar() + '</div>';
       str += '<div class="upload-action upload-delete" title="Delete"></div>';
       str += '</div>';
       unlinked.append(str);
@@ -1491,6 +1509,14 @@ function showTags(tags) {
   }
   $('#tags').html(str).show();
 }
+function tagsToIcons(tags) {
+  let str = '';
+  if (!tags) return str;
+  for (let tag of tags) {
+    if (tag in app.tagicons) str += `<span title="#${tag}">${app.tagicons[tag]}</span>`;
+  }
+  return str;
+}
 
 function activateNote(id, nopost) {
   if (app.notes[app.activenote] && app.notes[app.activenote].touched) {
@@ -1540,6 +1566,7 @@ function activateTab(name) {
   else $('#scrolled').show();
   if (name == 'search') $('#search-input').focus();
   updatePanels();
+  if (app.hidepanelleft) togglePanelLeft('open');
 }
 
 function listSearchResults(items, first) {
@@ -1710,6 +1737,9 @@ function loadSettings() {
   body.append('<p><span class="settings-label">Append-to note IDs:</span><input type="text" id="shareappend" placeholder="7,12,45" pattern="[0-9]+(, ?[0-9]+)*"></p>');
   body.append('<h2>New note templates</h2>');
   body.append('<p><span class="settings-label">Template note IDs:</span><input type="text" id="templatenotes" placeholder="2,8,16" pattern="[0-9]+(, ?[0-9]+)*"></p>');
+  body.append('<h2>Hashtag icons</h2>');
+  body.append('<p id="tag-icons"></p>');
+  body.append('<p><input type="button" id="addicon" class="modal-button-small" value="Add new hashtag icon"></p>');
   div.append('<p id="modal-error"></p>');
   div.append('<p><input type="button" id="settings-save" class="modal-button" value="Save"></p>');
   body.find('#logout-this').on('click', function() {
@@ -1724,6 +1754,25 @@ function loadSettings() {
   body.find('#register-u2f').on('click', function() {
     if (!app.password) return alert('Security keys can only be used with a password set. Please add a password first.');
     sendToServer({ req: 'webauthn', mode: 'prepare' });
+  });
+  body.find('#addicon').on('click', function() {
+    $('#tag-icons').append('<div><span>Tag:</span> <input type="text" name="tag" placeholder="#idea"> <span>Icon:</span> <input type="text" name="icon" readonly placeholder="💡"></div>');
+  });
+  for (let tag in app.tagicons) {
+    body.find('#tag-icons').append(`<div><span>Tag:</span> <input type="text" name="tag" value="#${tag}"> <span>Icon:</span> <input type="text" name="icon" readonly value="${app.tagicons[tag]}"></div>`);
+  }
+  body.find('#tag-icons').on('focus', 'input[name="icon"]', function(evt) {
+    app.emojitarget = evt.currentTarget;
+    $('#modal-overlay').append('<emoji-picker></emoji-picker>');
+    $('emoji-picker').on('emoji-click', function(evt) {
+      app.emojitarget.value = evt.originalEvent.detail.unicode;
+      $(this).remove();
+    }).on('click', function(evt) {
+      if (evt.originalEvent.originalTarget == this) { // Background clicked
+        $('emoji-picker').remove();
+      }
+    });
+    evt.preventDefault();
   });
   div.find('#settings-save').on('click', function() {
     let data = { req: 'settings', mode: 'save' };
@@ -1762,8 +1811,23 @@ function loadSettings() {
       return;
     }
     data.templatenotes = $('#templatenotes').val();
+    data.tagicons = {};
+    for (let entry of $('#tag-icons').children()) {
+      entry = $(entry);
+      let tag = entry.find('input[name="tag"]').val();
+      if (tag.startsWith('#')) tag = tag.substring(1);
+      if (!tag.match(/^[a-zA-Z][a-zA-Z0-9]+$/)) {
+        div.find('#modal-error').show().text(`Invalid input for hashtag: "${tag}"`);
+        return;
+      }
+      let icon = entry.find('input[name="icon"]').val();
+      data.tagicons[tag] = icon;
+    }
+    app.tagicons = data.tagicons;
+
     sendToServer(data);
     if (data.length > 1) $('#status').html('Saving settings...').css('opacity', 1);
+    updatePanels();
   });
   sendToServer({ req: 'settings', mode: 'get' });
   showModal('settings', div, true);
