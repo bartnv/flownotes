@@ -1511,9 +1511,11 @@ function showTags(tags) {
 }
 function tagsToIcons(tags) {
   let str = '';
-  if (!tags) return str;
+  let tagicons = Object.keys(app.tagicons);
+  if (!tags || !tagicons.length) return str;
   for (let tag of tags) {
-    if (tag in app.tagicons) str += `<span title="#${tag}">${app.tagicons[tag]}</span>`;
+    let key = tagicons.find(key => key.toLowerCase() === tag.toLowerCase());
+    if (key) str += `<span title="#${tag}">${app.tagicons[key]}</span>`;
   }
   return str;
 }

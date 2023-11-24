@@ -770,7 +770,7 @@ function search_notes($term) {
     return [ select_note($id) + [ 'hits' => '-1' ] ];
   }
   elseif (substr($term, 0, 1) == '#') { // Hashtag search
-    if (!($stmt = $dbh->prepare("SELECT note.id, modified, title, tags, deleted, -1 AS hits FROM note, json_each(tags) WHERE json_each.value = ? ORDER BY 2 DESC"))) {
+    if (!($stmt = $dbh->prepare("SELECT note.id, modified, title, tags, deleted, -1 AS hits FROM note, json_each(tags) WHERE json_each.value = ? COLLATE NOCASE ORDER BY 2 DESC"))) {
       error_log("FlowNotes: search_notes() prepare failed: " . $dbh->errorInfo()[2]);
       return 'SQL error';
     }
