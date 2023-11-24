@@ -70,7 +70,7 @@ DIV#compare-to DEL { visibility: hidden; }
 .note-deleted { text-decoration: line-through; }
 .note-title { font-weight: bold; line-height: 1.4; margin-bottom: 1px; overflow: hidden; text-overflow: ellipsis; }
 .note-details { display: flex; font-size: 0.9em; }
-.note-icons { margin-left: auto; line-height: 1.2; }
+.note-icons { margin-left: auto; line-height: 1.2; font-family: "Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji","EmojiOne Color","Android Emoji",sans-serif; }
 .note-hits { position: absolute; top: 3px; right: 5px; color: blue; font-size: 0.9em; }
 .list-divider { padding: 0.5rem; background-color: rgb(150,150,150); }
 .list-none { padding: 0.5rem; font-style: italic; }
@@ -105,7 +105,7 @@ DIV#search-results { position: relative; }
 INPUT#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
 DIV.mask { overflow: hidden; }
 .search-controls { margin: 5px 5px 0 5px; }
-DIV#modal-overlay { position: absolute; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.5); transition: opacity 0.3s linear; z-index: 1005; }
+DIV#modal-overlay { position: absolute; left: 0px; top: 0px; bottom: 0px; right: 0px; display: flex; justify-content: center; align-items: center; overflow: hidden; background-color: rgba(0,0,0,0.5); transition: opacity 0.3s linear; z-index: 1005; }
 DIV#modal-overlay > DIV { display: flex; flex-direction: column; padding: 18px 25px; border-radius: 25px; box-sizing: border-box; max-height: 95%; max-width: 95%; background-color: rgba(50,50,50,1); color: white; }
 DIV#modal-overlay > DIV > IMG { margin: 7px 0; max-height: 90vh; }
 DIV#modal-overlay H1 { margin: 0; }
@@ -119,7 +119,7 @@ P#modal-error { display: none; color: rgb(255,0,0); }
 .modal-button-small { background-color: rgb(204,204,204); border-radius: 5px; border: none; padding: 0.35em 0.6em; font-size: 0.9em; }
 .modal-button-small:hover { background-color: white; cursor: pointer; }
 #tag-icons { display: flex; flex-direction: column; gap: 1px; }
-#tag-icons INPUT[name="icon"] { width: 19px; }
+#tag-icons INPUT[name="icon"] { width: 2rem; text-align: center; font-family: "Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji","EmojiOne Color","Android Emoji",sans-serif; }
 EMOJI-PICKER { position: absolute; padding: 50%; background-color: rgba(0, 0, 0, 0.5); }
 #upload-dropzone { display: flex; flex-direction: column; height: 30rem; width: 30rem; margin-top: 1rem; margin-bottom: 7px; border: dashed grey 4px; padding: 1rem; align-items: center; justify-content: center; }
 #upload-progress table td { max-width: 25rem; overflow: hidden; text-overflow: ellipsis; }
