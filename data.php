@@ -983,6 +983,7 @@ function update_note_meta($id, $note) {
 }
 
 function upgrade_database() {
+  global $dbh;
   switch (query_setting('dbversion')) {
     case 2:
       sql_single('ALTER TABLE "note" ADD COLUMN cursor text');
@@ -1020,6 +1021,11 @@ function upgrade_database() {
       sql_single("INSERT INTO fts(fts) VALUES('rebuild')");
     case 13:
       sql_single("ALTER TABLE note ADD COLUMN tags text default '[]'");
+      $dbh->sqliteCreateFunction('regexp', function($pattern, $data) {
+        preg_match_all($pattern, $data, $matches, PREG_PATTERN_ORDER);
+        return json_encode(array_values(array_unique($matches[0])));
+      });
+      sql_single("UPDATE note SET tags = regexp('/(?:(?<=^#)|(?<=\s#))[a-zA-Z][a-zA-Z0-9]+(?=(\s|$))/', content)");
   }
   store_setting('dbversion', 14);
 }
