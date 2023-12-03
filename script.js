@@ -1774,7 +1774,7 @@ function loadSettings() {
       if (evt.originalEvent.target == this) { // Overlay background clicked
         $(this).remove();
       }
-    });
+    }).on('keydown', function(e) { e.stopPropagation(); });
     evt.preventDefault();
   });
   div.find('#settings-save').on('click', function() {
