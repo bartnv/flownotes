@@ -141,7 +141,7 @@ DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 
 #tour-bubble INPUT { margin: 0 1rem 1rem 0; }
 .tour-anchor { position: relative; }
 
-#tags { position: absolute; top: calc(90% + 0.7rem); width: 80%; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+#tags { position: absolute; top: calc(90% + 0.7rem); max-height: calc(10% - 1.2rem); width: 80%; display: flex; flex-wrap: wrap; gap: 0.3rem; overflow-y: auto; }
 #tags > DIV, #render .tag { border: solid rgb(85, 85, 85) 1px; border-radius: 0.18rem; padding: 0 0.18rem; background-color: rgb(180, 180, 180); cursor: pointer; }
 #tags > DIV:hover { background-color: rgb(200, 200, 200); }
 #render .tag { background-color: rgb(213, 213, 213); padding: 0.12rem 0.18rem; }
