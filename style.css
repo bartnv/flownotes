@@ -118,6 +118,7 @@ P#modal-error { display: none; color: rgb(255,0,0); }
 .modal-button:hover { background-color: white; cursor: pointer; }
 .modal-button-small { background-color: rgb(204,204,204); border-radius: 5px; border: none; padding: 0.35em 0.6em; font-size: 0.9em; }
 .modal-button-small:hover { background-color: white; cursor: pointer; }
+#modal-settings FORM { display: flex; flex-direction: column; gap: 3px; }
 #tag-icons { display: flex; flex-direction: column; gap: 1px; }
 #tag-icons INPUT[name="icon"] { width: 2rem; text-align: center; font-family: "Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji","EmojiOne Color","Android Emoji",sans-serif; }
 #picker-overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.5); z-index: 1006; }
