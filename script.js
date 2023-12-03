@@ -34,7 +34,7 @@ $(document).on('keydown', function(evt) {
     return false;
   }
   else if (evt.key == 'Escape') {
-    if ($('emoji-picker').length) { $('emoji-picker').remove(); }
+    if ($('#picker-overlay').length) { $('#picker-overlay').remove(); }
     else if (app.modal && (app.modal != 'password')) hideModal();
     else if (app.tour) {
       app.tourdiv.remove();
@@ -1717,7 +1717,7 @@ function loadHelp() {
 }
 
 function loadSettings() {
-  let div = $('<div><h1>Settings</h1><div id="modal-body"></div></div>');
+  let div = $('<div id="modal-settings"><h1>Settings</h1><div id="modal-body"></div></div>');
   let body = div.find('#modal-body');
   body.append('<h2>Logout</h2>');
   body.append('<p><input type="button" id="logout-this" class="modal-button-small" value="Logout this session"></p>');
@@ -1765,13 +1765,14 @@ function loadSettings() {
   }
   body.find('#tag-icons').on('focus', 'input[name="icon"]', function(evt) {
     app.emojitarget = evt.currentTarget;
-    $('#modal-overlay').append('<emoji-picker></emoji-picker>');
+    $('body').append('<div id="picker-overlay"><emoji-picker></emoji-picker></div>');
     $('emoji-picker').on('emoji-click', function(evt) {
       app.emojitarget.value = evt.originalEvent.detail.unicode;
-      $(this).remove();
-    }).on('click', function(evt) {
-      if (evt.originalEvent.originalTarget == this) { // Background clicked
-        $('emoji-picker').remove();
+      $('#picker-overlay').remove();
+    })
+    $('#picker-overlay').on('click', function(evt) {
+      if (evt.originalEvent.target == this) { // Overlay background clicked
+        $(this).remove();
       }
     });
     evt.preventDefault();
