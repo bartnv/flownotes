@@ -663,7 +663,7 @@ $().ready(function() {
     let content = '<div>' + diffString(escape(snapshot.content), escape(app.notes[app.activenote].content)) + '</div>';
     $('#compare-from').html('<h1>Snapshot</h1>' + content);
     $('#compare-to').html('<h1>Current</h1>' + content);
-    $('#input,#render,#stats,#link').hide();
+    $('#input,#render,#stats,#link,#tags').hide();
     $('#compare').show();
   });
   $('#button-snap-close').on('click', function() {
