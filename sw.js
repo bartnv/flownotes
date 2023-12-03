@@ -59,7 +59,9 @@ function tryNetwork(request, timeout, options = {}) {
     fetch(request, options).then(response => {
       clearTimeout(id);
       fulfill(response.clone());
-      if (response.status == 200) caches.open('flownotes-' + version).then(cache => cache.put(request, response));
+      if (response.status == 200) {
+        if (request.method == 'GET') caches.open('flownotes-' + version).then(cache => cache.put(request, response));
+      }
       else console.log(`Request for ${request.url} failed with status ${response.status} (${response.statusText})`);
     }, reject);
   });
