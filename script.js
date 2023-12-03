@@ -1482,7 +1482,7 @@ function findTitle(text) {
 }
 
 function findTags(text) {
-  let tags = [];
+  let tags = new Set();
   let matches;
   if (matches = text.match(/^---\n(.*?)\n---/s)) { // Note has Frontmatter
     text = text.substring(matches[0].length);
@@ -1490,7 +1490,7 @@ function findTags(text) {
       let fm = jsyaml.load(matches[1]);
       if (Array.isArray(fm.tags)) {
         for (let tag of fm.tags) {
-          if (typeof tag === 'string') tags.push(tag);
+          if (typeof tag === 'string') tags.add(tag);
         }
       }
     } catch (e) {
@@ -1498,8 +1498,8 @@ function findTags(text) {
     }
   }
   matches = text.match(/(?<=(^|\s)#)[a-zA-Z][a-zA-Z0-9]+(?=(\s|$))/g);
-  if (matches) tags = tags.concat(matches);
-  return tags;
+  for (let tag of matches) tags.add(tag);
+  return Array.from(tags);
 }
 
 function showTags(tags) {
