@@ -1498,7 +1498,7 @@ function findTags(text) {
     }
   }
   matches = text.match(/(?<=(^|\s)#)[a-zA-Z][a-zA-Z0-9]+(?=(\s|$))/g);
-  for (let tag of matches) tags.add(tag);
+  if (matches) for (let tag of matches) tags.add(tag);
   return Array.from(tags);
 }
 
