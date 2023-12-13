@@ -61,7 +61,11 @@ $(document).on('keydown', function(evt) {
     }
     let html = '<div id="upload"><h2>Upload files</h2><div id="upload-progress" class="nointeraction"><table></table></div></div>';
     showModal('paste-upload', html, true);
-    app.uploadqueue.push(item.getAsFile());
+    let file = item.getAsFile();
+    if (app.notes[app.activenote].title != '{no title}') {
+      file = new File([file], app.notes[app.activenote].title + file.name.replace(/.*\./, '.'), { type: file.type });
+    }
+    app.uploadqueue.push(file);
     doUpload();
   }
 });
