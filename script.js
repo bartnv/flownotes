@@ -2268,28 +2268,29 @@ if (nSpace == null) {
 
 if (out.n.length == 0) {
     for (var i = 0; i < out.o.length; i++) {
-      str += '<del>' + escape(out.o[i]) + oSpace[i] + "</del>";
+      str += '<del>' + escape(out.o[i]) + "</del>" + oSpace[i];
     }
 } else {
   if (out.n[0].text == null) {
     for (n = 0; n < out.o.length && out.o[n].text == null; n++) {
-      str += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
+      str += '<del>' + escape(out.o[n]) + "</del>"  + oSpace[n];
     }
   }
 
   for ( var i = 0; i < out.n.length; i++ ) {
     if (out.n[i].text == null) {
-      str += '<ins>' + escape(out.n[i]) + nSpace[i] + "</ins>";
+      str += '<ins>' + escape(out.n[i]) + "</ins>" + nSpace[i];
     } else {
       var pre = "";
 
       for (n = out.n[i].row + 1; n < out.o.length && out.o[n].text == null; n++ ) {
-        pre += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
+        pre += '<del>' + escape(out.o[n]) + "</del>" + oSpace[n];
       }
       str += out.n[i].text + nSpace[i] + pre;
     }
   }
 }
+str = str.replaceAll(/<\/del>(\s+)<del>/g, "$1").replaceAll(/<\/ins>(\s+)<ins>/g, "$1");
 
 return str;
 }

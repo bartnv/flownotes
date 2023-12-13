@@ -57,9 +57,10 @@ INPUT#button-snap-restore,INPUT#button-snap-close,INPUT#button-update-now { alig
 TEXTAREA#input,DIV#render { width: 80%; height: 80%; background-color: white; overscroll-behavior: contain; }
 DIV#render { box-sizing: border-box; padding: 0 20px; overflow: auto; }
 DIV#render IMG { max-height: 70vh; max-width: 100%; }
-DIV#compare { display: flex; gap: 5px; padding: 10px; white-space: pre-wrap; overflow-y: auto; }
+DIV#compare { display: flex; gap: 5px; width: 95%; padding: 10px; white-space: pre-wrap; overflow-y: auto; }
 DIV#compare H1 { text-align: center; border-bottom: none; margin-bottom: 10px; }
-DIV#compare > DIV > DIV { padding: 10px; background-color: white; height: max-content; }
+DIV#compare > DIV { width: 10px; overflow-x: clip; flex-grow: 1; }
+DIV#compare > DIV > DIV { padding: 10px; background-color: white; height: max-content; font-family: monospace; }
 DIV#compare-from INS { visibility: hidden; }
 DIV#compare-to DEL { visibility: hidden; }
 
@@ -159,7 +160,7 @@ DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 
             user-select: none;
   outline: none;
 }
-INS { background-color: rgba(0, 255, 0, 0.3); }
+INS { background-color: rgba(0, 255, 0, 0.3); text-decoration: none; }
 DEL { background-color: rgba(255, 0, 0, 0.3); }
 
 /* Loader CSS from loading.io - License: CC0 */
