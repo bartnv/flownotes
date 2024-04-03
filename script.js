@@ -154,7 +154,7 @@ $().ready(function() {
     else if (e.key == 'F1') {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition();
-      let newcontent = content.substring(0, cursor.start) + new Date().format('Y-m-d') + content.substring(cursor.end);
+      let newcontent = content.substring(0, cursor.start) + new Date().toLocaleDateString('sv-SV') + content.substring(cursor.end);
       $('#input').val(newcontent).setCursorPosition(cursor.start+10);
       return false;
     }
@@ -180,7 +180,7 @@ $().ready(function() {
     else if (e.key == 'F2') {
       let content = $('#input').val();
       let cursor = $('#input').getCursorPosition();
-      let newcontent = content.substring(0, cursor.start) + new Date().format('Y-m-d H:i') + content.substring(cursor.end);
+      let newcontent = content.substring(0, cursor.start) + new Intl.DateTimeFormat('sv-SE',{ dateStyle: 'short', timeStyle: 'short' }).format(new Date()) + content.substring(cursor.end);
       $('#input').val(newcontent).setCursorPosition(cursor.start+16);
       return false;
     }
