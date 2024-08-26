@@ -30,7 +30,16 @@
           <input type="button" id="search-button" class="search-controls" value="Go">
         </div>
         <div class="mask">
-          <div id="search-results"></div>
+          <div id="search-results">
+            <div class="tips">
+              <h1>Search tips</h1>
+              <p>Simply type your term(s) in any order to do a basic search of the full text of all your notes.</p>
+              <p>Start your search to a forward slash ("/") to do an advanced search using a Regular Expression. To learn Regular Expressions we recommend <a href="https://www.regular-expressions.info/quickstart.html">www.regular-expressions.info</a>.</p>
+              <p>Start your search with a hash ("#") followed by a number to quickly go to a specific note ID. The ID of the current note is always shown in the address bar of your browser.</p>
+              <p>Start your search with a hash followed by letters to search for a hashtag used in your notes. This is case-insensitive but otherwise needs to match the used hashtag exactly, so searching for <code>#recipe</code> will not find notes with hashtag <code>#recipes</code>.</p>
+              <p>Start your search with a plus ("+") to search specifically in the titles or filenames of uploaded files. Just a plus by itself gives you a list of all notes that have linked files.</p>
+            </div>
+          </div>
         </div>
       </div>
       <div id="tab-pinned" class="tab scrolly" style="display: none;"></div>

@@ -72,6 +72,7 @@ DIV#compare-to DEL { visibility: hidden; }
 .note-title { font-weight: bold; line-height: 1.4; margin-bottom: 1px; overflow: hidden; text-overflow: ellipsis; }
 .note-details { display: flex; font-size: 0.9em; }
 .note-icons { margin-left: auto; line-height: 1.2; font-family: "Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji","EmojiOne Color","Android Emoji",sans-serif; }
+.note-icons SPAN { margin-left: 0.25rem; }
 .note-hits { position: absolute; top: 3px; right: 5px; color: blue; font-size: 0.9em; }
 .list-divider { padding: 0.5rem; background-color: rgb(150,150,150); }
 .list-none { padding: 0.5rem; font-style: italic; }
@@ -155,13 +156,24 @@ DIV#copied { position: absolute; width: max-content; opacity: 0; border-radius: 
 .notransition { transition: none !important; }
 .nointeraction { pointer-events: none; }
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-            user-select: none;
+  -webkit-user-select: none; /* Safari */
+          user-select: none;
   outline: none;
 }
 INS { background-color: rgba(0, 255, 0, 0.3); text-decoration: none; }
 DEL { background-color: rgba(255, 0, 0, 0.3); }
+
+.tips {
+  margin: 1rem;
+  border: solid #ddcb8e 1px;
+  border-radius: 1rem;
+  padding: 0 0.7rem;
+  background-color: rgb(251, 244, 208);
+  color: #6a6a6a;
+}
+.tips H1 {
+  font-size: 1.2rem;
+}
 
 /* Loader CSS from loading.io - License: CC0 */
 .loader {
