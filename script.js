@@ -312,11 +312,7 @@ $().ready(function() {
       app.prepend = null;
     }
     if (!app.changed) app.changed = Date.now();
-    if (!app.notes[app.activenote].touched) {
-      app.notes[app.activenote].touched = true;
-      $('.note-li[data-id=' + app.activenote + ']').addClass('note-touched');
-      $('#button-mode-edit').addClass('button-touched');
-    }
+    if (!app.notes[app.activenote].touched) touchNote(app.activenote);
     else if (app.notes[app.activenote].content == $('#input').val()) {
       app.notes[app.activenote].touched = false;
       $('.note-li[data-id=' + app.activenote + ']').removeClass('note-touched');
@@ -1575,6 +1571,12 @@ function activateTab(name) {
   if (app.hidepanelleft) togglePanelLeft('open');
 }
 
+function touchNote(note) {
+  app.notes[note].touched = true;
+  $('.note-li[data-id=' + note + ']').addClass('note-touched');
+  $('#button-mode-edit').addClass('button-touched');
+}
+
 function listSearchResults(items, first) {
   if (items.error) {
     $('#search-results').empty().append('<div style="margin: 5px">Search error: ' + items.error + '</div>');
@@ -2096,9 +2098,7 @@ function doUpload() {
         links += '[' + file.name + '](' + file.path + ')\n';
       }
       $('#input').val(before + links + after).setCursorPosition(cursor.start+links.length);
-      app.notes[data.note].touched = true;
-      $('.note-li[data-id=' + data.note + ']').addClass('note-touched');
-      $('#button-mode-edit').addClass('button-touched');
+      touchNote(data.note);
       $('#uploads-linked').append(app.loader).find('.list-none').remove();
       app.changed = Date.now()-60000; // Force a pushUpdate on the next tick
     }
