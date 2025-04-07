@@ -21,6 +21,7 @@ let app = {
   keys: [],
   uploadqueue: [],
   tagicons: {},
+  searchmode: 'relevance',
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
 
@@ -469,6 +470,13 @@ $().ready(function() {
     sendToServer({ req: 'search', term: $('#search-input').val(), lastupdate: app.lastupdate });
     $('#search-input').select();
     $('#search-results').empty().append(app.loader);
+  });
+  $('#search-sort').on('click', function() {
+    if (app.searchmode == 'relevance') app.searchmode = 'last change';
+    else app.searchmode = 'relevance';
+    updateSearch();
+    $('#search-sort-notice').remove();
+    $('#search-results').prepend('<div id="search-sort-notice">Ordering search results by ' + app.searchmode + '</div>');
   });
   $('#button-panel-left-hide').on('click', togglePanelLeft);
   $('#button-panel-right-hide').on('click', togglePanelRight);
@@ -1289,7 +1297,8 @@ function updateRecent() {
 function updateSearch() {
   let items = app.searchresults;
   if (!items) return;
-  items.sort(function(a, b) { return b[1] - a[1] });
+  if (app.searchmode == 'relevance') items.sort(function(a, b) { return b[1] - a[1] });
+  else items.sort(function(a, b) { return app.notes[b[0]].modified - app.notes[a[0]].modified });
   let results = "";
   for (let i of items) { // i is an array of [ id, hits ]
     if (i[1] === 0) continue; // FTS can sometimes result hits of 0
