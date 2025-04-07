@@ -1645,23 +1645,25 @@ function tourStep(back = false) {
     [ 'Recent notes', '#label-recent', 'top', 'left', function() { togglePanelLeft('open'); },
       "This list shows your notes in chronological order, with the most recent ones on top. You can scroll back as far as you need to. When you update an older note you'll notice it jumps to the top of the list as soon as it's saved." ],
     [ 'Search notes', '#label-search', 'top', 'left', null,
-      "On this tab you can search through your notes. The full text of the notes is searched and all notes with your term in it will be returned. More complex selections are possible with Regular Expressions by starting the search with a forward slash." ],
+      "On this tab you can search through your notes. The full text of the notes is searched and all notes with your search term(s) in it will be returned." ],
     [ 'Pinned notes', '#label-pinned', 'top', 'left', function() { togglePanelLeft('open'); },
       'This tab shows your pinned notes. You can click the pin button to add to or remove from this list. This way you can keep your most-used notes close at hand.' ],
+    [ 'Modes', '#button-mode-view', 'top', 'left', function() { touchNote(app.activenote); app.changed = Date.now(); app.inactive = 0; },
+      'The pencil and the eye buttons switch between edit mode and view mode. An orange dot indicates that there are still changes to be saved. Saving happens automatically every few seconds. When the dot disappears all your changes are safely stored on the server.' ],
     [ 'Right sidebar', '#button-panel-right-hide', 'top', 'right', function() { togglePanelLeft('close'); },
-      'Show or hide the right sidebar. This sidebar provides some miscellaneous functionality, such as an overview of links from/to the current note and a list of its snapshots.' ],
+      'Show or hide the right sidebar. This sidebar provides some miscellaneous functionality.' ],
     [ 'Links', '#button-links', 'top', 'right', function() { $('#button-links').click(); },
-      'This shows an overview of all notes that link to the current one and all notes the current one links to.' ],
+      'This shows an overview of all notes that link to the current one and all notes the current one links to. You can link notes by dragging one from the list into the text of another.' ],
     [ 'Snapshots', '#button-snaps', 'top', 'right', function() { $('#button-snaps').click(); },
       'This shows a list of the previously created snapshots for the current note (you can configure the automatic creation of snapshots in the settings). You can also make a new snapshot manually.' ],
     [ 'Headings', '#button-toc', 'top', 'right', function() { $('#button-toc').click(); },
-      'This shows a table of contents based on Markdown headings you may have used in the note.' ],
+      'This shows a table of contents based on any Markdown headings you may have used in the note.' ],
     [ 'Uploads', '#button-uploads', 'top', 'right', function() { $('#button-uploads').click(); },
-      'This shows the uploaded files that are linked to this note as well as, at the bottom, any files that are present in FlowNotes but not currently linked to a note.' ],
+      'This shows the uploaded files that are linked to this note. You can add files by dragging and dropping them onto the note.' ],
     [ 'Export functions', '#button-export', 'bottom', 'right', function() { togglePanelRight('close'); },
       'Here you find a set of export functions to use your notes in other applications. You can download a copy of your notes or publish an continously updated version as a public link.' ],
     [ 'Settings', '#button-settings', 'bottom', 'left', null,
-      'In the settings panel you can manage security for your FlowNotes and configure things like snapshots and the share-to-FlowNotes functionality.' ]
+      'In the settings panel you can manage security for your FlowNotes and configure extra functionality.' ]
   ];
   if (tour[app.tour]) {
     if (app.tourdiv) app.tourdiv.css('opacity', '0');
@@ -1681,7 +1683,7 @@ function tourShow(step) {
   }
   app.tourdiv.empty().removeAttr('style').removeClass().addClass(step[2] + '-' + step[3]);
   app.tourdiv.append('<h2>' + step[0] + '</h2><p>' + step[5] + '</p>');
-  app.tourdiv.append('<input type="button" class="modal-button" value="Prev" onclick="tourStep(true); event.cancelBubble = true;">');
+  app.tourdiv.append('<input type="button" class="modal-button modal-button-secondary" value="Prev" onclick="tourStep(true); event.cancelBubble = true;">');
   app.tourdiv.append('<input type="button" class="modal-button" value="Next" onclick="tourStep(); event.cancelBubble = true;">');
   if (step[2] == 'top') app.tourdiv.css('top', $(step[1]).height() + 'px');
   else app.tourdiv.css('bottom', $(step[1]).height() + 'px');
