@@ -216,7 +216,7 @@ $().ready(function() {
       if (start == -1) start = 0;
       else start += 1;
       let line = content.substring(start, cursor.start);
-      let pre = /^[ *-]*(\[ \])?[ *-]+/.exec(line);
+      let pre = /^[ *-]*(\[ \])?[ *>-]+/.exec(line);
       if (pre && (pre[0].length < cursor.start-start)) app.prepend = pre[0];
     }
     else if (e.ctrlKey && (e.key == 'ArrowUp')) {
