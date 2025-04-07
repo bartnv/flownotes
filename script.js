@@ -1187,8 +1187,9 @@ function updatePublish(note) {
 
 function updateStats() {
   let val = $('#input').val();
-  let matches = val.match(/\W\w/g);
-  $('#stats').show().html('Chars: ' + val.length + '<br>Words: ' + ((matches?matches:[]).length+(/^(\W|$)/.test(val)?0:1)));
+  let lines = val.match(/\n(?!(\n|$))/g)?.length ?? 0;
+  let words = val.match(/\W\w/g);
+  $('#stats').show().html('Chars: ' + val.length + '<br>Lines: ' + (lines + (val.length?1:0)) + '<br>Words: ' + ((words?words:[]).length+(/^(\W|$)/.test(val)?0:1)));
 }
 
 function handleWebauthn(data) {
