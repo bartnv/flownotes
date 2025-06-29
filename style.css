@@ -256,6 +256,8 @@ DEL { background-color: rgba(255, 0, 0, 0.3); }
 @media print {
   .sidepanel, .panel-buttons, #tags, #modal-overlay, #status, #link, #copied { display: none !important; }
   DIV#panel-main { width: 100%; max-width: 100%; }
+  DIV#panel-main TEXTAREA { display: none; }
+  DIV#panel-main #plain { display: block !important; width: 100%; white-space: pre-wrap; }
   DIV#render { width: 100%; }
   BODY, DIV#panels, DIV#render { height: auto; background-color: white; }
   PRE { text-wrap: wrap; }

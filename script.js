@@ -455,6 +455,10 @@ $().ready(function() {
     localStorage.setItem('flownotes' + instance + 'hidepanelleft', app.hidepanelleft);
     localStorage.setItem('flownotes' + instance + 'hidepanelright', app.hidepanelright);
     localStorage.setItem('flownotes' + instance + 'lastpanelright', app.lastpanelright);
+  }).on('beforeprint', function() {
+    $('#plain').text($('#input').val());
+  }).on('afterprint', function() {
+    $('#plain').empty();
   });
   $('#label-recent').on('click', function() { activateTab('recent'); });
   $('#label-search').on('click', function() {
