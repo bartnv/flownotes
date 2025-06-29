@@ -73,40 +73,43 @@ $(document).on('keydown', function(evt) {
 
 $().ready(function() {
   let renderer = {
-    link(href, title, text) {
+    link({ href, text, title }) {
       if (title == null) title = '';
       let match = href.match(/^#([0-9]+)/);
       if (match) {
         if (text.startsWith('=') && (text != '=')) title = text = text.substring(1);
         else if (app.notes[match[1]]) title = app.notes[match[1]].title;
-        return '<a class="link-note" href="' + href + '" title="' + title + '">' + text + '</a>';
+        return `<a class="link-note" href="${href}" title="${title}">${text}</a>`;
       }
       else if (href.match(/^#[A-Za-z -]+$/)) {
         if (text == '') {
           title = href.substring(1).toLowerCase();
           text = href.substring(1).replaceAll('-', ' ');
         }
-        href = '#' + app.activenote + '_' + title;
-        return '<a class="link-head" href="' + href + '" title="' + title + '">' + text + '</a>';
+        href = `#${app.activenote}_${title}`;
+        return `<a class="link-head" href="${href}" title="${title}">${text}</a>`;
       }
       else if (href.match(/^uploads/)) {
-        return '<a class="link-ext" href="data.php?upload=' + href.substring(8) + '" title="' + title + '" target="_blank">' + text + '</a>';
+        return `<a class="link-ext" href="data.php?upload=${href.substring(8)}" title="${title}" target="_blank">${text}</a>`;
       }
-      return '<a class="link-ext" href="' + href + '" title="' + title + '" target="_blank">' + text + '</a>';
+      return `<a class="link-ext" href="${href}" title="${title}" target="_blank">${text}</a>`;
     },
-    image(href, title, text) {
+    image({ href, title, text }) {
       if (!title) title = text;
       if (href.match(/^uploads/)) {
-        return '<img src="data.php?upload=' + href.substring(8) + '" alt="' + text + '" title="' + title + '" onclick="lightbox(this)">';
+        return `<img src="data.php?upload=${href.substring(8)}" alt="${text}" title="${title}" onclick="lightbox(this)">`;
       }
-      return '<img src="' + href + '" alt="' + text + '" title="' + title + '">';
+      return `<img src="${href}" alt="${text}" title="${title}">`;
     },
-    code(code, info, escaped) {
-      if (info) return '<pre data-info="' + info + '"><code>' + code + '</code></pre>';
-      return '<pre><code>' + code + '</code></pre>';
+    code({ text, lang, raw }) {
+      let prefix = raw.substring(0, raw.indexOf(text));
+      let suffix = raw.substring(raw.lastIndexOf(text)+text.length, raw.length);
+      let data = `data-rawtext="${btoa(raw)}" data-prefix="${prefix}" data-suffix="${suffix}"`;
+      if (lang) data += ` data-info="${lang}"`;
+      return `<pre ${data}><code>${text}</code></pre>`;
     },
-    codespan(code) {
-      return '<code class="inline">' + code.replaceAll('&amp;', '&') + '</code>';
+    codespan({ text }) {
+      return `<code class="inline">${text.replaceAll('&amp;', '&')}</code>`;
     }
   };
   let password = {
@@ -119,7 +122,7 @@ $().ready(function() {
       if (match) return { type: 'password', raw: match[0], pass: match[1] }
     },
     renderer(token) {
-      return '<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="' + token.pass + '">*****</code>';
+      return `<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="${token.pass}">*****</code>`;
     }
   };
   marked.use({
@@ -874,7 +877,11 @@ function render(content) {
   });
   // marked.use({ headerPrefix: app.activenote + '_' });
   marked.use(markedGfmHeadingId.gfmHeadingId({ prefix: app.activenote + '_' }));
-  el.html(marked.parse(content));
+  try {
+    el.html(marked.parse(content));
+  } catch (e) {
+    console.log('Render failed: ' + e);
+  }
   return el;
 }
 
