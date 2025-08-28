@@ -22,6 +22,7 @@ let app = {
   uploadqueue: [],
   tagicons: {},
   searchmode: 'relevance',
+  frontmatter: null,
   loader: $('<div class="loader"><div></div><div></div><div></div><div></div></div>')
 }
 
@@ -41,6 +42,10 @@ $(document).on('keydown', function(evt) {
       app.tourdiv.remove();
       delete app.tour;
       delete app.tourdiv;
+    }
+    else if (app.editpre) {
+      app.editpre = false;
+      render($('#input').val());
     }
   }
   else if ((evt.key == 'ArrowLeft') && (app.tour)) {
@@ -101,12 +106,13 @@ $().ready(function() {
       }
       return `<img src="${href}" alt="${text}" title="${title}">`;
     },
-    code({ text, lang, raw }) {
-      let prefix = raw.substring(0, raw.indexOf(text));
-      let suffix = raw.substring(raw.lastIndexOf(text)+text.length, raw.length);
-      let data = `data-rawtext="${btoa(raw)}" data-prefix="${prefix}" data-suffix="${suffix}"`;
+    code({ text, lang, raw, codeBlockStyle, position }) {
+      if (codeBlockStyle == 'indented') return `<pre><code>${text}</code></pre>`;
+      let start = (app.frontmatter?app.frontmatter.length:0) + position.start.offset + raw.indexOf('\n') + 1;
+      let end = (app.frontmatter?app.frontmatter.length:0) + position.start.offset + raw.lastIndexOf('\n', raw.length-2);
+      let data = `data-srcstart="${start}" data-srcend="${end}"`;
       if (lang) data += ` data-info="${lang}"`;
-      return `<pre ${data}><code>${text}</code></pre>`;
+      return `<pre ${data}><code>${text}</code><span class="edit"></span></pre>`;
     },
     codespan({ text }) {
       return `<code class="inline">${text.replaceAll('&amp;', '&')}</code>`;
@@ -125,11 +131,40 @@ $().ready(function() {
       return `<code class="inline" onclick="passwordToClipboard(this, event);" data-pass="${token.pass}">*****</code>`;
     }
   };
+  let checkbox = {
+    name: 'checkbox',
+    level: 'inline',
+    start(src) { let match = src.match(/\[( |x)\]/); return match?match.index:undefined; },
+    tokenizer(src) {
+      let rule = /^\[( |x)\]/;
+      let match = rule.exec(src);
+      if (match) return { type: 'checkbox', raw: match[0], checked: match[1]=='x'?true:false }
+    },
+    renderer(token) {
+      let position = (app.frontmatter?app.frontmatter.length:0) + token.position.start.offset + 1;
+      return `<input type="checkbox"${token.checked?' checked':''} onchange="checkboxChange(this, ${position})">`;
+    }
+  }
+  let walkTokens = function(token) {
+    if (token.text) token.text = token.text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  }
   marked.use({
     breaks: true,
     renderer: renderer,
-    extensions: [ password ]
+    walkTokens: walkTokens,
+    extensions: [ password, checkbox ],
+    hooks: {
+      preprocess: (md) => { // Strip off frontmatter
+        app.frontmatter = md.match(/^---\n(.*?)\n---\n/s)?.[0];
+        if (app.frontmatter) return md.substring(app.frontmatter.length);
+        return md;
+      },
+      postprocess: (html) => { // Make hashtags clickable
+        return html.replace(/(?<=(^|\s|>))#[a-zA-Z][a-zA-Z0-9]+(?=(\s|$|<))/g, '<span class="tag">$&</span>');
+      }
+    }
   });
+  marked.use(markedTokenPosition());
 
   $('#input').on('keydown', function(e) {
     if (!e.key.startsWith('F')) {
@@ -353,27 +388,41 @@ $().ready(function() {
   $('#render').on('click', 'code', function (e) {
     if (!navigator.clipboard) return;
     if (window.getSelection().type == 'Range') return;
+    if (e.target.parentElement.contentEditable == 'plaintext-only') return;
     navigator.clipboard.writeText($(this).text());
     selectText(this);
     showCopied(e);
-  }).on('click', 'pre', function (e) {
+  }).on('mouseup', 'pre', function (e) {
     if (!navigator.clipboard) return;
     if (window.getSelection().type != 'Range') return;
+    if (e.target.contentEditable == 'plaintext-only') return;
     let sel = window.getSelection();
     if (sel.anchorNode !== sel.focusNode) return; // Selection continues outside of code block
     navigator.clipboard.writeText(sel.toString());
     showCopied(e);
-  }).on('dblclick', 'pre', function() {
-    this.contentEditable = true;
-    selectText(this);
-    if (navigator.clipboard) navigator.clipboard.writeText($(this).text());
-    $(this).on('blur', function() {
+  }).on('click', 'span.edit', function() {
+    let el = $(this).parent();
+    if (!el.data('srcend')) return;
+    app.editpre = true;
+    el.prop('contentEditable', 'plaintext-only');
+    selectText(el[0]);
+    el.focus();
+    el.on('blur', function() {
       this.contentEditable = false;
+      if (app.editpre) {
+        let input = $('#input');
+        if (el.text() != input.val().substring(el.data('srcstart'), el.data('srcend'))) {
+          input.val(input.val().substring(0, el.data('srcstart')) + el.text() + input.val().substring(el.data('srcend')));
+          input.trigger('input');
+        }
+        app.editpre = false;
+      }
     });
   });
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
     if (e.ctrlKey) return;
+    if (e.target.nodeName == 'PRE') return; // Avoid hotkeys from contenteditable in PRE
     switch (e.keyCode) {
       case 83: $('#label-search').click();
                    return false;
@@ -865,17 +914,6 @@ function loadSnap(snap) {
 
 function render(content) {
   let el = $('#render');
-  content = content.replace(/^---\n(.*?)\n---/s, ''); // Remove Frontmatter
-  content = content.replace(/\[( |x)\]/g, function(match, sub, offset) { // 2-step replace to avoid <input> being mangled, while recording a correct offset
-    return '[' + sub + '][' + offset + ']';
-  });
-  content = content.replace(/&/g, '&amp;');
-  content = content.replace(/</g, '&lt;');
-  content = content.replace(/(?<=(^|\s))#[a-zA-Z][a-zA-Z0-9]+(?=(\s|$))/g, '<span class="tag">$&</span>');
-  content = content.replace(/\[( |x)\]\[(\d+)\]/g, function(match, sub1, sub2, offset) {
-    return '<input type="checkbox"' + (sub1 == 'x'?' checked':'') + ' onchange="checkboxChange(this, ' + sub2 + ')"></input>';
-  });
-  // marked.use({ headerPrefix: app.activenote + '_' });
   marked.use(markedGfmHeadingId.gfmHeadingId({ prefix: app.activenote + '_' }));
   try {
     el.html(marked.parse(content));
@@ -888,8 +926,8 @@ function render(content) {
 function checkboxChange(checkbox, offset) {
   let input = $('#input');
   let content = input.val();
-  if (checkbox.checked) input.val(content.substring(0, offset+1) + 'x' + content.substring(offset+2));
-  else input.val(content.substring(0, offset+1) + ' ' + content.substring(offset+2));
+  if (checkbox.checked) input.val(content.substring(0, offset) + 'x' + content.substring(offset+1));
+  else input.val(content.substring(0, offset) + ' ' + content.substring(offset+1));
   input.trigger('input');
 }
 function passwordToClipboard(el, evt) {
