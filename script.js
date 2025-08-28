@@ -902,6 +902,11 @@ function loadNote(id) {
   if (app.notes[id].tags) showTags(app.notes[id].tags);
   else $('#tags').hide();
   $('#snap').hide();
+  if ($('#label-search').hasClass('tab-active') && ($('#search-input').val().length)) {
+    if (app.mode == 'view') {
+      highlightTermsIn($('#search-input').val().split(/\s/), $('#render')[0]);
+    }
+  }
 }
 function loadSnap(snap) {
   if (app.mode == 'view') render(snap.content);
@@ -910,6 +915,34 @@ function loadSnap(snap) {
   if (!app.hidepanelright && ($('#panel-main').width() == parseInt($('#panel-main').css('min-width')))) {
     togglePanelRight('close');
   }
+}
+
+function highlightTermsIn(terms, root) {
+  for (let id in terms) {
+    let hl = new Highlight();
+    let ranges = getRanges(terms[id], root);
+    for (let range of ranges) hl.add(range);
+    if (hl.size) CSS.highlights.set(`search-term-${Number(id)+1}`, hl);
+  }
+}
+
+function getRanges(term, root) {
+  let ranges = [];
+  let tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, (n) => /^\s*$/.test(n.data)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT);
+  while (tw.nextNode()) {
+    let node = tw.currentNode;
+    let start = 0;
+    while (true) {
+      let idx = node.data.indexOf(term, start);
+      if (idx == -1) break;
+      let range = new Range();
+      range.setStart(node, idx);
+      range.setEnd(node, idx+term.length);
+      ranges.push(range);
+      start = idx+1;
+    }
+  }
+  return ranges;
 }
 
 function render(content) {
