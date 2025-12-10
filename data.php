@@ -328,7 +328,7 @@ switch ($data['req']) {
         array_splice($keys, $data['idx'], 1);
         store_setting('webauthnkeys', json_encode($keys, JSON_THROW_ON_ERROR));
         foreach ($keys as $key) {
-          $ret[] = $key['name'] ?? dechex(crc32(implode('', $key->id)));
+          $ret[] = $key->name ?? dechex(crc32(implode('', $key->id)));
         }
         send_and_exit([ 'webauthn' => 'list', 'keys' => $ret ]);
       default:
