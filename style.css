@@ -105,7 +105,7 @@ DIV#scrolled:hover { background-color: rgba(0, 0, 0, 0.4); }
 DIV#scrolled > * { display: block; width: 40px; height: 40px; }
 DIV#search-box { display: flex; }
 DIV#search-results { position: relative; }
-INPUT#search-input { flex-grow: 1; margin-right: 0; font-size: inherit; }
+INPUT#search-input { flex-grow: 1; flex-shrink:1; margin-right: 0; font-size: inherit; }
 BUTTON#search-sort { padding: 0; margin: 5px 5px 0 0; width: 1.75rem; }
 BUTTON#search-sort > * { display: block; }
 DIV#search-sort-notice { margin: 5px; font-style: italic; }
