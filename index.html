@@ -4,12 +4,13 @@
 <meta charset="utf8">
 <title>MMVI FlowNotes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" crossorigin="anonymous" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/marked@16.1.1/lib/marked.umd.min.js" crossorigin="anonymous" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/marked-gfm-heading-id@4.1.2/lib/index.umd.min.js" crossorigin="anonymous" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/marked-token-position@1.0.0/lib/index.umd.min.js" crossorigin="anonymous" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js" integrity="sha256-Rdw90D3AegZwWiwpibjH9wkBPwS9U4bjJ51ORH8H69c=" crossorigin="anonymous" defer></script>
-<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.26.1/picker.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@18.0.9/lib/marked.umd.min.js" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/marked-gfm-heading-id@4.1.4/lib/index.umd.min.js" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/marked-token-position@2.0.2/lib/index.umd.min.js" crossorigin="anonymous" defer></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/js-yaml@5.2.3/dist/js-yaml.cjs.min.js" crossorigin="anonymous" defer></script>-->
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.29.1/index.min.js" defer></script>
+<script type="module">import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5.2.3/+esm'; window.jsyaml = yaml;</script>
 <script type="text/javascript" src="script.js" defer></script>
 <link rel="stylesheet" type="text/css" href="style.css">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -80,6 +81,10 @@
         <svg class="button-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="3 3 18 18" fill="white"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
         <!-- Icon license: Apache License 2.0 / Created by Google -->
       </div>
+      <div id="button-present" title="Start presentation">
+        <svg class="button-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960" fill="white"><path d="m380-300 280-180-280-180v360ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
+        <!-- Icon license: Apache License 2.0 / Created by Google -->
+      </div>
       <div id="button-popout" title="Popout note">
         <svg class="button-svg" xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 24 24" fill="white"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
         <!-- Icon license: Apache License 2.0 / Created by Google -->
@@ -99,6 +104,7 @@
       <div id="plain" style="display: none;"></div>
       <div id="tags" style="display: none;"></div>
       <div id="render" style="display: none;"></div>
+      <div id="present-outer" style="display: none;"><div id="present"></div></div>
       <div id="compare" style="display: none;">
         <div id="compare-from"></div>
         <div id="compare-to"></div>

@@ -14,6 +14,7 @@ let app = {
   lastupdate: 0,
   lastcomm: Date.now(),
   modal: null,
+  present: null,
   password: false,
   hidepanelleft: false,
   hidepanelright: true,
@@ -102,7 +103,7 @@ $().ready(function() {
     image({ href, title, text }) {
       if (!title) title = text;
       if (href.match(/^uploads/)) {
-        return `<img src="data.php?upload=${href.substring(8)}" alt="${text}" title="${title}" onclick="lightbox(this)">`;
+        return `<img src="data.php?upload=${href.substring(8)}" alt="${text}" title="${title}">`;
       }
       return `<img src="${href}" alt="${text}" title="${title}">`;
     },
@@ -418,7 +419,7 @@ $().ready(function() {
         app.editpre = false;
       }
     });
-  });
+  }).on('click', 'img', lightbox);
   $('#modal-overlay').on('keydown', function(e) { e.stopPropagation(); }); // Avoid hotkeys bubbling up from the modal
   $(document).on('keydown', function(e) {
     if (e.ctrlKey) return;
@@ -702,6 +703,24 @@ $().ready(function() {
   });
   $('#button-fullscreen').on('click', function() {
     $('#panel-main')[0].requestFullscreen();
+  });
+  $('#button-present').on('click', function() {
+    app.present = 1;
+    $('#present-outer').show().on('fullscreenchange', function(evt) {
+      if (document.fullscreenElement === null) $(this).empty().hide();
+    })[0].requestFullscreen();
+    renderPresentation();
+  });
+  $('#present-outer').on('click', function() {
+    if (app.present === null) {
+      document.exitFullscreen();
+      $('#present').empty();
+      $(this).hide();
+    }
+    else {
+      app.present++;
+      renderPresentation();
+    }
   });
   $('#button-popout').on('click', function() {
     let proxy = window.open('./popout.html', '_blank', 'popup,height=800,width=600');
@@ -1554,6 +1573,30 @@ function updateUploads() {
   }
 }
 
+function renderPresentation() {
+  let present = $('#present');
+  let items = $('#render').children();
+  let count = 0, start = null, end;
+  for (let x in items) {
+    if ([ 'H1', 'H2' ].includes(items[x].nodeName)) {
+      count++;
+      if (count < app.present) continue;
+      if (start === null) {
+        start = x;
+      }
+      else {
+        end = x;
+        break;
+      }
+    }
+  }
+  if (start === null) {
+    present.empty().append('<footer>End of the presentation</footer>');
+    app.present = null;
+  }
+  else present.empty().append(items.slice(start, end).clone());
+}
+
 function findTitle(text) {
   let matches;
   if (matches = text.match(/^---\n(.*?)\n---/s)) { // Note has Frontmatter
@@ -2014,9 +2057,9 @@ function showCopied(e) {
   setTimeout(function() { copied.removeClass('notransition').css('opacity', 0); }, 1000);
 }
 
-function lightbox(el) {
+function lightbox() {
   let content = $('<div></div>');
-  content.append(el.cloneNode());
+  content.append(this.cloneNode());
   showModal('lightbox', content, 'anyclick');
 }
 function showModal(type, content, escapable) {

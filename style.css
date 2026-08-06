@@ -173,6 +173,17 @@ DEL { background-color: rgba(255, 0, 0, 0.3); }
 ::highlight(search-term-2) { background-color: rgb(255, 128, 255  ); }
 ::highlight(search-term-3) { background-color: rgb(128, 255, 255  ); }
 
+#present-outer { background-color: white; }
+#present { margin: 5vh 5vw; font-size: 3vh; }
+#present IMG { max-height: 80%; max-width: 100%; }
+#present IMG[alt$=">"] {
+  float: right;
+}
+#present IMG[alt$="<"] {
+  float: left;
+}
+#present FOOTER { font-size: 2vh; text-align: center; position: absolute; bottom: 2vh; left: 0; right: 0; }
+
 .tips {
   margin: 1rem;
   border: solid #ddcb8e 1px;
