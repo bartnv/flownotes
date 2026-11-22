@@ -164,7 +164,10 @@ $().ready(function() {
         return md;
       },
       postprocess: (html) => { // Make hashtags clickable
-        return html.replace(/(?<=(^|\s|>))#[a-zA-Z][a-zA-Z0-9]+(?=(\s|$|<))/g, '<span class="tag">$&</span>');
+        return html.replace(/(?<=(^|\s|>))#[a-zA-Z][a-zA-Z0-9]+(?=(\s|$|<))/g, (match) => {
+          if (app.tagicons.hasOwnProperty(match.slice(1))) return `<span class="tag">${match} ${app.tagicons[match.slice(1)]}</span>`;
+          return `<span class="tag">${match}</span>`;
+        });
       }
     }
   });
@@ -797,7 +800,7 @@ $().ready(function() {
   });
   $('#tags').on('click', 'div', function(evt) {
     activateTab('search');
-    $('#search-input').val(evt.currentTarget.innerHTML);
+    $('#search-input').val(evt.currentTarget.innerHTML.split(' ')[0]);
     $('#search-button').click();
   });
   $('#render').on('click', '.tag', function(evt) {
@@ -1659,6 +1662,7 @@ function findTags(text) {
 function showTags(tags) {
   let str = '';
   for (let tag of tags) {
+    if (app.tagicons.hasOwnProperty(tag)) tag += ` ${app.tagicons[tag]}`;
     str += '<div>#' + tag + '</div>';
   }
   $('#tags').html(str).show();
