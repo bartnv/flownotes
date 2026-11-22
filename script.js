@@ -18,7 +18,10 @@ let app = {
   password: false,
   hidepanelleft: false,
   hidepanelright: true,
-  lastpanelright: 'links',
+  showtablinks: false,
+  showtabsnaps: false,
+  showtabtoc: false,
+  showtabfiles: false,
   keys: [],
   uploadqueue: [],
   tagicons: {},
@@ -497,7 +500,8 @@ $().ready(function() {
         $('#status').html('Snapshot @' + app.snap + ' not found').css('opacity', 1);
       }
     }
-  }).on('unload', function() { // TODO: switch this over to visiblitychange/pagehide
+  }).on('visiblitychange', function() {
+    if (!document.hidden) return;
     if (app.changed) {
       app.notes[app.activenote].content = $('#input').val();
       pushUpdate(true);
@@ -507,7 +511,10 @@ $().ready(function() {
     localStorage.setItem('flownotes' + instance + 'activenote', app.activenote);
     localStorage.setItem('flownotes' + instance + 'hidepanelleft', app.hidepanelleft);
     localStorage.setItem('flownotes' + instance + 'hidepanelright', app.hidepanelright);
-    localStorage.setItem('flownotes' + instance + 'lastpanelright', app.lastpanelright);
+    localStorage.setItem('flownotes' + instance + 'showtablinks', app.showtablinks);
+    localStorage.setItem('flownotes' + instance + 'showtabsnaps', app.showtabsnaps);
+    localStorage.setItem('flownotes' + instance + 'showtabtoc', app.showtabtoc);
+    localStorage.setItem('flownotes' + instance + 'showtabfiles', app.showtabfiles);
   }).on('beforeprint', function() {
     $('#plain').text($('#input').val());
   }).on('afterprint', function() {
@@ -601,11 +608,24 @@ $().ready(function() {
   });
   $('#buttons-right').on('click', '.button-mode', function() {
     let mode = this.id.split('-')[1];
-    if ($('#button-' + mode).hasClass('button-active')) {
-      togglePanelRight('close');
+    if (app.hidepanelright) {
+      app['showtab' + mode] = true;
+      togglePanelRight('open');
       return;
     }
-    else if (app.hidepanelright) togglePanelRight('open');
+    if (app['showtab' + mode]) { // Tab is active, deactivate it
+      console.log('Disable mode ' + mode);
+      $('#tab-' + mode).hide();
+      $('#button-' + mode).removeClass('button-active');
+      if (!$('#buttons-right .button-mode.button-active').length) {
+        togglePanelRight('close');
+      }
+      else app['showtab' + mode] = false; // Leave showtab true if it was the last active tab
+      return;
+    }
+    app['showtab' + mode] = true;
+    $('#tab-' + mode).show();
+    $('#button-' + mode).addClass('button-active');
     switch (mode) {
       case 'links':
         updateLinks();
@@ -616,12 +636,10 @@ $().ready(function() {
       case 'toc':
         loadToc();
         break;
-      case 'uploads':
+      case 'files':
         loadUploads();
         break;
     }
-    $(this).addClass('button-active').siblings('.button-mode').removeClass('button-active');
-    app.lastpanelright = mode;
   });
   $('#panel-left,#buttons-left').on('touchstart', function(e) {
     app.touchstart = { from: 'left', pageX: e.changedTouches[0].pageX, pageY: e.changedTouches[0].pageY };
@@ -793,7 +811,11 @@ $().ready(function() {
   $('.sidepanel').addClass('notransition');
   if (localStorage.getItem('flownotes' + instance + 'hidepanelleft') == 'true') togglePanelLeft('close');
   if (localStorage.getItem('flownotes' + instance + 'hidepanelright') == 'false') {
-    $('#button-' + localStorage.getItem('flownotes' + instance + 'lastpanelright')).click();
+    for (let mode of [ 'links', 'snaps', 'toc', 'files' ]) {
+      if (localStorage.getItem('flownotes' + instance + 'showtab' + mode) == 'true') {
+        $('#button-' + mode).click();
+      }
+    }
   }
   setTimeout(function() { $('.sidepanel').removeClass('notransition'); }, 500);
 
@@ -835,8 +857,8 @@ function init(data = {}) {
     $('#tab-recent').append(app.loader);
   }
   if (!app.hidepanelright) {
-    if (app.lastpanelright == 'snaps') data.snapshots = true;
-    else if (app.lastpanelright == 'uploads') data.uploads = true;
+    if (app.showtabsnaps) data.snapshots = true;
+    if (app.showtabfiles) data.uploads = true;
   }
   sendToServer(data);
   $('#status').html('Loading...').css('opacity', 1);
@@ -863,7 +885,14 @@ function togglePanelRight(force) {
     $('#panel-right').css('margin-right', '0');
     $('#panels').css({ left: '', right: '0' });
     if ((window.innerWidth < 880) && !app.hidepanelleft) togglePanelLeft('close');
-    $('#button-' + app.lastpanelright).addClass('button-active');
+    let found = false;
+    for (let mode of [ 'links', 'snaps', 'toc', 'files' ]) {
+      if (app['showtab' + mode]) {
+        found = true;
+        $('#button-' + mode).addClass('button-active');
+        $('#tab-' + mode).show();
+      }
+    }
     updatePanels();
   }
   else {
@@ -1058,8 +1087,8 @@ function tick() {
 function pushUpdate(beacon, retransmit) {
   let data = { req: 'update', activenote: app.activenote, notes: {}, lastupdate: app.lastupdate };
   if (!app.hidepanelright) {
-    if (app.lastpanelright == 'snaps') data.snapshots = true;
-    else if (app.lastpanelright == 'uploads') data.uploads = true;
+    if (app.showtabsnaps) data.snapshots = true;
+    if (app.showtabfiles) data.uploads = true;
   }
   if ($('#label-search').hasClass('tab-active') && $('#search-input').val().length) data.term = $('#search-input').val();
   for (let i in app.notes) {
@@ -1156,12 +1185,12 @@ function parseFromServer(data, textStatus, xhr) {
 
   if ((data.snapshots) && (data.snapshotsfrom == app.activenote)) {
     app.snapshots = data.snapshots;
-    if (app.hidepanelright == false && app.lastpanelright == 'snaps') updateSnapshots();
+    if (app.hidepanelright == false && app.showtabsnaps) updateSnapshots();
     if (window.location.hash.indexOf('@') > -1) $(window).trigger('hashchange');
   }
   if ((data.uploads) && (data.uploadsfrom == app.activenote)) {
     app.uploads = data.uploads;
-    if (app.hidepanelright == false && app.lastpanelright == 'uploads') updateUploads();
+    if (app.hidepanelright == false && app.showtabfiles) updateUploads();
   }
   if (data.tagicons) app.tagicons = data.tagicons;
 
@@ -1357,20 +1386,10 @@ function updatePanels() {
   else updateSearch();
 
   if (!app.hidepanelright) {
-    switch (app.lastpanelright) {
-      case 'links':
-        updateLinks();
-        break;
-      case 'snaps':
-        updateSnapshots();
-        break;
-      case 'toc':
-        loadToc();
-        break;
-      case 'uploads':
-        updateUploads();
-        break;
-    }
+    if (app.showtablinks) updateLinks();
+    if (app.showtabsnaps) updateSnapshots();
+    if (app.showtabtoc) loadToc();
+    if (app.showtabfiles) updateUploads();
   }
 }
 
@@ -1476,7 +1495,7 @@ function updateLinks() {
   }
   else str += '<div class="list-none">- none -</div>';
   str += '</div>';
-  $('#tab-right').html(str);
+  $('#tab-links').html(str);
 }
 function updateSnapshots() {
   let div = $('#snapshots').empty();
@@ -1499,7 +1518,7 @@ function updateSnapshots() {
   }
 }
 function loadUploads() {
-  let div = $('#tab-right').empty()
+  let div = $('#tab-files').empty()
     .append('<div class="list-divider">Files linked to this note</div><div id="uploads-linked" class="scrolly"></div><div class="list-divider mta">Unlinked files</div><div id="uploads-unlinked" class="scrolly"></div>');
   let linked = div.find('#uploads-linked');
   let unlinked = div.find('#uploads-unlinked');
@@ -1672,8 +1691,8 @@ function activateNote(id, nopost) {
   if (!nopost) {
     let data = { req: 'activate', activenote: app.activenote, lastupdate: app.lastupdate };
     if (!app.hidepanelright) {
-      if (app.lastpanelright == 'snaps') data.snapshots = true;
-      else if (app.lastpanelright == 'uploads') data.uploads = true;
+      if (app.showtabsnaps) data.snapshots = true;
+      else if (app.showtabfiles) data.uploads = true;
     }
     if (app.notes[id] && (app.notes[id].content !== undefined)) {
       loadNote(app.activenote);
@@ -2000,8 +2019,9 @@ function handleSettings(settings) {
 }
 
 function loadSnapshots() {
-  let div = $('#tab-right').empty()
-    .append('<div><input type="button" id="create-snapshot" class="tab-button" value="Create new snapshot"></div><div class="list-divider">Snapshots</div><div id="snapshots" class="scrolly"></div>');
+  console.log('Load snapshots');
+  let div = $('#tab-snaps').empty()
+    .append('<div class="list-divider">Snapshots</div><div><input type="button" id="create-snapshot" class="tab-button" value="Create new snapshot"></div><div id="snapshots" class="scrolly"></div>');
   div.find('#create-snapshot').on('click', function() {
     let note = app.notes[app.activenote];
     if (note.touched) return alert('Last changes not saved yet; please wait 10 seconds and try again');
@@ -2039,7 +2059,7 @@ function loadSnapshots() {
   else if (app.init) sendToServer({ req: 'snapshot', mode: 'list', activenote: app.activenote });
 }
 function loadToc() {
-  let div = $('#tab-right').empty()
+  let div = $('#tab-toc').empty()
     .append('<div class="list-divider">Headings</div><div id="toc" class="scrolly"></div>');
   div = div.find('#toc');
   app.slugtoraw = {};
@@ -2134,7 +2154,10 @@ function logout() {
   localStorage.setItem('flownotes' + instance + 'activenote', app.activenote);
   localStorage.setItem('flownotes' + instance + 'hidepanelleft', app.hidepanelleft);
   localStorage.setItem('flownotes' + instance + 'hidepanelright', app.hidepanelright);
-  localStorage.setItem('flownotes' + instance + 'lastpanelright', app.lastpanelright);
+  localStorage.setItem('flownotes' + instance + 'showtablinks', app.showtablinks);
+  localStorage.setItem('flownotes' + instance + 'showtabsnaps', app.showtabsnaps);
+  localStorage.setItem('flownotes' + instance + 'showtabtoc', app.showtabtoc);
+  localStorage.setItem('flownotes' + instance + 'showtabfiles', app.showtabfiles);
   showModal('logout', '<div><p>You have been logged out</p><p><input type="button" class="modal-button" value="Login" onclick="hideModal(); sendToServer({ req: \'init\' });"></p></div>', false);
 }
 
