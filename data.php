@@ -383,7 +383,7 @@ switch ($data['req']) {
         header('Content-type: application/vnd.sqlite3');
         header('Content-disposition: attachment; filename="FlowNotes database ' . date('Y-m-d') . '.sqlite3"');
         header('Content-length: ' . filesize('db/notes.sq3'));
-        header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime('db/notes.sq3') . ' GMT'));
+        header('Last-modified: ' . gmdate("D, d M Y H:i:s", filemtime('db/notes.sq3')) . ' GMT');
         readfile('db/notes.sq3');
       exit(0);
       case 'pubhtmlone':
