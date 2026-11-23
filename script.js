@@ -728,7 +728,7 @@ $().ready(function() {
   $('#button-present').on('click', function() {
     app.present = 1;
     $('#present-outer').show().on('fullscreenchange', function(evt) {
-      if (document.fullscreenElement === null) $(this).empty().hide();
+      if (document.fullscreenElement === null) $(this).hide().find('#present').empty();
     })[0].requestFullscreen();
     renderPresentation();
   });
