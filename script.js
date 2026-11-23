@@ -52,6 +52,14 @@ $(document).on('keydown', function(evt) {
       render($('#input').val());
     }
   }
+  else if (app.present && ((evt.key == ' ') || (evt.key == 'ArrowRight'))) {
+    app.present++;
+    renderPresentation();
+  }
+  else if (app.present && ((evt.key == 'Backspace') || (evt.key == 'ArrowLeft'))) {
+    if (app.present > 1) app.present--;
+    renderPresentation();
+  }
   else if ((evt.key == 'ArrowLeft') && (app.tour)) {
     tourStep(true);
     return false;
